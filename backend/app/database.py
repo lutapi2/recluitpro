@@ -18,9 +18,12 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 
+ROOT_DIR = Path(__file__).resolve().parents[2]
+DEFAULT_DB_FILE = (ROOT_DIR / "recruitpro.db").as_posix()
+
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql+psycopg://recruitpro:change-me@localhost:5432/recruitpro",
+    f"sqlite:///{DEFAULT_DB_FILE}",
 )
 
 
