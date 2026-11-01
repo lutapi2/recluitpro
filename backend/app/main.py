@@ -383,6 +383,7 @@ def vacancy_data(vacancy: Vacancy, viewer: User, *, include_page_details: bool =
                 "resumeName": item.resume.original_name,
                 "aiScore": item.ai_score,
                 "aiVerdict": item.ai_verdict,
+                "aiSummary": item.ai_summary,
                 "appliedAt": item.created_at.isoformat(),
                 "status": item.status,
                 "assignedRecruiterId": item.assigned_recruiter_id,
@@ -1259,6 +1260,19 @@ def apply_to_vacancy(
     candidate.last_activity_at = utc_now()
     db.add(document)
     db.flush()
+
+    # Evaluación IA institucional inmediata del CV frente a la vacante
+    resume_text = extract_text_from_file(path, document.original_name)
+    ai_analysis = analyze_compatibility(
+        candidate_name=candidate.name,
+        candidate_email=candidate.email,
+        candidate_location=candidate.location or "",
+        vacancy_title=vacancy.title,
+        vacancy_description=vacancy.description,
+        vacancy_type=vacancy.type,
+        resume_text=resume_text,
+    )
+
     application = Application(
         vacancy_id=vacancy.id,
         candidate_id=candidate.id,
@@ -1268,6 +1282,10 @@ def apply_to_vacancy(
         resume_id=document.id,
         privacy_consent_at=utc_now(),
         privacy_consent_version=PRIVACY_CONSENT_VERSION,
+        ai_score=ai_analysis.get("matchScore"),
+        ai_verdict=ai_analysis.get("verdict"),
+        ai_summary=ai_analysis.get("summary"),
+        ai_analyzed_at=utc_now(),
     )
     db.add(application)
     db.flush()
@@ -1344,6 +1362,7 @@ def list_all_applications(
                 "resumeName": app_item.resume.original_name if app_item.resume else "",
                 "aiScore": app_item.ai_score,
                 "aiVerdict": app_item.ai_verdict,
+                "aiSummary": app_item.ai_summary,
                 "status": app_item.status,
                 "appliedAt": app_item.created_at.isoformat(),
                 "assignedRecruiterId": app_item.assigned_recruiter_id,
@@ -1510,7 +1529,8 @@ def ai_analyze_application(
     resume_text = ""
     if application.resume:
         file_path = UPLOAD_DIR / application.resume.storage_name
-        resume_text = extract_text_from_file(file_path)
+        orig_name = application.resume.original_name or ""
+        resume_text = extract_text_from_file(file_path, orig_name)
 
     analysis = analyze_compatibility(
         candidate_name=application.name,
@@ -1549,7 +1569,8 @@ def ai_analyze_candidate_vacancy_fit(
     )
     if latest_doc:
         file_path = UPLOAD_DIR / latest_doc.storage_name
-        resume_text = extract_text_from_file(file_path)
+        orig_name = latest_doc.original_name or ""
+        resume_text = extract_text_from_file(file_path, orig_name)
 
     analysis = analyze_compatibility(
         candidate_name=viewer.name,
@@ -1560,11 +1581,6 @@ def ai_analyze_candidate_vacancy_fit(
         vacancy_type=vacancy.type,
         resume_text=resume_text,
     )
-    application.ai_score = analysis.get("matchScore")
-    application.ai_verdict = analysis.get("verdict")
-    application.ai_summary = analysis.get("summary")
-    application.ai_analyzed_at = datetime.now(timezone.utc)
-    db.commit()
     return analysis
 
 

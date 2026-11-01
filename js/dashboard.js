@@ -647,41 +647,9 @@ function setupSplitEvaluationPanel(app) {
   if (runAiBtn) runAiBtn.disabled = false;
   currentAiAnalysis = null;
 
-  // Auto-display AI evaluation if candidate has already been analyzed
-  if (app.aiScore) {
-    const score = app.aiScore;
-    const stars = score >= 85 ? 5 : score >= 70 ? 4 : score >= 55 ? 3 : 2;
-    const stage = score >= 70 ? "entrevista" : score >= 55 ? "en_revision" : "rechazada";
-    currentAiAnalysis = {
-      matchScore: score,
-      stars: stars,
-      verdict: app.aiVerdict || "Recomendación Favorable (Nivel Sobresaliente)",
-      suggestedStage: stage,
-      summary: app.aiSummary || `Afinidad técnica del ${score}% frente a los requerimientos de la vacante.`,
-      matchedSkills: ["Python", "FastAPI", "PostgreSQL", "Docker", "Kubernetes", "AWS", "Backend", "Arquitectura"],
-      interviewQuestions: [
-        "Detalle un proyecto de alta exigencia donde haya implementado Python y microservicios con FastAPI.",
-        "Describa su experiencia liderando infraestructura y contenedores con Kubernetes y AWS.",
-        "¿Cuál es su metodología para asegurar la calidad de código y entregas continuas?"
-      ],
-    };
-    setCandidateRating(stars);
-
-    const scorePill = document.getElementById("ai-score-pill");
-    const verdictLabel = document.getElementById("ai-verdict-label");
-    const progressFill = document.getElementById("ai-progress-fill");
-    const summaryEl = document.getElementById("ai-summary");
-    
-    if (verdictLabel) verdictLabel.textContent = app.aiVerdict || "Dictamen Técnico Favorable";
-    if (scorePill) {
-      scorePill.textContent = `${app.aiScore}% Compatibilidad`;
-      scorePill.className = "ai-score-pill " + (app.aiScore >= 80 ? "score-high" : app.aiScore >= 60 ? "score-med" : "score-low");
-    }
-    if (progressFill) progressFill.style.width = `${app.aiScore}%`;
-    if (summaryEl) summaryEl.textContent = app.aiSummary || `Afinidad técnica del ${app.aiScore}% frente a los requerimientos de la vacante.`;
-    
-    if (aiResults) aiResults.style.display = "block";
-    if (runAiBtn) runAiBtn.textContent = "Volver a Analizar";
+  // Auto-display and execute AI evaluation for real-time assessment
+  if (app.id) {
+    runAiScreening();
   } else {
     if (aiResults) aiResults.style.display = "none";
     if (runAiBtn) runAiBtn.textContent = "Ejecutar Análisis";
@@ -1673,12 +1641,8 @@ function autoApplyAiRecommendation() {
       verdict: currentEvaluatingApp.aiVerdict || "Recomendación Favorable (Nivel Sobresaliente)",
       suggestedStage: stage,
       summary: currentEvaluatingApp.aiSummary || `Afinidad técnica del ${score}% frente a los requerimientos de la vacante.`,
-      matchedSkills: ["Python", "FastAPI", "PostgreSQL", "Docker", "Kubernetes", "AWS", "Backend", "Arquitectura"],
-      interviewQuestions: [
-        "Detalle un proyecto de alta exigencia donde haya implementado Python y microservicios con FastAPI.",
-        "Describa su experiencia liderando infraestructura y contenedores con Kubernetes y AWS.",
-        "¿Cuál es su metodología para asegurar la calidad de código y entregas continuas?"
-      ],
+      matchedSkills: [],
+      interviewQuestions: [],
     };
   }
 
@@ -1698,10 +1662,10 @@ function autoApplyAiRecommendation() {
   if (noteEl) {
     const skillsList = (currentAiAnalysis.matchedSkills || []).length
       ? currentAiAnalysis.matchedSkills.map((s) => "• " + s).join("\n")
-      : "• Python, FastAPI, PostgreSQL, Docker, Kubernetes, AWS";
+      : "• Competencias en proceso de homologación";
     const questionsList = (currentAiAnalysis.interviewQuestions || []).length
       ? currentAiAnalysis.interviewQuestions.map((q, i) => `${i + 1}. ${q}`).join("\n")
-      : ["1. Detalle un proyecto de alta exigencia donde haya implementado arquitecturas distribuidas con FastAPI.", "2. ¿Cuál es su metodología para asegurar calidad, despliegue continuo y alta disponibilidad?"].join("\n");
+      : ["1. Describa sus principales proyectos y logros en su especialidad.", "2. ¿Cuál es su metodología para asegurar la calidad de sus entregables?"].join("\n");
 
     const noteText = `[Dictamen Técnico IA: ${currentAiAnalysis.matchScore}% Compatibilidad - ${currentAiAnalysis.verdict}]
 Resumen: ${currentAiAnalysis.summary}
