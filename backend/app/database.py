@@ -25,6 +25,10 @@ DATABASE_URL = os.getenv(
     "DATABASE_URL",
     f"sqlite:///{DEFAULT_DB_FILE}",
 )
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
+elif DATABASE_URL.startswith("postgresql://") and not DATABASE_URL.startswith("postgresql+"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
 
 
 class Base(DeclarativeBase):

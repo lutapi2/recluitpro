@@ -1407,6 +1407,29 @@ def update_application(
     }
 
 
+@app.delete("/api/applications/{application_id}", status_code=204)
+def delete_application(
+    application_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    verify_csrf(request)
+    viewer = current_user(request, db)
+    require_role(viewer, Role.ADMIN, Role.RECRUITER)
+    application = db.get(Application, application_id)
+    if not application:
+        raise HTTPException(status_code=404, detail="Postulación no encontrada.")
+    if viewer.role != Role.ADMIN:
+        vacancy = db.get(Vacancy, application.vacancy_id)
+        if not vacancy or (vacancy.recruiter_id != viewer.id and application.assigned_recruiter_id != viewer.id):
+            raise HTTPException(status_code=403, detail="No tienes permisos para eliminar esta postulación.")
+
+    db.query(ApplicationActivity).filter(ApplicationActivity.application_id == application_id).delete(synchronize_session=False)
+    db.delete(application)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 # ==========================================================================
 # ARTIFICIAL INTELLIGENCE (AI) RECRUITMENT & SCREENING ENDPOINTS
 # ==========================================================================
