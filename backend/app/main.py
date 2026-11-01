@@ -173,7 +173,7 @@ logger = logging.getLogger("recruitpro")
 class RegisterRequest(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     email: str = Field(min_length=3, max_length=254)
-    password: str = Field(min_length=12, max_length=128)
+    password: str = Field(min_length=6, max_length=128)
     privacy_consent: bool
 
 
@@ -506,7 +506,14 @@ def register(payload: RegisterRequest, request: Request, response: Response, db:
     email = normalize_email(payload.email)
     if not payload.name.strip():
         raise HTTPException(status_code=422, detail="Escribe tu nombre.")
+    
+    # Check if email is already registered
+    existing_user = db.scalar(select(User.id).where(User.email == email).limit(1))
+    if existing_user:
+        raise HTTPException(status_code=409, detail="Ya existe una cuenta con este correo.")
+
     user = User(
+        id=str(uuid4()),
         name=payload.name.strip(),
         email=email,
         password_hash=password_hash.hash(payload.password),
@@ -520,12 +527,17 @@ def register(payload: RegisterRequest, request: Request, response: Response, db:
     try:
         db.commit()
         db.refresh(user)
-    except IntegrityError as error:
+    except Exception as error:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Ya existe una cuenta con ese correo.") from error
+        logger.exception("Error al registrar cuenta: %s", error)
+        raise HTTPException(status_code=500, detail="Error interno al registrar la cuenta.") from error
+
+    # Auto-login immediately upon registration (no email confirmation needed)
+    create_session(response, db, user, request)
     return {
-        "message": "¡Cuenta creada exitosamente! Tu cuenta está activa y puedes iniciar sesión de inmediato.",
-        "emailSent": True,
+        "message": "¡Cuenta creada exitosamente! Redirigiendo...",
+        "authenticated": True,
+        "redirect": "dashboard.html",
     }
 
 
@@ -538,11 +550,7 @@ def login(payload: LoginRequest, request: Request, response: Response, db: Sessi
     password_matches = password_hash.verify(payload.password, stored_hash)
     if not user or not password_matches:
         raise HTTPException(status_code=401, detail="Correo o contraseña incorrectos.")
-    if user.email_verified_at is None:
-        raise HTTPException(
-            status_code=403,
-            detail="Confirma tu correo antes de iniciar sesión. Puedes solicitar otro enlace desde el registro.",
-        )
+    # Sin verificacion requerida: acceso inmediato
     user.last_activity_at = utc_now()
     create_session(response, db, user, request)
     return user_data(user, db, user)

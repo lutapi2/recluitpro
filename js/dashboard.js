@@ -1437,6 +1437,29 @@ async function saveApplicationDetailUpdate(e) {
   }
 }
 
+async function deleteCurrentApplication() {
+  const id = document.getElementById("app-detail-id").value;
+  if (!id) return;
+  if (!confirm("¿Estás seguro de que deseas eliminar permanentemente esta postulación de la plataforma?")) return;
+
+  try {
+    await apiRequest(`/api/applications/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
+
+    pipelineApplicationsCache = (pipelineApplicationsCache || []).filter((item) => item.id !== id);
+    closeApplicationDetailDialog();
+    showKanbanToast("Postulación eliminada exitosamente.");
+    const container = document.getElementById("kanban-board-container");
+    if (container) container.innerHTML = renderPipelineBoardOnly();
+    const stats = document.getElementById("pipeline-total-stats");
+    if (stats) stats.innerHTML = `Total candidatos: <b>${pipelineApplicationsCache.length}</b>`;
+  } catch (error) {
+    console.error("Error al eliminar postulación:", error);
+    alert(error.message || "No se pudo eliminar la postulación.");
+  }
+}
+
 /* Toast alert notification */
 let toastTimeout = null;
 function showKanbanToast(message, isError = false) {

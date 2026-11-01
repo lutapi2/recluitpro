@@ -44,11 +44,8 @@ async function register() {
       return;
     }
 
-    const notice = document.getElementById("email-notice");
-    notice.textContent = result.emailSent
-      ? result.message
-      : `${result.message} El envío está temporalmente indisponible; puedes reenviar el enlace cuando el correo vuelva a estar disponible.`;
-    document.getElementById("resend-verification").classList.remove("hidden");
+    // Acceso directo e inmediato al panel
+    location.href = "dashboard.html";
   } catch (requestError) {
     console.error("No se pudo completar el registro:", requestError);
     message.textContent = requestError.message || "No se pudo conectar con el servidor. Inténtalo de nuevo.";
