@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RecruitPro | Iniciar sesión</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div class="auth">
+      <section class="brand">
+        <div class="logo">✦ RecruitPro</div>
+        <div>
+          <small>TALENT MANAGEMENT PLATFORM</small>
+          <h1>Conecta talento con oportunidades.</h1>
+          <p>
+            Plataforma profesional para candidatos, reclutadores y
+            administradores.
+          </p>
+        </div>
+        <div class="features">
+          <span>01 · Candidatos<br /><b>Gestiona tu perfil.</b></span>
+          <span>02 · Reclutadores<br /><b>Consulta candidatos.</b></span>
+          <span>03 · Administración<br /><b>Supervisa la plataforma.</b></span>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="card">
+          <h2>Bienvenido de nuevo</h2>
+          <p>Ingresa tus credenciales para continuar.</p>
+          <div id="error" class="error"></div>
+          <label>
+            Correo electrónico
+            <input id="email" type="email" placeholder="nombre@correo.com" autocomplete="email" required />
+          </label>
+          <label>
+            Contraseña
+            <div class="password">
+              <input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                autocomplete="current-password"
+                required
+              />
+              <button type="button" onclick="togglePassword()" aria-label="Mostrar u ocultar contraseña">◉</button>
+            </div>
+          </label>
+                    <button class="primary" onclick="login()">Iniciar sesión</button>
+
+          <div style="margin: 18px 0; text-align: center; padding: 12px 14px; background: #eff6ff; border-radius: 12px; border: 1px solid #bfdbfe;">
+            <span style="font-size: 13px; font-weight: 700; color: #1e40af;"> ¿Buscas trabajo?</span>
+            <p style="margin: 4px 0 10px; font-size: 13px; color: #3b82f6;">Conoce nuestras vacantes abiertas y postúlate en 1 minuto:</p>
+            <a href="empleos.html" class="primary small" style="text-decoration: none; display: inline-block; padding: 6px 14px; font-weight: 700;">Ver vacantes abiertas ↗</a>
+          </div>
+          <p class="center"><a href="recuperar.html">¿Olvidaste tu contraseña?</a></p>
+          <label for="verification-email">
+            ¿Aún no verificaste tu correo?
+            <input id="verification-email" type="email" placeholder="nombre@correo.com" autocomplete="email" />
+          </label>
+          <button class="secondary" type="button" onclick="resendVerification()">Reenviar enlace de verificación</button>
+          <div id="verification-message" class="notice-box" role="status"></div>
+          <p class="center">
+            ¿No tienes una cuenta? <a href="registro.html">Crear cuenta</a>
+          </p>
+        </div>
+      </section>
+    </div>
+    <script src="js/auth.js"></script>
+  </body>
+</html>

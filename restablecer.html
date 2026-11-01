@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RecruitPro | Nueva contraseña</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <main class="panel">
+      <section class="card">
+        <h2>Crear nueva contraseña</h2>
+        <p>El enlace es de un solo uso y vence en una hora.</p>
+        <form id="reset-form">
+          <label for="new-password">Nueva contraseña</label>
+          <input id="new-password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required />
+          <div id="reset-message" class="notice-box" role="status"></div>
+          <button class="primary" type="submit">Actualizar contraseña</button>
+        </form>
+        <p class="center"><a href="index.html">Volver a iniciar sesión</a></p>
+      </section>
+    </main>
+    <script src="js/reset-password.js"></script>
+  </body>
+</html>

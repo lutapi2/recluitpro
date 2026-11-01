@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RecruitPro | Crear cuenta</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div class="auth">
+      <section class="brand">
+        <div class="logo">✦ RecruitPro</div>
+        <div>
+          <small>CREATE YOUR ACCOUNT</small>
+          <h1>Forma parte de nuestra plataforma.</h1>
+          <p>Crea una cuenta de candidato. Un administrador puede habilitar cuentas de reclutador.</p>
+        </div>
+        <div class="features">
+          <span>01 · Registro<br /><b>Crea tus credenciales.</b></span>
+          <span>02 · Seguridad<br /><b>Roles protegidos.</b></span>
+          <span>03 · Acceso<br /><b>Permisos por rol.</b></span>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="card">
+          <h2>Crear cuenta</h2>
+          <p>Completa tus datos para registrarte.</p>
+          <div id="error" class="error"></div>
+          <div id="privacy-notice" class="privacy-notice"></div>
+          <label for="name">
+            Nombre completo
+            <input id="name" placeholder="Ej. Carlos Pérez" autocomplete="name" required maxlength="100" />
+          </label>
+          <label for="email">
+            Correo electrónico
+            <input id="email" type="email" placeholder="nombre@correo.com" autocomplete="email" required maxlength="254" />
+          </label>
+          <label for="password">
+            Contraseña
+            <input
+              id="password"
+              type="password"
+              placeholder="Mínimo 12 caracteres"
+              autocomplete="new-password"
+              minlength="12"
+              maxlength="128"
+              required
+            />
+          </label>
+          <label class="consent-label">
+            <input id="privacy-consent" type="checkbox" required />
+            <span>Acepto el tratamiento de mis datos personales según el <a href="privacidad.html" target="_blank" rel="noopener">aviso de privacidad</a>. Entiendo que puedo retirar mi consentimiento y solicitar la eliminación de mis datos.</span>
+          </label>
+          <button class="primary" type="button" onclick="register()">Crear cuenta</button>
+          <p id="email-notice" class="notice"></p>
+          <button id="resend-verification" class="secondary hidden" type="button" onclick="resendVerification()">Reenviar enlace de verificación</button>
+          <p class="center">
+            ¿Ya tienes una cuenta? <a href="index.html">Iniciar sesión</a>
+          </p>
+        </div>
+      </section>
+    </div>
+    <script src="js/registro.js"></script>
+  </body>
+</html>

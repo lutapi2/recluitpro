@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RecruitPro | Recuperar contraseña</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <main class="panel">
+      <section class="card">
+        <h2>Recuperar contraseña</h2>
+        <p>Te enviaremos instrucciones si existe una cuenta verificada con ese correo.</p>
+        <form id="recovery-form">
+          <label for="recovery-email">Correo electrónico</label>
+          <input id="recovery-email" type="email" autocomplete="email" required />
+          <div id="recovery-message" class="notice-box" role="status"></div>
+          <button class="primary" type="submit">Enviar instrucciones</button>
+        </form>
+        <p class="center"><a href="index.html">Volver a iniciar sesión</a></p>
+      </section>
+    </main>
+    <script src="js/recovery.js"></script>
+  </body>
+</html>

@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RecruitPro | Dashboard</title>
+    <link rel="stylesheet" href="css/style.css?v=2.7" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand-link" href="dashboard.html" aria-label="RecruitPro, inicio">
+        <span class="logo-mark">✦</span>
+        <span class="logo-name">RecruitPro</span>
+      </a>
+      <nav id="nav" aria-label="Navegación principal"></nav>
+      <div class="account">
+        <a href="empleos.html" target="_blank" class="kanban-action-btn" style="text-decoration: none; font-size: 12px; margin-right: 8px; font-weight: 600;" title="Ver portal público de empleo">Portal de Empleos ↗</a>
+        <div class="profile" aria-label="Perfil de usuario">
+          <span id="avatar" class="avatar" aria-hidden="true"></span>
+          <span class="profile-details">
+            <b id="user"></b>
+            <span id="user-role"></span>
+          </span>
+        </div>
+        <button class="logout-button" onclick="logout()">
+          <span class="logout-icon" aria-hidden="true">↗</span>
+          <span class="logout-text">Salir</span>
+        </button>
+      </div>
+    </header>
+
+    <main id="app" class="content"></main>
+
+    <!-- Dialog para Visor de CVs en Pantalla Dividida (Split-Screen Reviewer) -->
+    <dialog
+      id="document-preview"
+      class="document-preview split-preview-dialog"
+      aria-labelledby="preview-title"
+    >
+      <div class="preview-header">
+        <div class="preview-header-left">
+          
+          <div>
+            <h2 id="preview-title">Expediente del Candidato y Currículum</h2>
+            <small id="preview-subtitle" class="preview-subtitle">Revisión en pantalla dividida</small>
+          </div>
+        </div>
+        <div class="preview-header-actions">
+          <a id="document-download" class="kanban-action-btn" download>Descargar Currículum</a>
+          <button
+            class="preview-close"
+            type="button"
+            onclick="closeDocumentPreview()"
+            aria-label="Cerrar vista previa"
+          >
+            ×
+          </button>
+        </div>
+      </div>
+
+      <div class="split-preview-body">
+        <!-- Panel Izquierdo: Visor de Documento PDF -->
+        <div class="split-doc-pane">
+          <iframe
+            id="document-frame"
+            title="Vista previa del documento"
+            
+          ></iframe>
+        </div>
+
+        <!-- Panel Derecho: Formulario de Evaluación, Notas y Calificación -->
+        <aside id="split-evaluation-pane" class="split-eval-pane">
+          <div class="eval-candidate-card">
+            <div class="eval-candidate-header">
+              <div class="eval-avatar" id="eval-candidate-avatar">LT</div>
+              <div>
+                <h3 id="eval-candidate-name">Nombre Candidato</h3>
+                <span id="eval-candidate-vacancy" class="kanban-card-badge">Vacante</span>
+              </div>
+            </div>
+            <div class="eval-candidate-details" id="eval-candidate-details"></div>
+          </div>
+
+          <!-- Asistente de IA (AI Screening) -->
+          <div class="ai-card" id="eval-ai-box">
+            <div class="ai-header">
+              <div>
+                <h4 class="ai-title">Dictamen Curricular Automatizado</h4>
+                <small style="color: #64748b; font-size: 11px; display: block; margin-top: 2px;">Evaluación técnica predictiva ATS</small>
+              </div>
+              <button type="button" class="ai-trigger-btn" id="run-ai-btn" onclick="triggerAiScreening()">
+                Ejecutar Análisis
+              </button>
+            </div>
+            <div id="ai-loading" class="ai-loading-box" style="display: none;">
+              <span>Procesando currículum y evaluando correlación técnica con la vacante...</span>
+            </div>
+            <div id="ai-results" style="display: none;">
+              <div class="ai-result-header">
+                <span id="ai-verdict-label" class="ai-verdict-badge"></span>
+                <span id="ai-score-pill" class="ai-score-pill"></span>
+              </div>
+              <div class="ai-progress-track">
+                <div id="ai-progress-fill" class="ai-progress-fill" style="width: 0%;"></div>
+              </div>
+              <p id="ai-summary" class="ai-summary"></p>
+              <div class="ai-grid-details">
+                <div>
+                  <span class="ai-section-sub">Competencias Técnicas Acreditadas</span>
+                  <div id="ai-matched-tags" class="ai-tags-group"></div>
+                </div>
+                <div style="margin-top: 8px;">
+                  <span class="ai-section-sub">Competencias por Evaluar / Brechas</span>
+                  <div id="ai-missing-tags" class="ai-tags-group"></div>
+                </div>
+              </div>
+              <div style="margin-top: 10px;">
+                <span class="ai-section-sub">Cuestionario Técnico Sugerido para Panel</span>
+                <ol id="ai-questions-list" class="ai-questions-list"></ol>
+              </div>
+              <button type="button" class="ai-auto-apply-btn" onclick="autoApplyAiRecommendation()">
+                Consolidar Dictamen y Calificación en Formulario
+              </button>
+            </div>
+          </div>
+
+          <!-- Selector Rápido de Etapa -->
+          <div class="eval-section">
+            <label class="eval-section-title">Etapa en el proceso</label>
+            <div class="eval-stages-pill-group" id="eval-stages-group">
+              <button type="button" class="eval-stage-btn" data-stage="recibida" onclick="setSplitStage('recibida')">Recibida</button>
+              <button type="button" class="eval-stage-btn" data-stage="en_revision" onclick="setSplitStage('en_revision')">En revisión</button>
+              <button type="button" class="eval-stage-btn" data-stage="entrevista" onclick="setSplitStage('entrevista')">Entrevista</button>
+              <button type="button" class="eval-stage-btn" data-stage="oferta" onclick="setSplitStage('oferta')">Oferta</button>
+              <button type="button" class="eval-stage-btn" data-stage="rechazada" onclick="setSplitStage('rechazada')">Rechazada</button>
+            </div>
+          </div>
+
+          <!-- Calificación por Estrellas (Scorecard) -->
+          <div class="eval-section">
+            <label class="eval-section-title">Calificación del perfil (Scorecard)</label>
+            <div class="eval-star-rating">
+              <div class="star-group" id="eval-stars">
+                <button type="button" class="star-btn" data-value="1" onclick="setCandidateRating(1)">★</button>
+                <button type="button" class="star-btn" data-value="2" onclick="setCandidateRating(2)">★</button>
+                <button type="button" class="star-btn" data-value="3" onclick="setCandidateRating(3)">★</button>
+                <button type="button" class="star-btn" data-value="4" onclick="setCandidateRating(4)">★</button>
+                <button type="button" class="star-btn" data-value="5" onclick="setCandidateRating(5)">★</button>
+              </div>
+              <span class="eval-rating-label" id="eval-rating-text">Sin calificar</span>
+            </div>
+          </div>
+
+          <!-- Reclutador Asignado -->
+          <div class="eval-section">
+            <label class="eval-section-title" for="eval-assignee-select">Reclutador responsable</label>
+            <select id="eval-assignee-select" class="eval-select">
+              <option value="">Sin asignar</option>
+            </select>
+          </div>
+
+          <!-- Nota de Evaluación -->
+          <div class="eval-section">
+            <label class="eval-section-title" for="eval-note-text">Nota de evaluación / Feedback</label>
+            <textarea id="eval-note-text" class="eval-textarea" rows="3" placeholder="Escribe observaciones técnicas, puntos fuertes, áreas de mejora o impresiones de la entrevista..."></textarea>
+          </div>
+
+          <button type="button" class="primary small" style="width: 100%;" onclick="saveSplitEvaluation()">
+            Guardar Evaluación y Registro
+          </button>
+
+          <div id="eval-status-message" class="notice-box" role="status" style="margin-top: 10px;"></div>
+
+          <!-- Historial de Notas Previas -->
+          <div class="eval-section" style="margin-top: 16px;">
+            <label class="eval-section-title">Historial de notas y cambios</label>
+            <ul id="eval-history-list" class="kanban-history-list" style="max-height: 200px; overflow-y: auto;"></ul>
+          </div>
+        </aside>
+      </div>
+    </dialog>
+
+    <!-- Dialog Modal para Editar Vacante (Administrador y Reclutador) -->
+    <dialog
+      id="edit-vacancy-dialog"
+      class="edit-vacancy-dialog"
+      aria-labelledby="edit-dialog-title"
+    >
+      <div class="preview-header">
+        <h2 id="edit-dialog-title">Editar Vacante</h2>
+        <button
+          class="preview-close"
+          type="button"
+          onclick="closeEditVacancyDialog()"
+          aria-label="Cerrar"
+        >
+          ×
+        </button>
+      </div>
+      <form id="edit-vacancy-form" onsubmit="saveVacancyEdit(event)" class="edit-modal-body">
+        <input type="hidden" id="edit-vacancy-id" />
+        <label class="field-label" for="edit-vacancy-title">Título de la vacante</label>
+        <input id="edit-vacancy-title" name="title" required maxlength="100" />
+
+        <div class="apply-grid-2">
+          <div>
+            <label class="field-label" for="edit-vacancy-type">Tipo de vacante</label>
+            <input id="edit-vacancy-type" name="type" required maxlength="60" />
+          </div>
+          <div>
+            <label class="field-label" for="edit-vacancy-location">Ubicación</label>
+            <input id="edit-vacancy-location" name="location" maxlength="100" />
+          </div>
+        </div>
+
+        <div class="apply-grid-2">
+          <div>
+            <label class="field-label" for="edit-vacancy-status">Estado de la vacante</label>
+            <select id="edit-vacancy-status" name="status" class="edit-modal-select">
+              <option value="active">Activa (Abierta para postulaciones)</option>
+              <option value="closed">Cerrada (Convocatoria finalizada)</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label" for="edit-vacancy-recruiter">Reclutador asignado</label>
+            <select id="edit-vacancy-recruiter" name="recruiterEmail" class="edit-modal-select"></select>
+          </div>
+        </div>
+
+        <label class="field-label" for="edit-vacancy-description">Descripción y Requisitos</label>
+        <textarea id="edit-vacancy-description" name="description" required rows="5" maxlength="3000"></textarea>
+
+        <div id="edit-vacancy-message" class="notice-box" role="status"></div>
+
+        <div class="edit-modal-footer">
+          <button type="button" class="secondary" onclick="closeEditVacancyDialog()">Cancelar</button>
+          <button type="submit" class="primary small">Guardar cambios</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Dialog Modal para Editar Usuario (Candidatos y Reclutadores) -->
+    <dialog
+      id="edit-user-dialog"
+      class="edit-vacancy-dialog"
+      aria-labelledby="edit-user-dialog-title"
+    >
+      <div class="preview-header">
+        <h2 id="edit-user-dialog-title">Editar Perfil</h2>
+        <button
+          class="preview-close"
+          type="button"
+          onclick="closeEditUserDialog()"
+          aria-label="Cerrar"
+        >
+          ×
+        </button>
+      </div>
+      <form id="edit-user-form" onsubmit="saveUserEdit(event)" class="edit-modal-body">
+        <input type="hidden" id="edit-user-id" />
+        <label class="field-label" for="edit-user-name">Nombre completo</label>
+        <input id="edit-user-name" name="name" required maxlength="100" placeholder="Ej. Carlos Pérez" />
+
+        <label class="field-label" for="edit-user-email">Correo electrónico</label>
+        <input id="edit-user-email" type="email" name="email" required placeholder="nombre@correo.com" />
+
+        <div id="edit-user-message" class="notice-box" role="status"></div>
+
+        <div class="edit-modal-footer">
+          <button type="button" class="secondary" onclick="closeEditUserDialog()">Cancelar</button>
+          <button type="submit" class="primary small">Guardar cambios</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Dialog Modal para Detalle y Seguimiento de Postulación (Kanban) -->
+    <dialog id="application-detail-dialog" class="edit-vacancy-dialog" aria-labelledby="app-detail-title">
+      <div class="preview-header">
+        <h2 id="app-detail-title">Control y Registro de Seguimiento</h2>
+        <button class="preview-close" type="button" onclick="closeApplicationDetailDialog()" aria-label="Cerrar">×</button>
+      </div>
+      <div class="edit-modal-body">
+        <div id="app-detail-candidate-info" class="app-detail-info"></div>
+
+        <form id="app-detail-form" onsubmit="saveApplicationDetailUpdate(event)">
+          <input type="hidden" id="app-detail-id" />
+          
+          <div class="filter-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 12px;">
+            <label class="field-label" for="app-detail-stage">
+              Etapa en el proceso
+              <select id="app-detail-stage" name="stage">
+                <option value="recibida">Recibida</option>
+                <option value="en_revision">En revisión</option>
+                <option value="entrevista">Entrevista</option>
+                <option value="oferta">Oferta</option>
+                <option value="rechazada">Rechazada</option>
+              </select>
+            </label>
+
+            <label class="field-label" for="app-detail-assignee">
+              Reclutador responsable
+              <select id="app-detail-assignee" name="assignee">
+                <option value="">Sin asignar</option>
+              </select>
+            </label>
+          </div>
+
+          <label class="field-label" for="app-detail-note">
+            Añadir nota interna de evaluación
+            <textarea id="app-detail-note" name="note" rows="3" maxlength="2000" placeholder="Escribe impresiones de la entrevista, feedback técnico o próximos pasos..."></textarea>
+          </label>
+
+          <div id="app-detail-message" class="notice-box" role="status"></div>
+
+          <div class="edit-modal-footer">
+            <button type="button" class="secondary" onclick="closeApplicationDetailDialog()">Cancelar</button>
+            <button type="submit" class="primary small">Guardar seguimiento</button>
+          </div>
+        </form>
+
+        <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--line);" />
+
+        <h3>Historial de actividad</h3>
+        <ul id="app-detail-history" class="kanban-history-list"></ul>
+      </div>
+    </dialog>
+
+    <!-- Notificación Toast flotante para acciones del Kanban -->
+    <!-- Modal de Compatibilidad con IA para Candidatos -->
+    <dialog id="ai-candidate-fit-dialog" class="ai-candidate-modal" aria-labelledby="ai-fit-title">
+      <div class="public-modal-header" style="background: linear-gradient(135deg, #1e1b4b, #312e81); color: #fff; padding: 14px 20px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;"></span>
+          <h2 id="ai-fit-title" style="margin: 0; font-size: 16px; color: #fff;">Evaluador de Compatibilidad con IA</h2>
+        </div>
+        <button class="preview-close" type="button" onclick="closeAiCandidateDialog()" style="background: rgba(255,255,255,0.2); color: #fff;">×</button>
+      </div>
+      <div class="public-modal-body" style="padding: 20px;">
+        <div id="ai-candidate-loading" style="text-align: center; padding: 30px; font-size: 15px; color: #4338ca;">
+          Analizando correlación entre los requisitos de la vacante y su perfil profesional...
+        </div>
+        <div id="ai-candidate-results" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span id="ai-candidate-verdict" style="font-weight: 800; font-size: 15px; color: #1e1b4b;"></span>
+            <span id="ai-candidate-score-pill" class="ai-score-pill"></span>
+          </div>
+          <div class="ai-progress-track">
+            <div id="ai-candidate-progress-fill" class="ai-progress-fill" style="width: 0%;"></div>
+          </div>
+          <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 14px; margin-bottom: 14px;">
+            <h4 style="margin: 0 0 6px; font-size: 13px; color: #1e40af;">Recomendaciones Técnicas para su Postulación:</h4>
+            <p id="ai-candidate-advice" style="margin: 0; font-size: 13px; color: #1e3a8a; line-height: 1.5;"></p>
+          </div>
+          <div style="margin-bottom: 12px;">
+            <span class="ai-section-sub">Competencias Acreditadas:</span>
+            <div id="ai-candidate-matched" class="ai-tags-group"></div>
+          </div>
+          <div style="margin-bottom: 16px;">
+            <span class="ai-section-sub">Competencias Requeridas por la Posición:</span>
+            <div id="ai-candidate-missing" class="ai-tags-group"></div>
+          </div>
+          <button type="button" class="primary" style="width: 100%;" onclick="closeAiCandidateDialog()">
+            Cerrar Informe
+          </button>
+        </div>
+      </div>
+    </dialog>
+
+    <div id="kanban-toast"  class="kanban-toast" role="status" aria-live="polite"></div>
+
+    <script src="js/dashboard.js?v=2.7"></script>
+  </body>
+</html>
