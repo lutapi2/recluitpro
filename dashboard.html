@@ -266,9 +266,12 @@
 
         <div id="edit-user-message" class="notice-box" role="status"></div>
 
-        <div class="edit-modal-footer">
-          <button type="button" class="secondary" onclick="closeEditUserDialog()">Cancelar</button>
-          <button type="submit" class="primary small">Guardar cambios</button>
+        <div class="edit-modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+          <button type="button" class="secondary danger-button" style="color: #dc2626; border-color: #fecaca; background: #fef2f2; font-weight: 600;" onclick="deleteUserFromModal()">Eliminar usuario</button>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="secondary" onclick="closeEditUserDialog()">Cancelar</button>
+            <button type="submit" class="primary small">Guardar cambios</button>
+          </div>
         </div>
       </form>
     </dialog>
@@ -312,9 +315,12 @@
 
           <div id="app-detail-message" class="notice-box" role="status"></div>
 
-          <div class="edit-modal-footer">
-            <button type="button" class="secondary" onclick="closeApplicationDetailDialog()">Cancelar</button>
-            <button type="submit" class="primary small">Guardar seguimiento</button>
+          <div class="edit-modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+            <button type="button" class="secondary" style="color: #dc2626; border-color: #fecaca; background: #fef2f2; font-weight: 600;" onclick="deleteCurrentApplication()">Eliminar postulación</button>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="secondary" onclick="closeApplicationDetailDialog()">Cancelar</button>
+              <button type="submit" class="primary small">Guardar seguimiento</button>
+            </div>
           </div>
         </form>
 

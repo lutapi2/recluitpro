@@ -146,7 +146,21 @@ async function view(page, vacancyId = "") {
     } else if (page === "applications" && user.role === "candidato") {
       const result = await (await apiRequest("/api/applications/mine")).json();
       const items = result.items.length
-        ? `<div class="vacancy-list">${result.items.map((item) => `<article class="vacancy-card"><div class="vacancy-heading"><h2>${escapeHtml(item.vacancyTitle)}</h2><span class="vacancy-status">${escapeHtml(statusLabel(item.status))}</span></div><p>Postulación enviada el ${new Date(item.createdAt).toLocaleDateString("es")}.</p></article>`).join("")}</div>`
+        ? `<div class="vacancy-list">${result.items.map((item) => {
+            const isOffer = item.status === "oferta";
+            const isInterview = item.status === "entrevista";
+            return `
+              <article class="vacancy-card" style="${isOffer ? 'border: 2px solid #10b981; background: #f0fdf4; border-radius: 14px;' : isInterview ? 'border: 2px solid #6366f1; background: #eef2ff; border-radius: 14px;' : ''}">
+                <div class="vacancy-heading">
+                  <h2>${escapeHtml(item.vacancyTitle)}</h2>
+                  <span class="vacancy-status" style="${isOffer ? 'background: #10b981; color: #fff; font-weight: 700; padding: 4px 12px; border-radius: 9999px;' : isInterview ? 'background: #4f46e5; color: #fff; font-weight: 700; padding: 4px 12px; border-radius: 9999px;' : ''}">${escapeHtml(statusLabel(item.status))}</span>
+                </div>
+                ${isOffer ? '<p style="color: #047857; font-weight: 700; margin: 10px 0 6px 0; font-size: 15px;">🎉 ¡Felicitaciones! Has recibido una Oferta formal de empleo para este puesto. Nuestro equipo de selección se pondrá en contacto contigo para coordinar tu incorporación.</p>' : ''}
+                ${isInterview ? '<p style="color: #4338ca; font-weight: 600; margin: 8px 0;">📅 Has avanzado a la etapa de Entrevista. Te contactaremos pronto con los detalles de fecha y hora.</p>' : ''}
+                <p class="muted-copy" style="margin-top: 6px;">Postulación enviada el ${new Date(item.createdAt).toLocaleDateString("es")}.</p>
+              </article>
+            `;
+          }).join("")}</div>`
         : '<p class="empty-state">Todavía no tienes postulaciones.</p>';
       app.innerHTML = `<div class="head"><small>CANDIDATO</small><h1>Mis postulaciones</h1><p>Consulta el estado de tus procesos.</p></div>${items}`;
     } else if (page === "docs" && user.role === "candidato") {
@@ -234,7 +248,7 @@ function renderCandidates(candidates) {
         ? renderDocumentList(documents)
         : '<p class="empty-state">Sin documentos</p>';
 
-      return `<tr><td>${escapeHtml(candidate.name)}</td><td>${escapeHtml(candidate.email)}</td><td><details class="candidate-documents"><summary>${documents.length} documento${documents.length === 1 ? "" : "s"}</summary>${contents}</details></td>${user.role === "administrador" ? `<td><button class="secondary small" onclick="openEditUserDialog('${encodeURIComponent(candidate.id)}')">Editar</button><button class="secondary small" onclick="promoteRecruiter('${encodeURIComponent(candidate.id)}')">Habilitar reclutador</button></td>` : ""}</tr>`;
+      return `<tr><td>${escapeHtml(candidate.name)}</td><td>${escapeHtml(candidate.email)}</td><td><details class="candidate-documents"><summary>${documents.length} documento${documents.length === 1 ? "" : "s"}</summary>${contents}</details></td>${user.role === "administrador" ? `<td><div style="display:flex;gap:6px;align-items:center;"><button class="secondary small" onclick="openEditUserDialog('${encodeURIComponent(candidate.id)}')">Editar</button><button class="secondary small" onclick="promoteRecruiter('${encodeURIComponent(candidate.id)}')">Habilitar reclutador</button><button class="secondary small danger-button" style="color:#dc2626;border-color:#fecaca;" onclick="deleteUserDirect('${encodeURIComponent(candidate.id)}', '${escapeHtml(candidate.name)}')">Eliminar</button></div></td>` : ""}</tr>`;
     })
     .join("")}</tbody></table></div>`;
 }
@@ -247,7 +261,7 @@ function renderRecruiters(recruiters) {
   return `<div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Correo</th><th>Acciones</th></tr></thead><tbody>${recruiters
     .map(
       (recruiter) =>
-        `<tr><td>${escapeHtml(recruiter.name)}</td><td>${escapeHtml(recruiter.email)}</td><td><button class="secondary small" onclick="openEditUserDialog('${encodeURIComponent(recruiter.id)}')">Editar</button></td></tr>`,
+        `<tr><td>${escapeHtml(recruiter.name)}</td><td>${escapeHtml(recruiter.email)}</td><td><div style="display:flex;gap:6px;align-items:center;"><button class="secondary small" onclick="openEditUserDialog('${encodeURIComponent(recruiter.id)}')">Editar</button><button class="secondary small danger-button" style="color:#dc2626;border-color:#fecaca;" onclick="deleteUserDirect('${encodeURIComponent(recruiter.id)}', '${escapeHtml(recruiter.name)}')">Eliminar</button></div></td></tr>`,
     )
     .join("")}</tbody></table></div>`;
 }
@@ -1772,4 +1786,26 @@ async function triggerDirectAi(appId) {
     console.error("Error en análisis directo:", err);
     showKanbanToast("No se pudo completar el análisis con IA.", true);
   }
+}
+
+async function deleteUserDirect(encodedId, name) {
+  const id = decodeURIComponent(encodedId);
+  if (!confirm(`¿Estás seguro de que deseas eliminar permanentemente la cuenta de "${name}"? Esta acción borrará todas sus postulaciones, documentos y accesos.`)) return;
+  try {
+    await apiRequest(`/api/users/${encodeURIComponent(id)}`, { method: "DELETE" });
+    const currentPage = nav.querySelector("button.active")?.dataset.page || "home";
+    await view(currentPage);
+    showKanbanToast(`Cuenta de ${name} eliminada con éxito.`);
+  } catch (error) {
+    console.error("Error al eliminar usuario:", error);
+    alert(error.message || "No se pudo eliminar el usuario.");
+  }
+}
+
+async function deleteUserFromModal() {
+  const id = document.getElementById("edit-user-id").value;
+  const name = document.getElementById("edit-user-name").value;
+  if (!id) return;
+  closeEditUserDialog();
+  await deleteUserDirect(encodeURIComponent(id), name);
 }

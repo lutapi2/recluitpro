@@ -962,6 +962,50 @@ def promote_recruiter(user_id: str, request: Request, db: Session = Depends(get_
     return user_data(account, db, viewer)
 
 
+@app.delete("/api/users/{user_id}", status_code=204)
+def delete_user(user_id: str, request: Request, response: Response, db: Session = Depends(get_db)):
+    verify_csrf(request)
+    viewer = current_user(request, db)
+    require_role(viewer, Role.ADMIN)
+    account = db.get(User, user_id)
+    if not account:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+    if account.id == viewer.id:
+        raise HTTPException(status_code=400, detail="No puedes eliminar tu propia cuenta de administrador desde aquí.")
+
+    # 1. Eliminar postulaciones del usuario si es candidato
+    applications = db.scalars(select(Application).where(Application.candidate_id == account.id)).all()
+    for app_item in applications:
+        db.query(ApplicationActivity).filter(ApplicationActivity.application_id == app_item.id).delete(synchronize_session=False)
+        db.delete(app_item)
+
+    # 2. Reasignar vacantes si era reclutador
+    db.query(Vacancy).filter(Vacancy.recruiter_id == account.id).update({Vacancy.recruiter_id: viewer.id}, synchronize_session=False)
+    db.query(Application).filter(Application.assigned_recruiter_id == account.id).update({Application.assigned_recruiter_id: None}, synchronize_session=False)
+
+    # 3. Eliminar documentos del usuario
+    documents = db.scalars(select(Document).where(Document.owner_id == account.id)).all()
+    paths = [UPLOAD_DIR / doc.storage_name for doc in documents]
+    for doc in documents:
+        db.delete(doc)
+
+    # 4. Eliminar sesiones y tokens
+    db.query(AuthSession).filter(AuthSession.user_id == account.id).delete(synchronize_session=False)
+    db.query(EmailToken).filter(EmailToken.user_id == account.id).delete(synchronize_session=False)
+
+    # 5. Eliminar usuario definitivamente
+    db.delete(account)
+    db.commit()
+
+    for p in paths:
+        try:
+            p.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @app.get("/api/vacancies")
 def list_vacancies(
     request: Request,
