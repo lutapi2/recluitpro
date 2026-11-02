@@ -40,54 +40,40 @@ async function login() {
   error.classList.remove("show");
 
   const loginBtn = document.getElementById("login-btn");
-  const loader = document.getElementById("auth-loader");
-  const progressBar = document.getElementById("auth-progress-fill");
-  const statusText = document.getElementById("auth-status-text");
-  const subTip = document.getElementById("auth-sub-tip");
+  const statusCard = document.getElementById("auth-status-card");
+  const statusTitle = document.getElementById("auth-status-title");
+  const statusSubtitle = document.getElementById("auth-status-subtitle");
+  const progressBar = document.getElementById("auth-bottom-progress-bar");
 
-  // Activar estado de carga elegante
+  // Fase 1: Verificando (Cero redundancia)
   if (loginBtn) {
     loginBtn.disabled = true;
-    loginBtn.style.opacity = "0.6";
-    loginBtn.textContent = "Verificando acceso...";
+    loginBtn.style.opacity = "0.7";
+    loginBtn.textContent = "Autenticando...";
   }
-  if (loader) loader.style.display = "block";
-  if (progressBar) {
-    progressBar.classList.remove("success");
-    progressBar.style.width = "18%";
+
+  if (statusCard) {
+    statusCard.classList.remove("success");
+    statusCard.style.display = "flex";
   }
-  if (statusText) {
-    statusText.classList.remove("success");
-    statusText.textContent = "Iniciando verificación segura...";
-  }
-  if (subTip) subTip.style.display = "none";
+  if (statusTitle) statusTitle.textContent = "Verificando credenciales...";
+  if (statusSubtitle) statusSubtitle.textContent = "Conectando con el servidor seguro...";
+  if (progressBar) progressBar.style.width = "20%";
 
-  // Mensajes dinámicos que rotan mientras el servidor procesa
-  const messages = [
-    "🔐 Verificando credenciales con cifrado seguro...",
-    "⚡ Conectando con la base de datos de RecruitPro...",
-    "🚀 Despertando servicios en la nube...",
-    "✨ Casi listo, preparando tu espacio de trabajo..."
-  ];
-  let msgIndex = 0;
-  let progressVal = 18;
-
-  const messageInterval = setInterval(() => {
-    msgIndex = (msgIndex + 1) % messages.length;
-    if (statusText) statusText.textContent = messages[msgIndex];
-  }, 2400);
-
+  let progressVal = 20;
   const progressInterval = setInterval(() => {
-    if (progressVal < 92) {
+    if (progressVal < 86) {
       progressVal += Math.floor(Math.random() * 8) + 4;
-      if (progressBar) progressBar.style.width = `${Math.min(92, progressVal)}%`;
+      if (progressBar) progressBar.style.width = `${Math.min(86, progressVal)}%`;
     }
-  }, 600);
+  }, 400);
 
-  // Tip amigable si el servidor tarda más de 4.5 segundos
-  const tipTimeout = setTimeout(() => {
-    if (subTip) subTip.style.display = "block";
-  }, 4500);
+  // Mensaje discreto si el servidor en la nube demora en arrancar
+  const serverWakeupTimeout = setTimeout(() => {
+    if (statusSubtitle) {
+      statusSubtitle.textContent = "Activando servidor en la nube... ¡Ya casi!";
+    }
+  }, 3500);
 
   try {
     const csrf = await csrfToken();
@@ -101,12 +87,11 @@ async function login() {
       body: JSON.stringify({ email, password }),
     });
 
-    clearInterval(messageInterval);
     clearInterval(progressInterval);
-    clearTimeout(tipTimeout);
+    clearTimeout(serverWakeupTimeout);
 
     if (!response.ok) {
-      if (loader) loader.style.display = "none";
+      if (statusCard) statusCard.style.display = "none";
       if (loginBtn) {
         loginBtn.disabled = false;
         loginBtn.style.opacity = "1";
@@ -120,25 +105,26 @@ async function login() {
       return;
     }
 
-    // Éxito: Completar la barra al 100% en verde con mensaje de bienvenida
-    if (progressBar) {
-      progressBar.classList.add("success");
-      progressBar.style.width = "100%";
+    // Fase 2: Éxito sincronizado (Linear / Stripe style)
+    if (loginBtn) {
+      loginBtn.textContent = "Sesión iniciada";
+      loginBtn.disabled = true;
+      loginBtn.style.opacity = "0.7";
     }
-    if (statusText) {
-      statusText.classList.add("success");
-      statusText.textContent = "✓ ¡Acceso autorizado! Entrando a RecruitPro...";
-    }
+
+    if (statusCard) statusCard.classList.add("success");
+    if (statusTitle) statusTitle.textContent = "Acceso autorizado";
+    if (statusSubtitle) statusSubtitle.textContent = "Preparando tu espacio en RecruitPro...";
+    if (progressBar) progressBar.style.width = "100%";
 
     setTimeout(() => {
       location.href = "dashboard.html";
     }, 450);
   } catch (requestError) {
-    clearInterval(messageInterval);
     clearInterval(progressInterval);
-    clearTimeout(tipTimeout);
+    clearTimeout(serverWakeupTimeout);
 
-    if (loader) loader.style.display = "none";
+    if (statusCard) statusCard.style.display = "none";
     if (loginBtn) {
       loginBtn.disabled = false;
       loginBtn.style.opacity = "1";

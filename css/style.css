@@ -2765,127 +2765,194 @@ dialog.split-preview-dialog::backdrop {
 }
 
 /* ==========================================================================
-   ANIMACIÓN ELEGANTE DE INICIO DE SESIÓN / CARGA (AUTH PROGRESS SYSTEM)
+   TARJETA DE ESTADO DE AUTENTICACION ULTRA MODERNA (ESTILO LINEAR / STRIPE / VERCEL)
    ========================================================================== */
-.auth-loader-container {
-  margin-top: 18px;
-  padding: 20px 18px;
-  background: rgba(239, 246, 255, 0.85);
-  border: 1px solid #bfdbfe;
-  border-radius: 16px;
-  backdrop-filter: blur(8px);
-  text-align: center;
-  box-shadow: 0 12px 30px -6px rgba(37, 99, 235, 0.15);
-  animation: auth-reveal 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes auth-reveal {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.auth-loader-visual {
+.auth-status-card {
   position: relative;
-  width: 58px;
-  height: 58px;
-  margin: 0 auto 12px;
+  overflow: hidden;
+  margin-top: 14px;
+  border-radius: 12px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  text-align: left;
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  animation: authStatusSlideDown 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes authStatusSlideDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auth-status-card.success {
+  background: #F0FDF4;
+  border-color: #BBF7D0;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.06);
+}
+
+/* Icono dinamico izquierda */
+.auth-status-icon-wrap {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 50%;
+  background: #EFF6FF;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.auth-loader-ring {
-  position: absolute;
-  inset: 0;
+.auth-status-card.success .auth-status-icon-wrap {
+  background: #DCFCE7;
+  animation: authIconScaleUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes authIconScaleUp {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.5;
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Spinner circular minimalista en azul #3B82F6 */
+.auth-spinner {
+  width: 17px;
+  height: 17px;
+  border: 2px solid rgba(59, 130, 246, 0.2);
+  border-top-color: #3B82F6;
   border-radius: 50%;
-  border: 3px solid rgba(37, 99, 235, 0.15);
-  border-top-color: #2563eb;
-  border-right-color: #6366f1;
-  animation: auth-spin 1s cubic-bezier(0.6, 0.2, 0.4, 0.9) infinite;
+  animation: authSpinnerSpin 0.75s linear infinite;
 }
 
-@keyframes auth-spin {
+@keyframes authSpinnerSpin {
   to {
     transform: rotate(360deg);
   }
 }
 
-.auth-loader-sparkle {
-  font-size: 24px;
-  color: #2563eb;
-  animation: auth-pulse 1.8s ease-in-out infinite;
-  user-select: none;
+/* Icono check estilizado en verde esmeralda #10B981 */
+.auth-check-icon {
+  width: 19px;
+  height: 19px;
+  color: #10B981;
+  display: none;
 }
 
-@keyframes auth-pulse {
-  0%, 100% {
-    transform: scale(0.9);
-    opacity: 0.8;
-  }
-  50% {
-    transform: scale(1.18);
-    opacity: 1;
-    filter: drop-shadow(0 0 8px rgba(37, 99, 235, 0.5));
-  }
+.auth-status-card.success .auth-spinner {
+  display: none;
 }
 
-.auth-progress-track {
-  width: 100%;
-  height: 7px;
-  background: #dbeafe;
-  border-radius: 999px;
-  overflow: hidden;
-  margin: 12px 0 10px;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
-}
-
-.auth-progress-fill {
-  height: 100%;
-  width: 10%;
-  background: linear-gradient(90deg, #2563eb, #6366f1, #3b82f6);
-  border-radius: 999px;
-  transition: width 0.4s ease, background 0.3s ease;
-  background-size: 200% 100%;
-  animation: auth-shimmer 2s linear infinite;
-}
-
-@keyframes auth-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-.auth-progress-fill.success {
-  background: #059669 !important;
-}
-
-.auth-status-text {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: #1e3a8a;
-  margin: 0;
-  min-height: 20px;
-  transition: all 0.25s ease;
-}
-
-.auth-status-text.success {
-  color: #047857 !important;
-}
-
-.auth-sub-tip {
+.auth-status-card.success .auth-check-icon {
   display: block;
-  font-size: 11.5px;
-  color: #475569;
-  line-height: 1.4;
-  margin-top: 10px;
-  background: rgba(255, 255, 255, 0.85);
-  padding: 8px 12px;
-  border-radius: 10px;
-  border: 1px dashed #93c5fd;
-  animation: auth-reveal 0.4s ease forwards;
 }
+
+/* Textos jerarquizados a la derecha */
+.auth-status-texts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.auth-status-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0F172A;
+  line-height: 1.3;
+  transition: color 0.25s ease;
+}
+
+.auth-status-subtitle {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 400;
+  color: #64748B;
+  line-height: 1.35;
+  transition: color 0.25s ease;
+}
+
+/* Barra de progreso integrada (Borde inferior interno, 3px) */
+.auth-bottom-progress-track {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: transparent;
+  overflow: hidden;
+}
+
+.auth-bottom-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #3B82F6, #10B981);
+  transition: width 0.35s ease;
+}
+
+/* Tarjeta discreta para candidatos (limpieza del entorno) */
+.candidate-banner-card {
+  margin-top: 16px;
+  padding: 12px 14px;
+  text-align: center;
+  background: #F8FAFC;
+  border-radius: 12px;
+  border: 1px solid #E2E8F0;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.candidate-banner-card:hover {
+  background: #F1F5F9;
+  border-color: #CBD5E1;
+}
+
+.candidate-banner-card .banner-badge {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+  display: inline-block;
+}
+
+.candidate-banner-card .banner-desc {
+  margin: 4px 0 8px;
+  font-size: 12px;
+  color: #64748B;
+}
+
+.candidate-banner-card .banner-btn {
+  text-decoration: none;
+  display: inline-block;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #2563EB;
+  color: #FFFFFF;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+.candidate-banner-card .banner-btn:hover {
+  background: #1D4ED8;
+}
+

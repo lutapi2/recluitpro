@@ -48,25 +48,28 @@
           </label>
                     <button id="login-btn" class="primary" onclick="login()">Iniciar sesión</button>
 
-          <!-- Animación elegante de inicio de sesión -->
-          <div id="auth-loader" class="auth-loader-container" style="display: none;">
-            <div class="auth-loader-visual">
-              <div class="auth-loader-ring"></div>
-              <div class="auth-loader-sparkle">✦</div>
+          <!-- Tarjeta de estado de autenticación ultra moderna (Linear / Stripe style) -->
+          <div id="auth-status-card" class="auth-status-card" style="display: none;">
+            <div class="auth-status-icon-wrap">
+              <div class="auth-spinner"></div>
+              <svg class="auth-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
             </div>
-            <div class="auth-progress-track">
-              <div id="auth-progress-fill" class="auth-progress-fill" style="width: 15%;"></div>
+            <div class="auth-status-texts">
+              <p id="auth-status-title" class="auth-status-title">Verificando credenciales...</p>
+              <p id="auth-status-subtitle" class="auth-status-subtitle">Conectando con el servidor seguro...</p>
             </div>
-            <p id="auth-status-text" class="auth-status-text">Iniciando verificación segura...</p>
-            <div id="auth-sub-tip" class="auth-sub-tip" style="display: none;">
-              💡 El servidor en la nube se está activando tras reposo. ¡Ya casi entramos!
+            <div class="auth-bottom-progress-track">
+              <div id="auth-bottom-progress-bar" class="auth-bottom-progress-bar"></div>
             </div>
           </div>
 
-          <div style="margin: 18px 0; text-align: center; padding: 12px 14px; background: #eff6ff; border-radius: 12px; border: 1px solid #bfdbfe;">
-            <span style="font-size: 13px; font-weight: 700; color: #1e40af;"> ¿Buscas trabajo?</span>
-            <p style="margin: 4px 0 10px; font-size: 13px; color: #3b82f6;">Conoce nuestras vacantes abiertas y postúlate en 1 minuto:</p>
-            <a href="empleos.html" class="primary small" style="text-decoration: none; display: inline-block; padding: 6px 14px; font-weight: 700;">Ver vacantes abiertas ↗</a>
+          <!-- Acceso discreto para candidatos -->
+          <div class="candidate-banner-card">
+            <span class="banner-badge">¿Buscas trabajo?</span>
+            <p class="banner-desc">Conoce nuestras vacantes abiertas y postúlate en 1 minuto:</p>
+            <a href="empleos.html" class="banner-btn">Ver vacantes abiertas →</a>
           </div>
           <p class="center"><a href="recuperar.html">¿Olvidaste tu contraseña?</a></p>
           <p class="center">
