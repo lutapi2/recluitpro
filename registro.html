@@ -51,7 +51,22 @@
             <input id="privacy-consent" type="checkbox" required />
             <span>Acepto el tratamiento de mis datos personales según el <a href="privacidad.html" target="_blank" rel="noopener">aviso de privacidad</a>. Entiendo que puedo retirar mi consentimiento y solicitar la eliminación de mis datos.</span>
           </label>
-          <button class="primary" type="button" onclick="register()">Crear cuenta</button>
+          <button id="register-btn" class="primary" type="button" onclick="register()">Crear cuenta</button>
+
+          <!-- Animación elegante de registro -->
+          <div id="auth-loader" class="auth-loader-container" style="display: none;">
+            <div class="auth-loader-visual">
+              <div class="auth-loader-ring"></div>
+              <div class="auth-loader-sparkle">✦</div>
+            </div>
+            <div class="auth-progress-track">
+              <div id="auth-progress-fill" class="auth-progress-fill" style="width: 15%;"></div>
+            </div>
+            <p id="auth-status-text" class="auth-status-text">Creando tu perfil en RecruitPro...</p>
+            <div id="auth-sub-tip" class="auth-sub-tip" style="display: none;">
+              💡 El servidor en la nube se está activando tras reposo. ¡Ya casi entramos!
+            </div>
+          </div>
           <p class="center">
             ¿Ya tienes una cuenta? <a href="index.html">Iniciar sesión</a>
           </p>

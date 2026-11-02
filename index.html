@@ -46,7 +46,22 @@
               <button type="button" onclick="togglePassword()" aria-label="Mostrar u ocultar contraseña">◉</button>
             </div>
           </label>
-                    <button class="primary" onclick="login()">Iniciar sesión</button>
+                    <button id="login-btn" class="primary" onclick="login()">Iniciar sesión</button>
+
+          <!-- Animación elegante de inicio de sesión -->
+          <div id="auth-loader" class="auth-loader-container" style="display: none;">
+            <div class="auth-loader-visual">
+              <div class="auth-loader-ring"></div>
+              <div class="auth-loader-sparkle">✦</div>
+            </div>
+            <div class="auth-progress-track">
+              <div id="auth-progress-fill" class="auth-progress-fill" style="width: 15%;"></div>
+            </div>
+            <p id="auth-status-text" class="auth-status-text">Iniciando verificación segura...</p>
+            <div id="auth-sub-tip" class="auth-sub-tip" style="display: none;">
+              💡 El servidor en la nube se está activando tras reposo. ¡Ya casi entramos!
+            </div>
+          </div>
 
           <div style="margin: 18px 0; text-align: center; padding: 12px 14px; background: #eff6ff; border-radius: 12px; border: 1px solid #bfdbfe;">
             <span style="font-size: 13px; font-weight: 700; color: #1e40af;"> ¿Buscas trabajo?</span>

@@ -2763,3 +2763,129 @@ dialog.split-preview-dialog::backdrop {
   background: #4338ca !important;
   transform: translateY(-1px) !important;
 }
+
+/* ==========================================================================
+   ANIMACIÓN ELEGANTE DE INICIO DE SESIÓN / CARGA (AUTH PROGRESS SYSTEM)
+   ========================================================================== */
+.auth-loader-container {
+  margin-top: 18px;
+  padding: 20px 18px;
+  background: rgba(239, 246, 255, 0.85);
+  border: 1px solid #bfdbfe;
+  border-radius: 16px;
+  backdrop-filter: blur(8px);
+  text-align: center;
+  box-shadow: 0 12px 30px -6px rgba(37, 99, 235, 0.15);
+  animation: auth-reveal 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes auth-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.auth-loader-visual {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-loader-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid rgba(37, 99, 235, 0.15);
+  border-top-color: #2563eb;
+  border-right-color: #6366f1;
+  animation: auth-spin 1s cubic-bezier(0.6, 0.2, 0.4, 0.9) infinite;
+}
+
+@keyframes auth-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.auth-loader-sparkle {
+  font-size: 24px;
+  color: #2563eb;
+  animation: auth-pulse 1.8s ease-in-out infinite;
+  user-select: none;
+}
+
+@keyframes auth-pulse {
+  0%, 100% {
+    transform: scale(0.9);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 1;
+    filter: drop-shadow(0 0 8px rgba(37, 99, 235, 0.5));
+  }
+}
+
+.auth-progress-track {
+  width: 100%;
+  height: 7px;
+  background: #dbeafe;
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 12px 0 10px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.auth-progress-fill {
+  height: 100%;
+  width: 10%;
+  background: linear-gradient(90deg, #2563eb, #6366f1, #3b82f6);
+  border-radius: 999px;
+  transition: width 0.4s ease, background 0.3s ease;
+  background-size: 200% 100%;
+  animation: auth-shimmer 2s linear infinite;
+}
+
+@keyframes auth-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.auth-progress-fill.success {
+  background: #059669 !important;
+}
+
+.auth-status-text {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1e3a8a;
+  margin: 0;
+  min-height: 20px;
+  transition: all 0.25s ease;
+}
+
+.auth-status-text.success {
+  color: #047857 !important;
+}
+
+.auth-sub-tip {
+  display: block;
+  font-size: 11.5px;
+  color: #475569;
+  line-height: 1.4;
+  margin-top: 10px;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px dashed #93c5fd;
+  animation: auth-reveal 0.4s ease forwards;
+}

@@ -19,6 +19,53 @@ async function register() {
   const message = document.getElementById("error");
   message.classList.remove("show");
 
+  const registerBtn = document.getElementById("register-btn");
+  const loader = document.getElementById("auth-loader");
+  const progressBar = document.getElementById("auth-progress-fill");
+  const statusText = document.getElementById("auth-status-text");
+  const subTip = document.getElementById("auth-sub-tip");
+
+  if (registerBtn) {
+    registerBtn.disabled = true;
+    registerBtn.style.opacity = "0.6";
+    registerBtn.textContent = "Creando cuenta...";
+  }
+  if (loader) loader.style.display = "block";
+  if (progressBar) {
+    progressBar.classList.remove("success");
+    progressBar.style.width = "18%";
+  }
+  if (statusText) {
+    statusText.classList.remove("success");
+    statusText.textContent = "Registrando tu perfil...";
+  }
+  if (subTip) subTip.style.display = "none";
+
+  const messages = [
+    "✨ Creando tu espacio en RecruitPro...",
+    "🔐 Cifrando credenciales de seguridad...",
+    "⚡ Inicializando base de datos...",
+    "🚀 Casi listo, preparando tu panel de control..."
+  ];
+  let msgIndex = 0;
+  let progressVal = 18;
+
+  const messageInterval = setInterval(() => {
+    msgIndex = (msgIndex + 1) % messages.length;
+    if (statusText) statusText.textContent = messages[msgIndex];
+  }, 2400);
+
+  const progressInterval = setInterval(() => {
+    if (progressVal < 92) {
+      progressVal += Math.floor(Math.random() * 8) + 4;
+      if (progressBar) progressBar.style.width = `${Math.min(92, progressVal)}%`;
+    }
+  }, 600);
+
+  const tipTimeout = setTimeout(() => {
+    if (subTip) subTip.style.display = "block";
+  }, 4500);
+
   try {
     const response = await fetch("/api/auth/register", {
       method: "POST",
@@ -35,8 +82,18 @@ async function register() {
       }),
     });
 
+    clearInterval(messageInterval);
+    clearInterval(progressInterval);
+    clearTimeout(tipTimeout);
+
     const result = await response.json();
     if (!response.ok) {
+      if (loader) loader.style.display = "none";
+      if (registerBtn) {
+        registerBtn.disabled = false;
+        registerBtn.style.opacity = "1";
+        registerBtn.textContent = "Crear cuenta";
+      }
       message.textContent = Array.isArray(result.detail)
         ? result.detail.map((item) => item.msg).join(" ")
         : result.detail || "No se pudo crear la cuenta.";
@@ -44,9 +101,31 @@ async function register() {
       return;
     }
 
+    if (progressBar) {
+      progressBar.classList.add("success");
+      progressBar.style.width = "100%";
+    }
+    if (statusText) {
+      statusText.classList.add("success");
+      statusText.textContent = "✓ ¡Cuenta creada con éxito! Entrando...";
+    }
+
     // Acceso directo e inmediato al panel
-    location.href = "dashboard.html";
+    setTimeout(() => {
+      location.href = "dashboard.html";
+    }, 450);
   } catch (requestError) {
+    clearInterval(messageInterval);
+    clearInterval(progressInterval);
+    clearTimeout(tipTimeout);
+
+    if (loader) loader.style.display = "none";
+    if (registerBtn) {
+      registerBtn.disabled = false;
+      registerBtn.style.opacity = "1";
+      registerBtn.textContent = "Crear cuenta";
+    }
+
     console.error("No se pudo completar el registro:", requestError);
     message.textContent = requestError.message || "No se pudo conectar con el servidor. Inténtalo de nuevo.";
     message.classList.add("show");
