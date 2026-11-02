@@ -1373,6 +1373,11 @@ def list_all_applications(
                 "aiVerdict": app_item.ai_verdict,
                 "aiSummary": app_item.ai_summary,
                 "status": app_item.status,
+                "rejectedAt": (
+                    next((act.created_at.isoformat() for act in reversed(app_item.activities) if act.to_status == "rechazada"), app_item.created_at.isoformat())
+                    if app_item.status == "rechazada"
+                    else None
+                ),
                 "appliedAt": app_item.created_at.isoformat(),
                 "assignedRecruiterId": app_item.assigned_recruiter_id,
                 "assignedRecruiterName": app_item.assigned_recruiter.name if app_item.assigned_recruiter else None,
