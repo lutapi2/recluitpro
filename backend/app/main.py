@@ -53,7 +53,11 @@ DUMMY_PASSWORD_HASH = password_hash.hash("RecruitPro-invalid-login-dummy-secret"
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DATA_DIR = Path(os.getenv("DATA_DIR", str(ROOT.parent / "recruitpro-data"))).resolve()
+if os.name != "nt":
+    default_data_dir = Path("/tmp/recruitpro-data")
+else:
+    default_data_dir = ROOT.parent / "recruitpro-data"
+DATA_DIR = Path(os.getenv("DATA_DIR", str(default_data_dir))).resolve()
 if DATA_DIR == ROOT or ROOT in DATA_DIR.parents:
     raise RuntimeError("DATA_DIR debe estar fuera de la carpeta pública del proyecto.")
 UPLOAD_DIR = DATA_DIR / "private_uploads"
@@ -1193,29 +1197,34 @@ def download_document(document_id: str, request: Request, db: Session = Depends(
         raise HTTPException(status_code=404, detail="No se encontró el documento.")
     path = UPLOAD_DIR / document.storage_name
     if not path.is_file():
-        seed_path = ROOT / "backend" / "seed_uploads" / document.storage_name
-        if seed_path.is_file():
-            UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-            try:
-                shutil.copy2(seed_path, path)
-            except Exception:
-                pass
+        alt_paths = [
+            ROOT.parent / "recruitpro-data" / "private_uploads" / document.storage_name,
+            Path("/tmp/recruitpro-data/private_uploads") / document.storage_name,
+            ROOT / "backend" / "seed_uploads" / document.storage_name,
+        ]
+        for ap in alt_paths:
+            if ap.is_file():
+                path = ap
+                break
         if not path.is_file():
             UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
             cand_name = document.owner.name if document.owner else "Candidato"
             cand_email = document.owner.email if document.owner else "candidato@recruitpro.com"
-            fallback_bytes = generate_fallback_pdf(cand_name, cand_email, document.original_name)
+            doc_name = document.original_name or "cv.pdf"
+            fallback_bytes = generate_fallback_pdf(cand_name, cand_email, doc_name)
             with open(path, "wb") as f_out:
                 f_out.write(fallback_bytes)
+    doc_media = document.media_type or "application/pdf"
+    doc_fname = document.original_name or "cv.pdf"
     return FileResponse(
         path,
-        media_type=document.media_type,
-        filename=document.original_name,
+        media_type=doc_media,
+        filename=doc_fname,
         content_disposition_type="inline",
         headers={
             "X-Content-Type-Options": "nosniff",
             "Cache-Control": "private, no-store",
-            "X-Document-Name": quote(document.original_name),
+            "X-Document-Name": quote(doc_fname),
         },
     )
 

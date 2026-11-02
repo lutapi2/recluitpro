@@ -488,106 +488,124 @@ let currentCandidateRating = 0;
 let currentSelectedSplitStage = "";
 
 async function viewDocument(encodedId, optionalAppId = null) {
-  const id = decodeURIComponent(encodedId);
+  const id = decodeURIComponent(encodedId || "");
   const appId = optionalAppId ? decodeURIComponent(optionalAppId) : null;
 
-  try {
-    const response = await apiRequest(`/api/documents/${encodeURIComponent(id)}`);
-    const blob = await response.blob();
-    const filename = decodeURIComponent(response.headers.get("X-Document-Name") || "documento");
+  const dialog = document.getElementById("document-preview");
+  const frame = document.getElementById("document-frame");
+  const download = document.getElementById("document-download");
+  const subtitle = document.getElementById("preview-subtitle");
+  const splitPane = document.getElementById("split-evaluation-pane");
+  const splitBody = document.querySelector(".split-preview-body");
 
-    const dialog = document.getElementById("document-preview");
-    const frame = document.getElementById("document-frame");
-    const download = document.getElementById("document-download");
-    const subtitle = document.getElementById("preview-subtitle");
-    const splitPane = document.getElementById("split-evaluation-pane");
-    const splitBody = document.querySelector(".split-preview-body");
+  if (!dialog) return;
 
-    const oldUrl = dialog.dataset.objectUrl;
-    if (oldUrl) URL.revokeObjectURL(oldUrl);
+  // 1. Localizar la postulación del candidato en caché
+  currentEvaluatingApp = null;
+  let app = null;
 
-    const url = URL.createObjectURL(blob);
-    dialog.dataset.objectUrl = url;
-    if (appId) dialog.dataset.appId = appId;
-    else delete dialog.dataset.appId;
-
-    frame.src = url;
-    frame.title = `Vista previa de ${filename}`;
-    download.href = url;
-    download.download = filename;
-    download.textContent = `Descargar ${filename}`;
-
-    // Find application if reviewing as Admin or Recruiter
-    currentEvaluatingApp = null;
-    if (user.role !== "candidato") {
-      let app = null;
-
-      // 1. Try finding in pipelineApplicationsCache
-      if (appId) {
-        app = (pipelineApplicationsCache || []).find((a) => a.id === appId);
-      }
-      if (!app) {
-        app = (pipelineApplicationsCache || []).find((a) => a.resumeId === id);
-      }
-
-      // 2. Try finding in vacanciesCache
-      if (!app && vacanciesCache) {
-        for (const v of vacanciesCache) {
-          if (v.applications) {
-            const found = v.applications.find((a) => a.resumeId === id || a.id === appId);
-            if (found) {
-              app = { ...found, vacancyTitle: v.title, vacancyId: v.id };
-              break;
-            }
+  if (user && user.role !== "candidato") {
+    if (appId) {
+      app = (pipelineApplicationsCache || []).find((a) => a.id === appId);
+    }
+    if (!app && id) {
+      app = (pipelineApplicationsCache || []).find((a) => a.resumeId === id);
+    }
+    if (!app && vacanciesCache) {
+      for (const v of vacanciesCache) {
+        if (v.applications) {
+          const found = v.applications.find((a) => (id && a.resumeId === id) || (appId && a.id === appId));
+          if (found) {
+            app = { ...found, vacancyTitle: v.title, vacancyId: v.id };
+            break;
           }
         }
       }
-
-      // 3. Fallback: query backend API directly if still not found
-      if (!app) {
-        try {
-          const appsRes = await apiRequest("/api/applications");
-          const appsData = await appsRes.json();
-          pipelineApplicationsCache = appsData.items || [];
-          if (appId) app = pipelineApplicationsCache.find((a) => a.id === appId);
-          if (!app) app = pipelineApplicationsCache.find((a) => a.resumeId === id);
-        } catch (fetchErr) {
-          console.warn("No se pudo cargar la lista general de postulaciones:", fetchErr);
-        }
-      }
-
-      if (app) {
-        currentEvaluatingApp = app;
-        dialog.dataset.appId = app.id;
-        if (splitPane) splitPane.style.display = "flex";
-        if (splitBody) splitBody.classList.remove("no-eval");
-        if (subtitle) subtitle.textContent = `Expediente: ${app.name} · ${app.vacancyTitle}`;
-        setupSplitEvaluationPanel(app);
-      } else {
-        if (splitPane) splitPane.style.display = "none";
-        if (splitBody) splitBody.classList.add("no-eval");
-        if (subtitle) subtitle.textContent = filename;
-      }
-    } else {
-      if (splitPane) splitPane.style.display = "none";
-      if (splitBody) splitBody.classList.add("no-eval");
-      if (subtitle) subtitle.textContent = filename;
     }
+  }
 
-    dialog.showModal();
-  } catch (error) {
-    console.error("No se pudo abrir el documento:", error);
-    showMessage(error.message, true);
+  // 2. Configurar el panel de evaluación
+  if (app) {
+    currentEvaluatingApp = app;
+    dialog.dataset.appId = app.id;
+    if (splitPane) splitPane.style.display = "flex";
+    if (splitBody) splitBody.classList.remove("no-eval");
+    if (subtitle) subtitle.textContent = `Expediente: ${app.name || "Candidato"} · ${app.vacancyTitle || "Vacante"}`;
+    setupSplitEvaluationPanel(app);
+  } else {
+    if (splitPane) splitPane.style.display = "none";
+    if (splitBody) splitBody.classList.add("no-eval");
+    if (subtitle) subtitle.textContent = "Visualizador de Currículum";
+  }
+
+  // 3. Abrir el modal de inmediato para dar respuesta instantánea al usuario
+  dialog.showModal();
+
+  // 4. Cargar el documento PDF de forma asíncrona
+  if (id && id !== "null" && id !== "undefined") {
+    try {
+      const response = await apiRequest(`/api/documents/${encodeURIComponent(id)}`);
+      const blob = await response.blob();
+      const filename = decodeURIComponent(response.headers.get("X-Document-Name") || "curriculum.pdf");
+
+      const oldUrl = dialog.dataset.objectUrl;
+      if (oldUrl) URL.revokeObjectURL(oldUrl);
+
+      // Forzar tipo application/pdf para asegurar visor nativo en iframe
+      const pdfBlob = new Blob([blob], { type: "application/pdf" });
+      const url = URL.createObjectURL(pdfBlob);
+      dialog.dataset.objectUrl = url;
+
+      if (frame) {
+        frame.src = url;
+        frame.title = `Vista previa de ${filename}`;
+      }
+      if (download) {
+        download.href = url;
+        download.download = filename;
+        download.textContent = `Descargar ${filename}`;
+        download.style.display = "inline-flex";
+      }
+    } catch (docErr) {
+      console.warn("No se pudo cargar el archivo PDF original:", docErr);
+      if (frame) {
+        frame.srcdoc = `
+          <html><body style="font-family: system-ui, -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f8fafc; color: #334155; text-align: center; padding: 24px; box-sizing: border-box;">
+            <div style="background: white; padding: 32px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05); max-width: 420px;">
+              <div style="font-size: 42px; margin-bottom: 12px;">📄</div>
+              <h3 style="margin: 0 0 8px 0; color: #0f172a; font-size: 18px;">Documento Curricular Registrado</h3>
+              <p style="margin: 0 0 16px 0; font-size: 14px; color: #64748b; line-height: 1.5;">El postulante adjuntó su CV al registrar la postulación.</p>
+              <div style="background: #f1f5f9; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-family: monospace; color: #334155; margin-bottom: 16px; word-break: break-all;">ID Documento: ${escapeHtml(id)}</div>
+              <p style="font-size: 13px; color: #475569; margin: 0;">Puedes calificar con estrellas, dejar notas y evaluar el perfil en el panel lateral.</p>
+            </div>
+          </body></html>
+        `;
+      }
+      if (download) download.style.display = "none";
+    }
+  } else {
+    if (frame) {
+      frame.srcdoc = `
+        <html><body style="font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f8fafc; color: #475569; text-align: center; padding: 20px;">
+          <div>
+            <div style="font-size: 36px; margin-bottom: 12px;">📋</div>
+            <h3 style="margin: 0 0 8px 0; color: #1e293b;">Postulación sin documento adjunto</h3>
+            <p style="font-size: 13px; color: #64748b;">El candidato no adjuntó archivo o fue registrado manualmente.</p>
+          </div>
+        </body></html>
+      `;
+    }
+    if (download) download.style.display = "none";
   }
 }
 
 function setupSplitEvaluationPanel(app) {
-  document.getElementById("eval-candidate-name").textContent = app.name;
+  document.getElementById("eval-candidate-name").textContent = app.name || "Candidato";
   document.getElementById("eval-candidate-vacancy").textContent = "" + (app.vacancyTitle || "Vacante");
 
   const avatar = document.getElementById("eval-candidate-avatar");
   if (avatar) {
-    avatar.textContent = app.name
+    avatar.textContent = (app.name || "CD")
       .split(/\s+/)
       .map((n) => n[0])
       .slice(0, 2)
@@ -647,12 +665,55 @@ function setupSplitEvaluationPanel(app) {
   if (runAiBtn) runAiBtn.disabled = false;
   currentAiAnalysis = null;
 
-  // Auto-display and execute AI evaluation for real-time assessment
-  if (app.id) {
-    runAiScreening();
+  // Visualizar de inmediato dictamen y score si el candidato ya fue evaluado
+  if (app.aiScore !== null && app.aiScore !== undefined) {
+    const score = app.aiScore;
+    const stars = score >= 85 ? 5 : score >= 70 ? 4 : score >= 55 ? 3 : 2;
+    const stage = score >= 70 ? "entrevista" : score >= 55 ? "en_revision" : "rechazada";
+    currentAiAnalysis = {
+      matchScore: score,
+      stars: stars,
+      verdict: app.aiVerdict || (score >= 80 ? "Recomendación Favorable" : "Perfil en Evaluación"),
+      suggestedStage: stage,
+      summary: app.aiSummary || `Afinidad técnica del ${score}% frente a los requerimientos de la vacante.`,
+      matchedSkills: [],
+      missingSkills: [],
+      interviewQuestions: [
+        "Detalle su experiencia práctica en las tecnologías solicitadas por el puesto.",
+        "¿Cómo asegura la calidad, pruebas y entrega oportuna en sus proyectos?",
+        "Describa cómo colabora en equipo y prioriza requerimientos de alta exigencia."
+      ],
+    };
+    if (!detectedRating) {
+      setCandidateRating(stars);
+    }
+
+    const scorePill = document.getElementById("ai-score-pill");
+    const verdictLabel = document.getElementById("ai-verdict-label");
+    const progressFill = document.getElementById("ai-progress-fill");
+    const summaryEl = document.getElementById("ai-summary");
+    
+    if (verdictLabel) verdictLabel.textContent = app.aiVerdict || "Evaluación Técnica Preliminar";
+    if (scorePill) {
+      scorePill.textContent = `${app.aiScore}% Compatibilidad`;
+      scorePill.className = "ai-score-pill " + (app.aiScore >= 80 ? "score-high" : app.aiScore >= 60 ? "score-med" : "score-low");
+    }
+    if (progressFill) progressFill.style.width = `${app.aiScore}%`;
+    if (summaryEl) summaryEl.textContent = app.aiSummary || `Afinidad técnica del ${app.aiScore}% frente a los requerimientos de la vacante.`;
+    
+    if (aiResults) aiResults.style.display = "block";
+    if (runAiBtn) runAiBtn.textContent = "Volver a Analizar";
+
+    // Si faltan etiquetas detalladas de competencias, ejecutar análisis en segundo plano sin ocultar los datos
+    if (app.id) {
+      runAiScreening(true);
+    }
   } else {
     if (aiResults) aiResults.style.display = "none";
     if (runAiBtn) runAiBtn.textContent = "Ejecutar Análisis";
+    if (app.id) {
+      runAiScreening(false);
+    }
   }
   const msgEl = document.getElementById("eval-status-message");
   if (msgEl) {
@@ -1522,7 +1583,7 @@ async function deleteVacancy(encodedId, title) {
 
 let currentAiAnalysis = null;
 
-async function triggerAiScreening() {
+async function triggerAiScreening(isBackground = false) {
   const runBtn = document.getElementById("run-ai-btn");
   const loading = document.getElementById("ai-loading");
   const results = document.getElementById("ai-results");
@@ -1536,22 +1597,24 @@ async function triggerAiScreening() {
   }
 
   if (!currentEvaluatingApp) {
-    if (loading) {
+    if (loading && !isBackground) {
       loading.style.display = "block";
       loading.innerHTML = '<span style="color: #b91c1c;">No se encontró la postulación asociada para este documento.</span>';
     }
     return;
   }
 
-  if (runBtn) {
-    runBtn.disabled = true;
-    runBtn.textContent = "Analizando...";
+  if (!isBackground) {
+    if (runBtn) {
+      runBtn.disabled = true;
+      runBtn.textContent = "Analizando...";
+    }
+    if (loading) {
+      loading.style.display = "block";
+      loading.innerHTML = '<span>Procesando currículum y evaluando correlación técnica con la vacante...</span>';
+    }
+    if (results) results.style.display = "none";
   }
-  if (loading) {
-    loading.style.display = "block";
-    loading.innerHTML = '<span>Procesando currículum y evaluando correlación técnica con la vacante...</span>';
-  }
-  if (results) results.style.display = "none";
 
   try {
     const response = await apiRequest(`/api/ai/analyze-application/${encodeURIComponent(currentEvaluatingApp.id)}`);
@@ -1629,6 +1692,8 @@ async function triggerAiScreening() {
     }
   }
 }
+
+const runAiScreening = triggerAiScreening;
 
 function autoApplyAiRecommendation() {
   if (!currentAiAnalysis && currentEvaluatingApp && currentEvaluatingApp.aiScore) {
