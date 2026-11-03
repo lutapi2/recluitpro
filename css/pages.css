@@ -1,0 +1,1311 @@
+/* ==========================================================================
+   RecruitPro · pages.css (Fase 4: Kanban & Pipeline Moderno)
+   ========================================================================== */
+
+/* ---------- Kanban Wrapper & Controls ---------- */
+.kanban-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.kanban-controls-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  background: var(--rp-surface);
+  border: 1px solid var(--rp-border);
+  border-radius: var(--rp-radius-lg);
+  box-shadow: var(--rp-shadow-sm);
+}
+
+.kanban-controls-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 280px;
+}
+
+.kanban-search-box {
+  position: relative;
+  flex: 1;
+  max-width: 360px;
+}
+
+.kanban-search-box .rp-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--rp-text-muted);
+  pointer-events: none;
+}
+
+.kanban-search-input {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 12px 0 36px;
+  border: 1px solid var(--rp-border);
+  border-radius: var(--rp-radius-full);
+  background: var(--rp-surface-2);
+  color: var(--rp-text);
+  font: var(--rp-fw-regular) var(--rp-fs-sm) var(--rp-font);
+  transition: all 180ms ease;
+}
+
+.kanban-search-input:focus {
+  border-color: var(--rp-primary);
+  background: var(--rp-surface);
+  box-shadow: var(--rp-focus-ring);
+  outline: none;
+}
+
+.kanban-vacancy-select {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--rp-border);
+  border-radius: var(--rp-radius-full);
+  background: var(--rp-surface-2);
+  color: var(--rp-text);
+  font: var(--rp-fw-semibold) var(--rp-fs-xs) var(--rp-font);
+  cursor: pointer;
+  outline: none;
+  max-width: 240px;
+}
+
+.kanban-vacancy-select:focus {
+  border-color: var(--rp-primary);
+}
+
+.kanban-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.kanban-stats-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--rp-primary-soft);
+  color: var(--rp-primary);
+  border-radius: var(--rp-radius-full);
+  font-size: var(--rp-fs-xs);
+  font-weight: var(--rp-fw-semibold);
+}
+
+.kanban-stats-badge b {
+  font-weight: var(--rp-fw-bold);
+  font-size: 14px;
+}
+
+/* Scroll Arrows */
+.kanban-scroll-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--rp-border);
+  background: var(--rp-surface);
+  color: var(--rp-text-2);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.kanban-scroll-btn:hover {
+  background: var(--rp-surface-hover);
+  color: var(--rp-text);
+  border-color: var(--rp-primary);
+}
+
+/* ---------- Mobile Stage Tabs ---------- */
+.kanban-mobile-tabs {
+  display: none;
+  overflow-x: auto;
+  gap: 6px;
+  padding: 2px 0 10px;
+  scrollbar-width: none;
+}
+
+.kanban-mobile-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.kanban-mobile-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--rp-radius-full);
+  background: var(--rp-surface);
+  border: 1px solid var(--rp-border);
+  color: var(--rp-text-2);
+  font: var(--rp-fw-semibold) var(--rp-fs-xs) var(--rp-font);
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.kanban-mobile-tab-btn.active {
+  background: var(--rp-primary);
+  color: #ffffff;
+  border-color: var(--rp-primary);
+}
+
+/* ---------- Board & Columns ---------- */
+.kanban-board-container-outer {
+  position: relative;
+}
+
+.kanban-board {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding: 4px 4px 24px;
+  min-height: 520px;
+  scroll-behavior: smooth;
+}
+
+.kanban-column {
+  flex: 1;
+  min-width: 290px;
+  max-width: 320px;
+  background: var(--rp-surface-2);
+  border: 1px solid var(--rp-border);
+  border-radius: var(--rp-radius-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--rp-shadow-sm);
+  transition: background 200ms ease, box-shadow 200ms ease, outline 200ms ease;
+}
+
+.kanban-column.drag-over {
+  background: var(--rp-surface-hover);
+  outline: 2px dashed var(--rp-primary);
+  outline-offset: -2px;
+}
+
+/* Franja superior de color por etapa */
+.kanban-column.stage-recibida { border-top: 3.5px solid #3b82f6; }
+.kanban-column.stage-en_revision { border-top: 3.5px solid #0ea5e9; }
+.kanban-column.stage-entrevista { border-top: 3.5px solid #8b5cf6; }
+.kanban-column.stage-oferta { border-top: 3.5px solid #10b981; }
+.kanban-column.stage-rechazada { border-top: 3.5px solid #ef4444; }
+
+.kanban-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--rp-border);
+}
+
+.kanban-col-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kanban-stage-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.stage-recibida .kanban-stage-dot { background: #3b82f6; }
+.stage-en_revision .kanban-stage-dot { background: #0ea5e9; }
+.stage-entrevista .kanban-stage-dot { background: #8b5cf6; }
+.stage-oferta .kanban-stage-dot { background: #10b981; }
+.stage-rechazada .kanban-stage-dot { background: #ef4444; }
+
+.kanban-col-title {
+  margin: 0;
+  font-size: var(--rp-fs-sm);
+  font-weight: var(--rp-fw-bold);
+  color: var(--rp-text);
+  letter-spacing: -0.01em;
+}
+
+/* Contadores inteligentes */
+.kanban-count-pill {
+  font-size: 11.5px;
+  font-weight: var(--rp-fw-semibold);
+  padding: 2px 8px;
+  border-radius: var(--rp-radius-full);
+  transition: all 180ms ease;
+}
+
+.kanban-count-pill.is-zero {
+  background: var(--rp-surface-hover);
+  color: var(--rp-text-muted);
+}
+
+.kanban-count-pill.is-active {
+  background: var(--rp-primary-soft);
+  color: var(--rp-primary);
+  font-weight: var(--rp-fw-bold);
+}
+
+.kanban-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-height: 220px;
+}
+
+/* Empty column state */
+.kanban-empty-compact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 12px;
+  text-align: center;
+  border: 1.5px dashed var(--rp-border);
+  border-radius: var(--rp-radius-md);
+  color: var(--rp-text-muted);
+  font-size: var(--rp-fs-xs);
+  gap: 6px;
+  margin: 4px 0;
+}
+
+.kanban-empty-compact .rp-icon {
+  color: var(--rp-text-subtle);
+  opacity: 0.6;
+}
+
+/* ---------- Candidate Card ---------- */
+.candidate-card-v2 {
+  position: relative;
+  background: var(--rp-surface);
+  border: 1px solid var(--rp-border);
+  border-radius: var(--rp-radius-md);
+  padding: 14px 15px;
+  box-shadow: var(--rp-shadow-sm);
+  cursor: grab;
+  user-select: none;
+  transition: transform var(--rp-dur-fast) var(--rp-ease), box-shadow var(--rp-dur-fast) var(--rp-ease), border-color 150ms ease;
+}
+
+.candidate-card-v2:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--rp-shadow-md);
+  border-color: rgba(37, 99, 235, 0.3);
+}
+
+.candidate-card-v2:active {
+  cursor: grabbing;
+}
+
+/* Teclado activo en tarjeta */
+.candidate-card-v2.is-keyboard-grabbed {
+  outline: 2px solid var(--rp-primary);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.25) !important;
+  transform: scale(1.02);
+}
+
+/* SortableJS Ghost & Chosen Physics */
+.sortable-ghost {
+  opacity: 0.45 !important;
+  background: var(--rp-primary-soft) !important;
+  border: 2px dashed var(--rp-primary) !important;
+  box-shadow: none !important;
+}
+
+.sortable-chosen {
+  transform: rotate(2.5deg) scale(1.02);
+  box-shadow: var(--rp-shadow-xl) !important;
+  opacity: 0.98;
+  cursor: grabbing !important;
+}
+
+/* Layout interno de la tarjeta */
+.candidate-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.candidate-card-ai-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.candidate-card-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.candidate-card-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: var(--rp-fw-bold);
+  color: var(--rp-text);
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.candidate-card-vacancy-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--rp-text-2);
+  margin-bottom: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.candidate-card-vacancy-chip .rp-icon {
+  color: var(--rp-text-muted);
+  flex-shrink: 0;
+}
+
+/* Metadatos (email, teléfono, ciudad) */
+.candidate-card-metadata {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--rp-text-muted);
+}
+
+.candidate-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.candidate-meta-row .rp-icon {
+  width: 13px;
+  height: 13px;
+  color: var(--rp-text-subtle);
+  flex-shrink: 0;
+}
+
+/* Fila de acciones */
+.candidate-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--rp-border);
+}
+
+.candidate-card-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Indicador de 30 minutos de auto-ocultado */
+.rejected-countdown-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: var(--rp-fw-semibold);
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  padding: 2px 7px;
+  border-radius: var(--rp-radius-full);
+  margin-bottom: 8px;
+}
+
+[data-theme="dark"] .rejected-countdown-badge {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+/* ---------- Responsive Mobile ---------- */
+@media (max-width: 768px) {
+  .kanban-mobile-tabs {
+    display: flex;
+  }
+  .kanban-board {
+    overflow-x: hidden;
+    padding-bottom: 12px;
+  }
+  .kanban-column {
+    display: none;
+    max-width: 100%;
+    min-width: 100%;
+  }
+  .kanban-column.is-mobile-active {
+    display: flex;
+  }
+}
+
+
+/* ==========================================================================
+   RecruitPro · pages.css (Fase 5: Dashboard Moderno & Analytics)
+   ========================================================================== */
+
+/* ---------- Header Greeting & Controls ---------- */
+.dash-header-wrap {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.dash-header-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dash-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--rp-primary);
+  background: var(--rp-primary-soft);
+  padding: 3px 10px;
+  border-radius: var(--rp-radius-full);
+  width: fit-content;
+}
+
+.dash-greeting-title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: var(--rp-fw-bold, 700);
+  color: var(--rp-text);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.dash-wave {
+  display: inline-block;
+  transform-origin: 70% 70%;
+  animation: wave 2.2s infinite;
+}
+
+@keyframes wave {
+  0% { transform: rotate(0deg); }
+  10% { transform: rotate(14deg); }
+  20% { transform: rotate(-8deg); }
+  30% { transform: rotate(14deg); }
+  40% { transform: rotate(-4deg); }
+  50% { transform: rotate(10deg); }
+  60% { transform: rotate(0deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-wave {
+    animation: none;
+  }
+}
+
+.dash-greeting-sub {
+  margin: 0;
+  font-size: var(--rp-fs-sm);
+  color: var(--rp-text-muted);
+}
+
+.dash-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ---------- Metrics Grid ---------- */
+.dash-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.dash-metric-card {
+  position: relative;
+  background: var(--rp-surface);
+  border: 1px solid var(--rp-border);
+  border-radius: var(--rp-radius-lg);
+  padding: 18px 20px;
+  box-shadow: var(--rp-shadow-sm);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  transition: transform var(--rp-dur-fast) var(--rp-ease), box-shadow var(--rp-dur-fast) var(--rp-ease), border-color 150ms ease;
+}
+
+.dash-metric-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--rp-shadow-md);
+  border-color: rgba(37, 99, 235, 0.3);
+}
+
+.metric-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.metric-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.metric-icon-wrap.bg-blue { background: linear-gradient(135deg, #2563eb, #60a5fa); }
+.metric-icon-wrap.bg-purple { background: linear-gradient(135deg, #7c3aed, #a78bfa); }
+.metric-icon-wrap.bg-amber { background: linear-gradient(135deg, #d97706, #fbbf24); }
+.metric-icon-wrap.bg-emerald { background: linear-gradient(135deg, #059669, #34d399); }
+
+.metric-trend-pill {
+  font-size: 11px;
+  font-weight: var(--rp-fw-semibold);
+  padding: 3px 8px;
+  border-radius: var(--rp-radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--rp-surface-2);
+  color: var(--rp-text-2);
+}
+
+.metric-trend-pill.is-positive {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+[data-theme="dark"] .metric-trend-pill.is-positive {
+  background: rgba(16, 185, 129, 0.15);
+  color: #6ee7b7;
+}
+
+.metric-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.metric-value {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--rp-text);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+
+.metric-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--rp-text-muted);
+}
+
+.metric-sparkline {
+  margin-top: 12px;
+  height: 24px;
+  width: 100%;
+}
+
+.metric-sparkline svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ---------- Quick Actions Grid ---------- */
+.dash-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.dash-section-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: var(--rp-fw-bold);
+  color: var(--rp-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: -0.01em;
+}
+
+.dash-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.dash-action-card {
+  background: var(--rp-surface);
+  border: 1px solid var(--rp-border);
+  border-radius: var(--rp-radius-lg);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 180ms ease;
+  text-align: left;
+  user-select: none;
+}
+
+.dash-action-card:hover {
+  background: var(--rp-surface-hover);
+  border-color: var(--rp-primary);
+  transform: translateY(-2px);
+  box-shadow: var(--rp-shadow-sm);
+}
+
+.dash-action-card:active {
+  transform: scale(0.98);
+}
+
+.dash-action-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--rp-primary-soft);
+  color: var(--rp-primary);
+  flex-shrink: 0;
+}
+
+.dash-action-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dash-action-title {
+  font-size: 13.5px;
+  font-weight: var(--rp-fw-bold);
+  color: var(--rp-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-action-desc {
+  font-size: 11.5px;
+  color: var(--rp-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Analytics & Two-column Layout ---------- */
+.dash-two-col {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.dash-panel {
+  background: var(--rp-surface);
+  border: 1px solid var(--rp-border);
+  border-radius: var(--rp-radius-lg);
+  padding: 20px;
+  box-shadow: var(--rp-shadow-sm);
+  display: flex;
+  flex-direction: column;
+}
+
+.funnel-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.funnel-step-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--rp-radius-sm);
+  transition: background 150ms ease;
+}
+
+.funnel-step-row:hover {
+  background: var(--rp-surface-2);
+}
+
+.funnel-step-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12.5px;
+  font-weight: var(--rp-fw-semibold);
+  color: var(--rp-text);
+}
+
+.funnel-step-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.funnel-stage-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.funnel-step-track {
+  width: 100%;
+  height: 8px;
+  background: var(--rp-surface-2);
+  border-radius: var(--rp-radius-full);
+  overflow: hidden;
+}
+
+.funnel-step-fill {
+  height: 100%;
+  border-radius: var(--rp-radius-full);
+  transition: width 900ms var(--rp-ease);
+}
+
+/* ---------- Recent Applicants & Vacancies List ---------- */
+.dash-recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.dash-applicant-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: var(--rp-radius-md);
+  background: var(--rp-surface-2);
+  border: 1px solid var(--rp-border);
+  transition: all 150ms ease;
+  gap: 12px;
+}
+
+.dash-applicant-item:hover {
+  background: var(--rp-surface-hover);
+  border-color: rgba(37, 99, 235, 0.3);
+  transform: translateX(2px);
+}
+
+.dash-applicant-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.dash-applicant-name {
+  margin: 0;
+  font-size: 13px;
+  font-weight: var(--rp-fw-bold);
+  color: var(--rp-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-applicant-sub {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--rp-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-applicant-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Candidate Hero Welcome Banner */
+.candidate-hero-banner {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(124, 58, 237, 0.08));
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  border-radius: var(--rp-radius-lg);
+  padding: 24px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.candidate-hero-banner.has-offer {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(5, 150, 105, 0.05));
+  border: 1.5px solid #10b981;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.15);
+}
+
+.candidate-hero-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 600px;
+}
+
+.candidate-hero-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: var(--rp-fw-bold, 700);
+  color: var(--rp-text);
+}
+
+.candidate-hero-text {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--rp-text-muted);
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .dash-two-col {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ==========================================================================
+   RecruitPro · pages.css (Fase 6: Tablas, Vacantes, Candidatos & Modales)
+   ========================================================================== */
+
+/* ---------- Filter Panels ---------- */
+.filter-panel-v2 {
+  background: var(--rp-surface);
+  border: 1px solid var(--rp-border);
+  border-radius: var(--rp-radius-lg);
+  padding: 18px 20px;
+  box-shadow: var(--rp-shadow-sm);
+  margin-bottom: 24px;
+}
+
+.filter-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.filter-panel-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: var(--rp-fw-bold);
+  color: var(--rp-text);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.filter-grid-v2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-field-label {
+  font-size: 12px;
+  font-weight: var(--rp-fw-semibold);
+  color: var(--rp-text-2);
+}
+
+.filter-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.filter-input-wrap .rp-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--rp-text-muted);
+  pointer-events: none;
+}
+
+.filter-input {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--rp-border);
+  border-radius: var(--rp-radius-md);
+  background: var(--rp-surface-2);
+  color: var(--rp-text);
+  font: var(--rp-fw-regular) var(--rp-fs-sm) var(--rp-font);
+  transition: all 180ms ease;
+  outline: none;
+}
+
+.filter-input-wrap .filter-input {
+  padding-left: 34px;
+}
+
+.filter-input:focus {
+  border-color: var(--rp-primary);
+  background: var(--rp-surface);
+  box-shadow: var(--rp-focus-ring);
+}
+
+.filter-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--rp-border);
+}
+
+/* ---------- Vacancy Cards Grid ---------- */
+.vacancies-list-v2 {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.vacancy-card-v2 {
+  background: var(--rp-surface);
+  border: 1px solid var(--rp-border);
+  border-radius: var(--rp-radius-lg);
+  padding: 20px 22px;
+  box-shadow: var(--rp-shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: transform var(--rp-dur-fast) var(--rp-ease), box-shadow var(--rp-dur-fast) var(--rp-ease), border-color 150ms ease;
+}
+
+.vacancy-card-v2:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--rp-shadow-md);
+  border-color: rgba(37, 99, 235, 0.3);
+}
+
+.vacancy-card-header-v2 {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.vacancy-title-area {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 240px;
+}
+
+.vacancy-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.vacancy-card-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: var(--rp-fw-bold);
+  color: var(--rp-text);
+  letter-spacing: -0.01em;
+}
+
+.vacancy-card-desc {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--rp-text-2);
+  line-height: 1.55;
+}
+
+.vacancy-card-footer-v2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rp-border);
+  flex-wrap: wrap;
+}
+
+.vacancy-publisher-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--rp-text-muted);
+}
+
+.vacancy-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ---------- Modern Data Table ---------- */
+.rp-table-container {
+  background: var(--rp-surface);
+  border: 1px solid var(--rp-border);
+  border-radius: var(--rp-radius-lg);
+  box-shadow: var(--rp-shadow-sm);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.rp-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13.5px;
+}
+
+.rp-table thead th {
+  background: var(--rp-surface-2);
+  color: var(--rp-text-2);
+  font-weight: var(--rp-fw-bold);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--rp-border);
+}
+
+.rp-table tbody tr {
+  border-bottom: 1px solid var(--rp-border);
+  transition: background 150ms ease;
+}
+
+.rp-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.rp-table tbody tr:hover {
+  background: var(--rp-surface-hover);
+}
+
+.rp-table td {
+  padding: 14px 18px;
+  color: var(--rp-text);
+  vertical-align: middle;
+}
+
+.table-user-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.table-user-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.table-user-name {
+  font-weight: var(--rp-fw-bold);
+  color: var(--rp-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table-user-email {
+  font-size: 12px;
+  color: var(--rp-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Profile & Form Sections ---------- */
+.profile-section-card {
+  background: var(--rp-surface);
+  border: 1px solid var(--rp-border);
+  border-radius: var(--rp-radius-lg);
+  padding: 24px;
+  box-shadow: var(--rp-shadow-sm);
+  margin-bottom: 24px;
+}
+
+.profile-section-title {
+  margin: 0 0 6px 0;
+  font-size: 17px;
+  font-weight: var(--rp-fw-bold);
+  color: var(--rp-text);
+}
+
+.profile-section-sub {
+  margin: 0 0 18px 0;
+  font-size: 13px;
+  color: var(--rp-text-muted);
+}
+
+.profile-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+/* ---------- Document Upload Dropzone ---------- */
+.doc-dropzone {
+  border: 2px dashed var(--rp-border);
+  border-radius: var(--rp-radius-lg);
+  padding: 32px 24px;
+  text-align: center;
+  background: var(--rp-surface-2);
+  transition: all 180ms ease;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.doc-dropzone:hover {
+  border-color: var(--rp-primary);
+  background: var(--rp-primary-soft);
+}
+
+.doc-dropzone .rp-icon {
+  color: var(--rp-primary);
+  margin-bottom: 4px;
+}
+
+
+/* ---------- Dialogs & Modals Modernization (Glass & Dark Mode) ---------- */
+.edit-vacancy-dialog {
+  background: var(--rp-surface) !important;
+  color: var(--rp-text) !important;
+  border: 1px solid var(--rp-border) !important;
+  box-shadow: var(--rp-shadow-xl) !important;
+  border-radius: var(--rp-radius-xl) !important;
+}
+
+.edit-vacancy-dialog::backdrop {
+  background: var(--rp-backdrop) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.preview-header {
+  background: var(--rp-surface) !important;
+  color: var(--rp-text) !important;
+  border-bottom: 1px solid var(--rp-border) !important;
+  padding: 16px 20px !important;
+}
+
+.preview-header h2 {
+  color: var(--rp-text) !important;
+  font-size: 17px !important;
+  font-weight: 700 !important;
+  margin: 0 !important;
+}
+
+.preview-close {
+  background: var(--rp-surface-2) !important;
+  color: var(--rp-text-2) !important;
+  border: 1px solid var(--rp-border) !important;
+  border-radius: 50% !important;
+  width: 32px !important;
+  height: 32px !important;
+  display: grid !important;
+  place-items: center !important;
+  cursor: pointer !important;
+  transition: all 150ms ease !important;
+}
+
+.preview-close:hover {
+  background: var(--rp-surface-hover) !important;
+  color: var(--rp-text) !important;
+}
+
+.edit-modal-body {
+  background: var(--rp-surface) !important;
+  color: var(--rp-text) !important;
+  padding: 20px !important;
+}
+
+.edit-modal-body input,
+.edit-modal-body select,
+.edit-modal-body textarea {
+  width: 100% !important;
+  padding: 8px 12px !important;
+  background: var(--rp-surface-2) !important;
+  border: 1px solid var(--rp-border) !important;
+  border-radius: var(--rp-radius-md) !important;
+  color: var(--rp-text) !important;
+  font: var(--rp-fw-regular) var(--rp-fs-sm) var(--rp-font) !important;
+  outline: none !important;
+}
+
+.edit-modal-body input:focus,
+.edit-modal-body select:focus,
+.edit-modal-body textarea:focus {
+  border-color: var(--rp-primary) !important;
+  background: var(--rp-surface) !important;
+  box-shadow: var(--rp-focus-ring) !important;
+}
+
+.edit-modal-footer {
+  padding-top: 16px !important;
+  border-top: 1px solid var(--rp-border) !important;
+}

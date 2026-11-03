@@ -2,8 +2,8 @@ from datetime import datetime, timezone
 from enum import StrEnum
 from uuid import uuid4
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, LargeBinary, String, Text, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship, deferred
 
 from .database import Base
 
@@ -154,6 +154,7 @@ class Document(Base):
     media_type: Mapped[str] = mapped_column(String(100))
     storage_name: Mapped[str] = mapped_column(String(36), unique=True)
     size: Mapped[int] = mapped_column(Integer)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
-
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    file_data: Mapped[bytes | None] = deferred(mapped_column(LargeBinary, nullable=True))
+
     owner: Mapped[User] = relationship(back_populates="documents")

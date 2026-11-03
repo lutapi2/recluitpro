@@ -62,13 +62,13 @@ function renderBreadcrumbs(crumbs = []) {
 }
 
 function renderEmptyColumnState(stageKey) {
+  const icon = typeof window.ui !== "undefined" && window.ui.icon
+    ? window.ui.icon("inbox", "rp-icon")
+    : '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-6l-2 3h-4l-2-3H2v7a2 2 0 002 2h16a2 2 0 002-2v-7z"/><path d="M5.45 5.11L2 12v0h20v0l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>';
   return `
-    <div class="kanban-empty-state-modern">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
-      </svg>
-      <p>Arrastra un candidato aquí</p>
-      <small>Sin postulaciones en esta etapa</small>
+    <div class="kanban-empty-compact">
+      ${icon}
+      <span>Sin candidatos aquí</span>
     </div>
   `;
 }
@@ -129,6 +129,9 @@ let currentPipelineVacancyId = "";
 let pipelineApplicationsCache = [];
 let pipelineSearchQuery = "";
 let draggedAppId = null;
+let sortableInstances = [];
+let keyboardGrabbedCardId = null;
+let mobileActiveStageKey = "recibida";
 
 function label(role) {
   return {
@@ -148,43 +151,230 @@ function statusLabel(status) {
   }[status] || status;
 }
 
+
+/* ==========================================================================
+   FASE 6: FILTROS, VACANTES, CANDIDATOS, RECLUTADORES & PERFILES MODERNOS
+   ========================================================================== */
+
 function renderPager(result, pageName) {
   const pages = Math.max(1, Math.ceil(result.total / result.page_size));
-  return `<div class="pagination"><span>${result.total} resultado${result.total === 1 ? "" : "s"} · Página ${result.page} de ${pages}</span><div><button class="secondary small" type="button" ${result.page <= 1 ? "disabled" : ""} onclick="changePage('${pageName}', ${result.page - 1})">Anterior</button><button class="secondary small" type="button" ${result.page >= pages ? "disabled" : ""} onclick="changePage('${pageName}', ${result.page + 1})">Siguiente</button></div></div>`;
+  return `
+    <div class="pagination" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: var(--rp-surface); border: 1px solid var(--rp-border); border-radius: var(--rp-radius-lg); margin-top: 16px; box-shadow: var(--rp-shadow-sm);">
+      <span style="font-size: 13px; color: var(--rp-text-muted); font-weight: 500;">
+        ${result.total} resultado${result.total === 1 ? "" : "s"} · Página ${result.page} de ${pages}
+      </span>
+      <div style="display: flex; gap: 8px;">
+        <button class="rp-btn rp-btn--secondary rp-btn--sm" type="button" ${result.page <= 1 ? "disabled" : ""} onclick="changePage('${pageName}', ${result.page - 1})">
+          Anterior
+        </button>
+        <button class="rp-btn rp-btn--secondary rp-btn--sm" type="button" ${result.page >= pages ? "disabled" : ""} onclick="changePage('${pageName}', ${result.page + 1})">
+          Siguiente
+        </button>
+      </div>
+    </div>
+  `;
 }
 
 function renderVacancyFilters() {
   const isCandidate = user.role === "candidato";
-  return `<form class="box filter-panel" onsubmit="applyVacancyFilters(event)"><h2>Buscar vacantes</h2><div class="filter-grid"><label class="field-label">Palabras clave<input name="q" value="${escapeHtml(vacancyPageState.q)}" placeholder="Puesto, descripción o tipo"></label><label class="field-label">Ubicación<input name="location" value="${escapeHtml(vacancyPageState.location)}" placeholder="Ciudad o remoto"></label><label class="field-label">Tipo<input name="vacancy_type" value="${escapeHtml(vacancyPageState.vacancy_type)}" placeholder="Tiempo completo, prácticas"></label>${isCandidate ? "" : `<label class="field-label">Estado<select name="status_filter"><option value="">Todos</option><option value="active" ${vacancyPageState.status_filter === "active" ? "selected" : ""}>Activas</option><option value="closed" ${vacancyPageState.status_filter === "closed" ? "selected" : ""}>Cerradas</option></select></label>`}<label class="field-label">Ordenar por<select name="sort"><option value="created_at" ${vacancyPageState.sort === "created_at" ? "selected" : ""}>Fecha de publicación</option><option value="title" ${vacancyPageState.sort === "title" ? "selected" : ""}>Título</option><option value="location" ${vacancyPageState.sort === "location" ? "selected" : ""}>Ubicación</option><option value="type" ${vacancyPageState.sort === "type" ? "selected" : ""}>Tipo</option></select></label><label class="field-label">Orden<select name="order"><option value="desc" ${vacancyPageState.order === "desc" ? "selected" : ""}>Descendente</option><option value="asc" ${vacancyPageState.order === "asc" ? "selected" : ""}>Ascendente</option></select></label></div><button class="primary small" type="submit">Aplicar filtros</button></form>`;
+  const searchIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("search", "rp-icon-sm") : "";
+  const mapPinIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("map-pin", "rp-icon-sm") : "";
+  const filterIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("sliders-horizontal", "rp-icon-sm") : "";
+
+  return `
+    <form class="filter-panel-v2" onsubmit="applyVacancyFilters(event)">
+      <div class="filter-panel-header">
+        <h2 class="filter-panel-title">
+          ${filterIcon}
+          <span>Filtrar y buscar vacantes</span>
+        </h2>
+        ${
+          (vacancyPageState.q || vacancyPageState.location || vacancyPageState.vacancy_type || vacancyPageState.status_filter)
+            ? `
+              <button type="button" class="rp-btn rp-btn--ghost rp-btn--sm" onclick="clearVacancyFilters()">
+                Limpiar filtros
+              </button>
+            `
+            : ""
+        }
+      </div>
+
+      <div class="filter-grid-v2">
+        <div class="filter-field">
+          <label class="filter-field-label">Palabras clave</label>
+          <div class="filter-input-wrap">
+            ${searchIcon}
+            <input
+              class="filter-input"
+              name="q"
+              value="${escapeHtml(vacancyPageState.q)}"
+              placeholder="Cargo, palabra clave o tecnología..."
+            />
+          </div>
+        </div>
+
+        <div class="filter-field">
+          <label class="filter-field-label">Ubicación</label>
+          <div class="filter-input-wrap">
+            ${mapPinIcon}
+            <input
+              class="filter-input"
+              name="location"
+              value="${escapeHtml(vacancyPageState.location)}"
+              placeholder="Ciudad o 'Remoto'..."
+            />
+          </div>
+        </div>
+
+        <div class="filter-field">
+          <label class="filter-field-label">Tipo de puesto</label>
+          <input
+            class="filter-input"
+            name="vacancy_type"
+            value="${escapeHtml(vacancyPageState.vacancy_type)}"
+            placeholder="Tiempo completo, prácticas..."
+          />
+        </div>
+
+        ${
+          !isCandidate
+            ? `
+              <div class="filter-field">
+                <label class="filter-field-label">Estado</label>
+                <select class="filter-input" name="status_filter">
+                  <option value="">Todos los estados</option>
+                  <option value="active" ${vacancyPageState.status_filter === "active" ? "selected" : ""}>Activas (Abiertas)</option>
+                  <option value="closed" ${vacancyPageState.status_filter === "closed" ? "selected" : ""}>Cerradas (Finalizadas)</option>
+                </select>
+              </div>
+            `
+            : ""
+        }
+
+        <div class="filter-field">
+          <label class="filter-field-label">Ordenar por</label>
+          <select class="filter-input" name="sort">
+            <option value="created_at" ${vacancyPageState.sort === "created_at" ? "selected" : ""}>Fecha de publicación</option>
+            <option value="title" ${vacancyPageState.sort === "title" ? "selected" : ""}>Título</option>
+            <option value="location" ${vacancyPageState.sort === "location" ? "selected" : ""}>Ubicación</option>
+            <option value="type" ${vacancyPageState.sort === "type" ? "selected" : ""}>Tipo</option>
+          </select>
+        </div>
+
+        <div class="filter-field">
+          <label class="filter-field-label">Orden</label>
+          <select class="filter-input" name="order">
+            <option value="desc" ${vacancyPageState.order === "desc" ? "selected" : ""}>Más reciente primero (Descendente)</option>
+            <option value="asc" ${vacancyPageState.order === "asc" ? "selected" : ""}>Más antiguo primero (Ascendente)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="filter-actions-row">
+        <button class="rp-btn rp-btn--primary" type="submit">
+          Aplicar filtros
+        </button>
+      </div>
+    </form>
+  `;
+}
+
+function clearVacancyFilters() {
+  vacancyPageState = { ...vacancyPageState, q: "", location: "", vacancy_type: "", status_filter: "", page: 1 };
+  view("jobs");
 }
 
 function renderCandidateFilters() {
-  return `<form class="box filter-panel" onsubmit="applyCandidateFilters(event)"><h2>Buscar candidatos</h2><div class="filter-grid"><label class="field-label">Nombre o correo<input name="q" value="${escapeHtml(candidatePageState.q)}" placeholder="Buscar"></label><label class="field-label">Ubicación<input name="location" value="${escapeHtml(candidatePageState.location)}" placeholder="Ciudad"></label><label class="field-label">Etapa<select name="status_filter"><option value="">Todas las etapas</option>${["recibida", "en_revision", "entrevista", "oferta", "rechazada"].map((stage) => `<option value="${stage}" ${candidatePageState.status_filter === stage ? "selected" : ""}>${statusLabel(stage)}</option>`).join("")}</select></label><label class="field-label">Ordenar por<select name="sort"><option value="created_at" ${candidatePageState.sort === "created_at" ? "selected" : ""}>Fecha de registro</option><option value="name" ${candidatePageState.sort === "name" ? "selected" : ""}>Nombre</option></select></label><label class="field-label">Orden<select name="order"><option value="desc" ${candidatePageState.order === "desc" ? "selected" : ""}>Descendente</option><option value="asc" ${candidatePageState.order === "asc" ? "selected" : ""}>Ascendente</option></select></label></div><button class="primary small" type="submit">Aplicar filtros</button></form>`;
+  const searchIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("search", "rp-icon-sm") : "";
+  const mapPinIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("map-pin", "rp-icon-sm") : "";
+  const filterIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("sliders-horizontal", "rp-icon-sm") : "";
+
+  return `
+    <form class="filter-panel-v2" onsubmit="applyCandidateFilters(event)">
+      <div class="filter-panel-header">
+        <h2 class="filter-panel-title">
+          ${filterIcon}
+          <span>Filtrar y buscar candidatos</span>
+        </h2>
+        ${
+          (candidatePageState.q || candidatePageState.location || candidatePageState.status_filter)
+            ? `
+              <button type="button" class="rp-btn rp-btn--ghost rp-btn--sm" onclick="clearCandidateFilters()">
+                Limpiar filtros
+              </button>
+            `
+            : ""
+        }
+      </div>
+
+      <div class="filter-grid-v2">
+        <div class="filter-field">
+          <label class="filter-field-label">Nombre o correo</label>
+          <div class="filter-input-wrap">
+            ${searchIcon}
+            <input
+              class="filter-input"
+              name="q"
+              value="${escapeHtml(candidatePageState.q)}"
+              placeholder="Buscar por nombre o correo..."
+            />
+          </div>
+        </div>
+
+        <div class="filter-field">
+          <label class="filter-field-label">Ubicación</label>
+          <div class="filter-input-wrap">
+            ${mapPinIcon}
+            <input
+              class="filter-input"
+              name="location"
+              value="${escapeHtml(candidatePageState.location)}"
+              placeholder="Ciudad o ubicación..."
+            />
+          </div>
+        </div>
+
+        <div class="filter-field">
+          <label class="filter-field-label">Etapa en el proceso</label>
+          <select class="filter-input" name="status_filter">
+            <option value="">Todas las etapas</option>
+            ${["recibida", "en_revision", "entrevista", "oferta", "rechazada"]
+              .map((stage) => `<option value="${stage}" ${candidatePageState.status_filter === stage ? "selected" : ""}>${statusLabel(stage)}</option>`)
+              .join("")}
+          </select>
+        </div>
+
+        <div class="filter-field">
+          <label class="filter-field-label">Ordenar por</label>
+          <select class="filter-input" name="sort">
+            <option value="created_at" ${candidatePageState.sort === "created_at" ? "selected" : ""}>Fecha de registro</option>
+            <option value="name" ${candidatePageState.sort === "name" ? "selected" : ""}>Nombre</option>
+          </select>
+        </div>
+
+        <div class="filter-field">
+          <label class="filter-field-label">Orden</label>
+          <select class="filter-input" name="order">
+            <option value="desc" ${candidatePageState.order === "desc" ? "selected" : ""}>Descendente</option>
+            <option value="asc" ${candidatePageState.order === "asc" ? "selected" : ""}>Ascendente</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="filter-actions-row">
+        <button class="rp-btn rp-btn--primary" type="submit">
+          Aplicar filtros
+        </button>
+      </div>
+    </form>
+  `;
 }
 
-async function applyVacancyFilters(event) {
-  event.preventDefault();
-  const values = Object.fromEntries(new FormData(event.currentTarget).entries());
-  vacancyPageState = { ...vacancyPageState, ...values, page: 1 };
-  await view("jobs");
+function clearCandidateFilters() {
+  candidatePageState = { ...candidatePageState, q: "", location: "", status_filter: "", page: 1 };
+  view("candidates");
 }
 
-async function applyCandidateFilters(event) {
-  event.preventDefault();
-  const values = Object.fromEntries(new FormData(event.currentTarget).entries());
-  candidatePageState = { ...candidatePageState, ...values, page: 1 };
-  await view("candidates");
-}
-
-async function changePage(pageName, page) {
-  if (pageName === "jobs") {
-    vacancyPageState.page = page;
-    await view("jobs");
-  } else {
-    candidatePageState.page = page;
-    await view("candidates");
-  }
-}
 
 async function csrfToken() {
   const response = await fetch("/api/auth/csrf", { credentials: "same-origin" });
@@ -243,6 +433,547 @@ function documentName(document) {
   return typeof document === "string" ? document : document.name;
 }
 
+
+/* ==========================================================================
+   FASE 5: DASHBOARD HOME (Saludo dinámico, Métricas animadas, Embudo, Quick Actions)
+   ========================================================================== */
+
+function getDayGreeting() {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return "Buenos días";
+  if (hour >= 12 && hour < 20) return "Buenas tardes";
+  return "Buenas noches";
+}
+
+function renderSparklineSvg(color = "#2563EB", isUp = true) {
+  const d = isUp
+    ? "M0 20 Q 25 22, 50 12 T 100 4"
+    : "M0 6 Q 25 4, 50 14 T 100 20";
+  return `
+    <svg viewBox="0 0 100 24" preserveAspectRatio="none">
+      <path d="${d}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+  `;
+}
+
+function renderAdminOrRecruiterHome(summary, applications, vacancies) {
+  const greeting = getDayGreeting();
+  const firstName = (user.name || "Usuario").trim().split(" ")[0];
+  const isAdmin = user.role === "administrador";
+
+  const totalApps = applications.length;
+  const inInterviewCount = applications.filter((a) => a.status === "entrevista").length;
+  const inOfferCount = applications.filter((a) => a.status === "oferta").length;
+  const inReviewCount = applications.filter((a) => a.status === "en_revision").length;
+  const receivedCount = applications.filter((a) => a.status === "recibida").length;
+  const rejectedCount = applications.filter((a) => a.status === "rechazada").length;
+
+  const activeVacanciesCount = (vacancies || []).filter((v) => v.status !== "closed").length || summary.vacancies || 0;
+
+  // Icons
+  const briefcaseIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("briefcase") : "";
+  const usersIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("users") : "";
+  const calendarIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("calendar") : "";
+  const awardIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("award") : "";
+  const plusIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("plus-circle") : "";
+  const kanbanIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("columns-3") : "";
+  const userCheckIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("user-check") : "";
+  const shieldIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("shield-check") : "";
+  const externalIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("external-link", "rp-icon-sm") : "";
+  const trendUpIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("trending-up", "rp-icon-sm") : "";
+
+  // Funnel calculation
+  const funnelStages = [
+    { key: "recibida", label: "Recibidas (Nuevas)", count: receivedCount, color: "#3b82f6" },
+    { key: "en_revision", label: "En revisión", count: inReviewCount, color: "#0ea5e9" },
+    { key: "entrevista", label: "En entrevista", count: inInterviewCount, color: "#8b5cf6" },
+    { key: "oferta", label: "Con oferta", count: inOfferCount, color: "#10b981" },
+    { key: "rechazada", label: "Rechazadas", count: rejectedCount, color: "#ef4444" },
+  ];
+
+  const funnelTotal = Math.max(1, totalApps);
+
+  // Recent applicants
+  const recentApplicants = applications.slice(0, 5);
+
+  return `
+    <div class="dash-header-wrap">
+      <div class="dash-header-main">
+        <span class="dash-tag">
+          ${isAdmin ? "Panel de Administración" : "Panel de Reclutamiento"}
+        </span>
+        <h1 class="dash-greeting-title">
+          ${greeting}, ${escapeHtml(firstName)} <span class="dash-wave">👋</span>
+        </h1>
+        <p class="dash-greeting-sub">
+          ${
+            isAdmin
+              ? "Monitorea el talento global, vacantes activas y el ritmo de contratación de tu equipo."
+              : "Gestiona tus vacantes asignadas y avanza a tus candidatos en el proceso de selección."
+          }
+        </p>
+      </div>
+
+      <div class="dash-header-actions">
+        <button
+          type="button"
+          class="rp-btn rp-btn--primary"
+          onclick="view('jobs')"
+        >
+          ${plusIcon}
+          <span>Publicar vacante</span>
+        </button>
+        <button
+          type="button"
+          class="rp-btn rp-btn--secondary"
+          onclick="view('pipeline')"
+        >
+          ${kanbanIcon}
+          <span>Ver pipeline</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Metricas con CountUp -->
+    <div class="dash-metrics-grid rp-stagger">
+      <div class="dash-metric-card" onclick="view('jobs')" style="cursor: pointer;" title="Ver todas las vacantes">
+        <div class="metric-top">
+          <div class="metric-icon-wrap bg-blue">${briefcaseIcon}</div>
+          <span class="metric-trend-pill is-positive">${trendUpIcon} En convocatoria</span>
+        </div>
+        <div class="metric-body">
+          <div class="metric-value" data-count="${activeVacanciesCount}">0</div>
+          <div class="metric-label">Vacantes Activas</div>
+        </div>
+        <div class="metric-sparkline">${renderSparklineSvg("#2563EB", true)}</div>
+      </div>
+
+      <div class="dash-metric-card" onclick="view('pipeline')" style="cursor: pointer;" title="Ir al pipeline de candidatos">
+        <div class="metric-top">
+          <div class="metric-icon-wrap bg-purple">${usersIcon}</div>
+          <span class="metric-trend-pill">${trendUpIcon} En pipeline</span>
+        </div>
+        <div class="metric-body">
+          <div class="metric-value" data-count="${totalApps}">0</div>
+          <div class="metric-label">Total Postulaciones</div>
+        </div>
+        <div class="metric-sparkline">${renderSparklineSvg("#7C3AED", true)}</div>
+      </div>
+
+      <div class="dash-metric-card" onclick="view('pipeline')" style="cursor: pointer;" title="Candidatos en entrevista">
+        <div class="metric-top">
+          <div class="metric-icon-wrap bg-amber">${calendarIcon}</div>
+          <span class="metric-trend-pill is-positive">${trendUpIcon} Evaluación técnica</span>
+        </div>
+        <div class="metric-body">
+          <div class="metric-value" data-count="${inInterviewCount}">0</div>
+          <div class="metric-label">En Entrevista</div>
+        </div>
+        <div class="metric-sparkline">${renderSparklineSvg("#D97706", true)}</div>
+      </div>
+
+      <div class="dash-metric-card" onclick="view('pipeline')" style="cursor: pointer;" title="Candidatos con oferta">
+        <div class="metric-top">
+          <div class="metric-icon-wrap bg-emerald">${awardIcon}</div>
+          <span class="metric-trend-pill is-positive">${trendUpIcon} Finalistas</span>
+        </div>
+        <div class="metric-body">
+          <div class="metric-value" data-count="${inOfferCount}">0</div>
+          <div class="metric-label">Ofertas Extendidas</div>
+        </div>
+        <div class="metric-sparkline">${renderSparklineSvg("#059669", true)}</div>
+      </div>
+    </div>
+
+    <!-- Acciones Rápidas -->
+    <div class="dash-section-header">
+      <h2 class="dash-section-title">Acciones Rápidas</h2>
+    </div>
+
+    <div class="dash-actions-grid rp-stagger">
+      <div class="dash-action-card" onclick="view('jobs')">
+        <div class="dash-action-icon">${plusIcon}</div>
+        <div class="dash-action-text">
+          <span class="dash-action-title">Nueva Vacante</span>
+          <span class="dash-action-desc">Crear y publicar convocatoria</span>
+        </div>
+      </div>
+
+      <div class="dash-action-card" onclick="view('pipeline')">
+        <div class="dash-action-icon">${kanbanIcon}</div>
+        <div class="dash-action-text">
+          <span class="dash-action-title">Proceso de Selección</span>
+          <span class="dash-action-desc">Avanzar candidatos en Kanban</span>
+        </div>
+      </div>
+
+      <div class="dash-action-card" onclick="view('candidates')">
+        <div class="dash-action-icon">${userCheckIcon}</div>
+        <div class="dash-action-text">
+          <span class="dash-action-title">Directorio de Talento</span>
+          <span class="dash-action-desc">Buscar y filtrar perfiles</span>
+        </div>
+      </div>
+
+      ${
+        isAdmin
+          ? `
+            <div class="dash-action-card" onclick="view('recruiters')">
+              <div class="dash-action-icon">${shieldIcon}</div>
+              <div class="dash-action-text">
+                <span class="dash-action-title">Equipo Reclutadores</span>
+                <span class="dash-action-desc">Administrar accesos y carga</span>
+              </div>
+            </div>
+          `
+          : `
+            <div class="dash-action-card" onclick="window.open('empleos.html', '_blank')">
+              <div class="dash-action-icon">${externalIcon}</div>
+              <div class="dash-action-text">
+                <span class="dash-action-title">Portal de Empleos</span>
+                <span class="dash-action-desc">Ver vista pública para candidatos</span>
+              </div>
+            </div>
+          `
+      }
+    </div>
+
+    <!-- Analíticas: Embudo de Selección y Postulaciones Recientes -->
+    <div class="dash-two-col">
+      <div class="dash-panel">
+        <div class="dash-section-header" style="margin-bottom: 8px;">
+          <h2 class="dash-section-title">Embudo de Contratación (Funnel)</h2>
+          <button type="button" class="rp-btn rp-btn--ghost rp-btn--sm" onclick="view('pipeline')">
+            <span>Ver tablero</span>
+          </button>
+        </div>
+        <p style="margin: 0 0 16px 0; font-size: 12.5px; color: var(--rp-text-muted);">
+          Distribución porcentual de los ${totalApps} candidatos en el pipeline activo.
+        </p>
+
+        <div class="funnel-steps-list">
+          ${funnelStages
+            .map((stage) => {
+              const pct = totalApps > 0 ? Math.round((stage.count / totalApps) * 100) : 0;
+              return `
+                <div class="funnel-step-row" onclick="view('pipeline')" title="Ver candidatos en ${escapeHtml(stage.label)}">
+                  <div class="funnel-step-header">
+                    <div class="funnel-step-name-wrap">
+                      <span class="funnel-stage-dot" style="background: ${stage.color};"></span>
+                      <span>${escapeHtml(stage.label)}</span>
+                    </div>
+                    <div>
+                      <span style="font-weight: 700; color: var(--rp-text);">${stage.count}</span>
+                      <small style="color: var(--rp-text-muted); margin-left: 4px;">(${pct}%)</small>
+                    </div>
+                  </div>
+                  <div class="funnel-step-track">
+                    <div class="funnel-step-fill" style="width: ${pct}%; background: ${stage.color};"></div>
+                  </div>
+                </div>
+              `;
+            })
+            .join("")}
+        </div>
+      </div>
+
+      <div class="dash-panel">
+        <div class="dash-section-header" style="margin-bottom: 8px;">
+          <h2 class="dash-section-title">Postulaciones Recientes</h2>
+          <button type="button" class="rp-btn rp-btn--ghost rp-btn--sm" onclick="view('candidates')">
+            <span>Ver todas</span>
+          </button>
+        </div>
+        <p style="margin: 0 0 12px 0; font-size: 12.5px; color: var(--rp-text-muted);">
+          Últimos candidatos inscritos en vacantes abiertas.
+        </p>
+
+        <div class="dash-recent-list">
+          ${
+            recentApplicants.length
+              ? recentApplicants
+                  .map((app) => {
+                    const avatar = typeof window.ui !== "undefined" && window.ui.avatar
+                      ? window.ui.avatar(app.name, 32)
+                      : getDynamicAvatar(app.name, 32);
+
+                    const tone = app.status === "oferta"
+                      ? "success"
+                      : app.status === "entrevista"
+                      ? "primary"
+                      : app.status === "rechazada"
+                      ? "danger"
+                      : "";
+
+                    const badgeHtml = typeof window.ui !== "undefined" && window.ui.badge
+                      ? window.ui.badge(statusLabel(app.status), tone)
+                      : `<span class="rp-badge">${escapeHtml(statusLabel(app.status))}</span>`;
+
+                    return `
+                      <div class="dash-applicant-item" onclick="openApplicationDetailDialog('${escapeHtml(app.id)}')" style="cursor: pointer;" title="Ver seguimiento de ${escapeHtml(app.name)}">
+                        <div class="dash-applicant-left">
+                          ${avatar}
+                          <div style="min-width: 0;">
+                            <h4 class="dash-applicant-name">${escapeHtml(app.name)}</h4>
+                            <p class="dash-applicant-sub">${escapeHtml(app.vacancyTitle)}</p>
+                          </div>
+                        </div>
+                        <div class="dash-applicant-right">
+                          ${badgeHtml}
+                        </div>
+                      </div>
+                    `;
+                  })
+                  .join("")
+              : `
+                <div class="rp-empty rp-empty--compact" style="margin-top: 20px;">
+                  <p class="rp-empty__text">No hay postulaciones registradas todavía.</p>
+                </div>
+              `
+          }
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderCandidateHome(summary, applications, vacancies) {
+  const greeting = getDayGreeting();
+  const firstName = (user.name || "Candidato").trim().split(" ")[0];
+
+  const totalMyApps = applications.length;
+  const inInterviewCount = applications.filter((a) => a.status === "entrevista").length;
+  const inOfferCount = applications.filter((a) => a.status === "oferta").length;
+  const inReviewCount = applications.filter((a) => a.status === "en_revision").length;
+
+  const hasOffer = inOfferCount > 0;
+  const hasInterview = inInterviewCount > 0;
+
+  const briefcaseIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("briefcase") : "";
+  const fileCheckIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("file-check-2") : "";
+  const calendarIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("calendar") : "";
+  const awardIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("award") : "";
+  const searchIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("search") : "";
+  const fileTextIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("file-text") : "";
+  const userIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("user") : "";
+  const trendUpIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("trending-up", "rp-icon-sm") : "";
+
+  return `
+    <div class="dash-header-wrap">
+      <div class="dash-header-main">
+        <span class="dash-tag">Portal del Candidato</span>
+        <h1 class="dash-greeting-title">
+          ${greeting}, ${escapeHtml(firstName)} <span class="dash-wave">👋</span>
+        </h1>
+        <p class="dash-greeting-sub">
+          Consulta el estado de tus procesos de selección y encuentra oportunidades profesionales afines a tu perfil.
+        </p>
+      </div>
+
+      <div class="dash-header-actions">
+        <button
+          type="button"
+          class="rp-btn rp-btn--primary"
+          onclick="view('jobs')"
+        >
+          ${searchIcon}
+          <span>Explorar vacantes</span>
+        </button>
+      </div>
+    </div>
+
+    ${
+      hasOffer
+        ? `
+          <div class="candidate-hero-banner has-offer">
+            <div class="candidate-hero-content">
+              <span class="rp-badge rp-badge--success" style="width: fit-content;">🎉 ¡Oferta formal recibida!</span>
+              <h2 class="candidate-hero-title">Tienes una propuesta de contratación</h2>
+              <p class="candidate-hero-text">
+                El equipo de reclutamiento ha aprobado tu perfil y te ha extendido una oferta formal. Revisa los detalles de tu postulación en la sección de postulaciones.
+              </p>
+            </div>
+            <button type="button" class="rp-btn rp-btn--primary" onclick="view('applications')">
+              Ver mis postulaciones
+            </button>
+          </div>
+        `
+        : hasInterview
+        ? `
+          <div class="candidate-hero-banner" style="border-color: rgba(139, 92, 246, 0.3); background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(59, 130, 246, 0.06));">
+            <div class="candidate-hero-content">
+              <span class="rp-badge rp-badge--primary" style="width: fit-content;">📅 Entrevista en curso</span>
+              <h2 class="candidate-hero-title">Avanzaste a la etapa de entrevista</h2>
+              <p class="candidate-hero-text">
+                Uno de tus procesos está en fase de entrevista técnica o panel. Nuestro equipo se pondrá en contacto contigo para coordinar fechas y horarios.
+              </p>
+            </div>
+            <button type="button" class="rp-btn rp-btn--secondary" onclick="view('applications')">
+              Consultar estado
+            </button>
+          </div>
+        `
+        : `
+          <div class="candidate-hero-banner">
+            <div class="candidate-hero-content">
+              <h2 class="candidate-hero-title">Impulsa tu carrera con RecruitPro</h2>
+              <p class="candidate-hero-text">
+                Revisa las convocatorias vigentes, sube tu currículum actualizado en formato PDF y mantén tu perfil al día para conectar con las mejores empresas.
+              </p>
+            </div>
+            <button type="button" class="rp-btn rp-btn--primary" onclick="view('jobs')">
+              Ver convocatorias
+            </button>
+          </div>
+        `
+    }
+
+    <!-- Métricas del candidato -->
+    <div class="dash-metrics-grid rp-stagger">
+      <div class="dash-metric-card" onclick="view('jobs')" style="cursor: pointer;" title="Explorar vacantes activas">
+        <div class="metric-top">
+          <div class="metric-icon-wrap bg-blue">${briefcaseIcon}</div>
+          <span class="metric-trend-pill is-positive">${trendUpIcon} Oportunidades</span>
+        </div>
+        <div class="metric-body">
+          <div class="metric-value" data-count="${summary.vacancies || 0}">0</div>
+          <div class="metric-label">Vacantes Disponibles</div>
+        </div>
+        <div class="metric-sparkline">${renderSparklineSvg("#2563EB", true)}</div>
+      </div>
+
+      <div class="dash-metric-card" onclick="view('applications')" style="cursor: pointer;" title="Ver mis postulaciones">
+        <div class="metric-top">
+          <div class="metric-icon-wrap bg-purple">${fileCheckIcon}</div>
+          <span class="metric-trend-pill">${trendUpIcon} Enviadas</span>
+        </div>
+        <div class="metric-body">
+          <div class="metric-value" data-count="${totalMyApps}">0</div>
+          <div class="metric-label">Mis Postulaciones</div>
+        </div>
+        <div class="metric-sparkline">${renderSparklineSvg("#7C3AED", true)}</div>
+      </div>
+
+      <div class="dash-metric-card" onclick="view('applications')" style="cursor: pointer;" title="En proceso de entrevista">
+        <div class="metric-top">
+          <div class="metric-icon-wrap bg-amber">${calendarIcon}</div>
+          <span class="metric-trend-pill is-positive">${trendUpIcon} Entrevista</span>
+        </div>
+        <div class="metric-body">
+          <div class="metric-value" data-count="${inInterviewCount}">0</div>
+          <div class="metric-label">En Entrevista</div>
+        </div>
+        <div class="metric-sparkline">${renderSparklineSvg("#D97706", true)}</div>
+      </div>
+
+      <div class="dash-metric-card" onclick="view('applications')" style="cursor: pointer;" title="Ofertas recibidas">
+        <div class="metric-top">
+          <div class="metric-icon-wrap bg-emerald">${awardIcon}</div>
+          <span class="metric-trend-pill is-positive">${trendUpIcon} Propuestas</span>
+        </div>
+        <div class="metric-body">
+          <div class="metric-value" data-count="${inOfferCount}">0</div>
+          <div class="metric-label">Ofertas Recibidas</div>
+        </div>
+        <div class="metric-sparkline">${renderSparklineSvg("#059669", true)}</div>
+      </div>
+    </div>
+
+    <!-- Acciones Rápidas Candidato -->
+    <div class="dash-section-header">
+      <h2 class="dash-section-title">Accesos Rápidos</h2>
+    </div>
+
+    <div class="dash-actions-grid rp-stagger">
+      <div class="dash-action-card" onclick="view('jobs')">
+        <div class="dash-action-icon">${searchIcon}</div>
+        <div class="dash-action-text">
+          <span class="dash-action-title">Explorar Vacantes</span>
+          <span class="dash-action-desc">Encontrar puestos por cargo y ciudad</span>
+        </div>
+      </div>
+
+      <div class="dash-action-card" onclick="view('applications')">
+        <div class="dash-action-icon">${fileCheckIcon}</div>
+        <div class="dash-action-text">
+          <span class="dash-action-title">Mis Postulaciones</span>
+          <span class="dash-action-desc">Revisar avances y respuestas</span>
+        </div>
+      </div>
+
+      <div class="dash-action-card" onclick="view('docs')">
+        <div class="dash-action-icon">${fileTextIcon}</div>
+        <div class="dash-action-text">
+          <span class="dash-action-title">Documentos y CV</span>
+          <span class="dash-action-desc">Gestionar currículum adjunto</span>
+        </div>
+      </div>
+
+      <div class="dash-action-card" onclick="view('profile')">
+        <div class="dash-action-icon">${userIcon}</div>
+        <div class="dash-action-text">
+          <span class="dash-action-title">Editar Perfil</span>
+          <span class="dash-action-desc">Actualizar teléfono y datos</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de Mis Postulaciones Recientes -->
+    <div class="dash-panel" style="margin-bottom: 24px;">
+      <div class="dash-section-header" style="margin-bottom: 8px;">
+        <h2 class="dash-section-title">Mis Procesos Activos</h2>
+        <button type="button" class="rp-btn rp-btn--ghost rp-btn--sm" onclick="view('applications')">
+          <span>Ver todas</span>
+        </button>
+      </div>
+
+      <div class="dash-recent-list">
+        ${
+          applications.length
+            ? applications
+                .slice(0, 4)
+                .map((item) => {
+                  const isOffer = item.status === "oferta";
+                  const isInterview = item.status === "entrevista";
+                  const tone = isOffer ? "success" : isInterview ? "primary" : "";
+
+                  const badgeHtml = typeof window.ui !== "undefined" && window.ui.badge
+                    ? window.ui.badge(statusLabel(item.status), tone)
+                    : `<span class="rp-badge">${escapeHtml(statusLabel(item.status))}</span>`;
+
+                  return `
+                    <div class="dash-applicant-item" onclick="view('applications')" style="cursor: pointer;">
+                      <div class="dash-applicant-left">
+                        <div class="metric-icon-wrap ${isOffer ? "bg-emerald" : isInterview ? "bg-purple" : "bg-blue"}" style="width: 32px; height: 32px; border-radius: 8px;">
+                          ${briefcaseIcon}
+                        </div>
+                        <div style="min-width: 0;">
+                          <h4 class="dash-applicant-name">${escapeHtml(item.vacancyTitle)}</h4>
+                          <p class="dash-applicant-sub">Postulado el ${new Date(item.createdAt).toLocaleDateString("es")}</p>
+                        </div>
+                      </div>
+                      <div class="dash-applicant-right">
+                        ${badgeHtml}
+                      </div>
+                    </div>
+                  `;
+                })
+                .join("")
+            : `
+              <div class="rp-empty rp-empty--compact" style="margin-top: 20px;">
+                <p class="rp-empty__text">Todavía no te has postulado a ninguna vacante.</p>
+                <button type="button" class="rp-btn rp-btn--primary rp-btn--sm" style="margin-top: 10px;" onclick="view('jobs')">
+                  Ver vacantes disponibles
+                </button>
+              </div>
+            `
+        }
+      </div>
+    </div>
+  `;
+}
+
+
 async function view(page, vacancyId = "") {
   if (!user) return;
   nav.querySelectorAll("button").forEach((button) => {
@@ -251,40 +982,258 @@ async function view(page, vacancyId = "") {
       button.dataset.page === (page === "apply" ? "jobs" : page),
     );
   });
+  updateNavPill();
+  closeMobileMenu();
 
   try {
     if (page === "home") {
-      const summary = await (await apiRequest("/api/dashboard/summary")).json();
-      const cards = user.role === "administrador"
-        ? [["Usuarios", summary.users], ["Candidatos", summary.candidates], ["Reclutadores", summary.recruiters], ["Vacantes", summary.vacancies]]
-        : user.role === "reclutador"
-          ? [["Vacantes", summary.vacancies], ["Postulaciones", summary.applications]]
-          : [["Vacantes disponibles", summary.vacancies], ["Mis postulaciones", summary.applications]];
-      app.innerHTML = `<div class="head"><small>DASHBOARD</small><h1>Hola, ${escapeHtml(user.name.split(" ")[0])} </h1><p>Resumen de tu espacio RecruitPro.</p></div><div class="stats">${cards.map(([title, count]) => `<article><b>${title}</b><strong>${count}</strong></article>`).join("")}</div><div class="box"><h3>Encuentra nuevas oportunidades</h3><p>Consulta las vacantes publicadas y descubre oportunidades que se ajusten a tu perfil.</p><button class="primary small" onclick="view('jobs')">Ver vacantes</button></div></div>`;
+      const summaryRes = await apiRequest("/api/dashboard/summary");
+      const summary = await summaryRes.json();
+
+      let applications = [];
+      let vacancies = [];
+
+      if (user.role !== "candidato") {
+        try {
+          const [appsRes, vacsRes] = await Promise.all([
+            apiRequest("/api/applications"),
+            apiRequest("/api/vacancies?page=1&page_size=10"),
+          ]);
+          applications = (await appsRes.json()).items || [];
+          vacancies = (await vacsRes.json()).items || [];
+          pipelineApplicationsCache = applications;
+          vacanciesCache = vacancies;
+        } catch (err) {
+          console.warn("Could not load dashboard data:", err);
+        }
+        app.innerHTML = renderAdminOrRecruiterHome(summary, applications, vacancies);
+      } else {
+        try {
+          const [myAppsRes, vacsRes] = await Promise.all([
+            apiRequest("/api/applications/mine"),
+            apiRequest("/api/vacancies?page=1&page_size=10"),
+          ]);
+          applications = (await myAppsRes.json()).items || [];
+          vacancies = (await vacsRes.json()).items || [];
+          vacanciesCache = vacancies;
+        } catch (err) {
+          console.warn("Could not load candidate dashboard data:", err);
+        }
+        app.innerHTML = renderCandidateHome(summary, applications, vacancies);
+      }
+
+      setTimeout(() => {
+        document.querySelectorAll(".metric-value[data-count]").forEach((el) => {
+          const target = parseInt(el.getAttribute("data-count"), 10) || 0;
+          if (typeof window.ui !== "undefined" && window.ui.countUp) {
+            window.ui.countUp(el, target);
+          } else {
+            el.textContent = target;
+          }
+        });
+        if (typeof window.ui !== "undefined" && window.ui.refreshIcons) {
+          window.ui.refreshIcons();
+        }
+      }, 10);
     } else if (page === "profile") {
-      app.innerHTML = `<div class="head"><small>PERFIL</small><h1>Mi perfil</h1><p>Actualiza tus datos y protege tu cuenta.</p></div><div class="box"><form id="profile-form" onsubmit="saveOwnProfile(event)"><label class="field-label" for="profile-name">Nombre completo</label><input id="profile-name" name="name" required maxlength="100" value="${escapeHtml(user.name)}"><label class="field-label" for="profile-email">Correo electrónico</label><input id="profile-email" type="email" readonly value="${escapeHtml(user.email)}"><label class="field-label" for="profile-phone">Teléfono</label><input id="profile-phone" name="phone" maxlength="30" value="${escapeHtml(user.phone || "")}"><label class="field-label" for="profile-location">Ubicación</label><input id="profile-location" name="location" maxlength="100" value="${escapeHtml(user.location || "")}"><div id="profile-message" class="notice-box" role="status"></div><button class="primary small" type="submit">Guardar perfil</button></form><hr><h2>Cambiar contraseña</h2><form id="password-form" onsubmit="changeOwnPassword(event)"><label class="field-label" for="current-password">Contraseña actual</label><input id="current-password" name="current_password" type="password" autocomplete="current-password" required><label class="field-label" for="new-password">Nueva contraseña (mínimo 12 caracteres)</label><input id="new-password" name="new_password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required><div id="password-message" class="notice-box" role="status"></div><button class="primary small" type="submit">Actualizar contraseña</button></form><hr><h2>Privacidad</h2><p>Consentimiento registrado: ${user.privacyConsentAt ? new Date(user.privacyConsentAt).toLocaleDateString("es") : "No consta (cuenta anterior a la política de consentimiento)"}.</p><p>Versión del aviso: ${escapeHtml(user.privacyConsentVersion || "sin registro")}.</p><p>Para eliminar tu cuenta, postulaciones y documentos, confirma tu contraseña. Esta acción es permanente.</p><label class="field-label" for="delete-account-password">Contraseña actual</label><input id="delete-account-password" type="password" autocomplete="current-password" required><button class="secondary danger-button" type="button" onclick="deleteOwnAccount()">Eliminar mi cuenta y mis datos</button><div id="delete-account-message" class="notice-box" role="status"></div></div>`;
+      app.innerHTML = `
+        <div class="head">
+          <small>PERFIL Y SEGURIDAD</small>
+          <h1>Configuración de Cuenta</h1>
+          <p>Actualiza tus datos de contacto y protege el acceso a tu cuenta.</p>
+        </div>
+
+        <div class="profile-section-card">
+          <h2 class="profile-section-title">Datos Personales</h2>
+          <p class="profile-section-sub">Información visible para los procesos de selección y contacto.</p>
+
+          <form id="profile-form" onsubmit="saveOwnProfile(event)">
+            <div class="profile-form-grid">
+              <div>
+                <label class="filter-field-label" for="profile-name">Nombre completo</label>
+                <input class="filter-input" id="profile-name" name="name" required maxlength="100" value="${escapeHtml(user.name)}" />
+              </div>
+              <div>
+                <label class="filter-field-label" for="profile-email">Correo electrónico</label>
+                <input class="filter-input" id="profile-email" type="email" readonly value="${escapeHtml(user.email)}" style="opacity: 0.75;" />
+              </div>
+              <div>
+                <label class="filter-field-label" for="profile-phone">Teléfono de contacto</label>
+                <input class="filter-input" id="profile-phone" name="phone" maxlength="30" value="${escapeHtml(user.phone || "")}" placeholder="Ej. +52 55 1234 5678" />
+              </div>
+              <div>
+                <label class="filter-field-label" for="profile-location">Ciudad o ubicación</label>
+                <input class="filter-input" id="profile-location" name="location" maxlength="100" value="${escapeHtml(user.location || "")}" placeholder="Ej. Ciudad de México" />
+              </div>
+            </div>
+
+            <div id="profile-message" class="notice-box" role="status"></div>
+
+            <div style="display: flex; justify-content: flex-end;">
+              <button class="rp-btn rp-btn--primary" type="submit">Guardar cambios</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="profile-section-card">
+          <h2 class="profile-section-title">Seguridad y Contraseña</h2>
+          <p class="profile-section-sub">Actualiza periódicamente tu contraseña para proteger tu cuenta.</p>
+
+          <form id="password-form" onsubmit="changeOwnPassword(event)">
+            <div class="profile-form-grid">
+              <div>
+                <label class="filter-field-label" for="current-password">Contraseña actual</label>
+                <input class="filter-input" id="current-password" name="current_password" type="password" autocomplete="current-password" required />
+              </div>
+              <div>
+                <label class="filter-field-label" for="new-password">Nueva contraseña (mínimo 12 caracteres)</label>
+                <input class="filter-input" id="new-password" name="new_password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required />
+              </div>
+            </div>
+
+            <div id="password-message" class="notice-box" role="status"></div>
+
+            <div style="display: flex; justify-content: flex-end;">
+              <button class="rp-btn rp-btn--primary" type="submit">Actualizar contraseña</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="profile-section-card" style="border-color: rgba(239, 68, 68, 0.3);">
+          <h2 class="profile-section-title" style="color: var(--rp-danger);">Privacidad y Eliminación Permanente</h2>
+          <p class="profile-section-sub">
+            Consentimiento registrado: ${user.privacyConsentAt ? new Date(user.privacyConsentAt).toLocaleDateString("es") : "Sin registro previo"}.
+            Versión del aviso: ${escapeHtml(user.privacyConsentVersion || "1.0")}.
+          </p>
+          <p style="font-size: 13px; color: var(--rp-text-muted); margin-bottom: 14px;">
+            Para eliminar tu cuenta, postulaciones y archivos definitivamente de RecruitPro, confirma tu contraseña actual. Esta acción no se puede deshacer.
+          </p>
+
+          <div style="max-width: 360px; margin-bottom: 14px;">
+            <label class="filter-field-label" for="delete-account-password">Contraseña actual para confirmar</label>
+            <input class="filter-input" id="delete-account-password" type="password" autocomplete="current-password" required />
+          </div>
+
+          <div id="delete-account-message" class="notice-box" role="status"></div>
+
+          <button class="rp-btn rp-btn--danger" type="button" onclick="deleteOwnAccount()">
+            Eliminar mi cuenta definitivamente
+          </button>
+        </div>
+      `;
     } else if (page === "applications" && user.role === "candidato") {
       const result = await (await apiRequest("/api/applications/mine")).json();
       const items = result.items.length
-        ? `<div class="vacancy-list">${result.items.map((item) => {
-            const isOffer = item.status === "oferta";
-            const isInterview = item.status === "entrevista";
-            return `
-              <article class="vacancy-card" style="${isOffer ? 'border: 2px solid #10b981; background: #f0fdf4; border-radius: 14px;' : isInterview ? 'border: 2px solid #6366f1; background: #eef2ff; border-radius: 14px;' : ''}">
-                <div class="vacancy-heading">
-                  <h2>${escapeHtml(item.vacancyTitle)}</h2>
-                  <span class="vacancy-status" style="${isOffer ? 'background: #10b981; color: #fff; font-weight: 700; padding: 4px 12px; border-radius: 9999px;' : isInterview ? 'background: #4f46e5; color: #fff; font-weight: 700; padding: 4px 12px; border-radius: 9999px;' : ''}">${escapeHtml(statusLabel(item.status))}</span>
-                </div>
-                ${isOffer ? '<p style="color: #047857; font-weight: 700; margin: 10px 0 6px 0; font-size: 15px;">🎉 ¡Felicitaciones! Has recibido una Oferta formal de empleo para este puesto. Nuestro equipo de selección se pondrá en contacto contigo para coordinar tu incorporación.</p>' : ''}
-                ${isInterview ? '<p style="color: #4338ca; font-weight: 600; margin: 8px 0;">📅 Has avanzado a la etapa de Entrevista. Te contactaremos pronto con los detalles de fecha y hora.</p>' : ''}
-                <p class="muted-copy" style="margin-top: 6px;">Postulación enviada el ${new Date(item.createdAt).toLocaleDateString("es")}.</p>
-              </article>
-            `;
-          }).join("")}</div>`
-        : '<p class="empty-state">Todavía no tienes postulaciones.</p>';
-      app.innerHTML = `<div class="head"><small>CANDIDATO</small><h1>Mis postulaciones</h1><p>Consulta el estado de tus procesos.</p></div>${items}`;
+        ? `<div class="vacancies-list-v2 rp-stagger">${result.items
+            .map((item) => {
+              const isOffer = item.status === "oferta";
+              const isInterview = item.status === "entrevista";
+              const tone = isOffer ? "success" : isInterview ? "primary" : "";
+
+              const badgeHtml = typeof window.ui !== "undefined" && window.ui.badge
+                ? window.ui.badge(statusLabel(item.status), tone)
+                : `<span class="rp-badge">${escapeHtml(statusLabel(item.status))}</span>`;
+
+              return `
+                <article class="vacancy-card-v2" style="${isOffer ? "border: 2px solid #10b981; background: var(--rp-surface);" : isInterview ? "border: 2px solid #8b5cf6; background: var(--rp-surface);" : ""}">
+                  <div class="vacancy-card-header-v2">
+                    <div class="vacancy-title-area">
+                      <div class="vacancy-badges-row">
+                        ${badgeHtml}
+                      </div>
+                      <h2 class="vacancy-card-title">${escapeHtml(item.vacancyTitle)}</h2>
+                    </div>
+                  </div>
+
+                  ${
+                    isOffer
+                      ? `
+                        <div style="display: flex; align-items: center; gap: 8px; padding: 12px 14px; background: rgba(16, 185, 129, 0.1); border-radius: var(--rp-radius-md); border: 1px solid rgba(16, 185, 129, 0.25); color: #047857; margin: 4px 0;">
+                          <span style="font-size: 18px;">🎉</span>
+                          <span style="font-size: 13.5px; font-weight: 600;">
+                            ¡Felicitaciones! Has recibido una Oferta formal de empleo. Nuestro equipo se pondrá en contacto para coordinar los siguientes pasos.
+                          </span>
+                        </div>
+                      `
+                      : ""
+                  }
+
+                  ${
+                    isInterview
+                      ? `
+                        <div style="display: flex; align-items: center; gap: 8px; padding: 12px 14px; background: rgba(139, 92, 246, 0.1); border-radius: var(--rp-radius-md); border: 1px solid rgba(139, 92, 246, 0.25); color: #5b21b6; margin: 4px 0;">
+                          <span style="font-size: 18px;">📅</span>
+                          <span style="font-size: 13.5px; font-weight: 600;">
+                            Has avanzado a la etapa de Entrevista. Te contactaremos pronto con los detalles de agenda y panel.
+                          </span>
+                        </div>
+                      `
+                      : ""
+                  }
+
+                  <div class="vacancy-card-footer-v2">
+                    <span style="font-size: 12px; color: var(--rp-text-muted);">
+                      Postulación enviada el ${new Date(item.createdAt).toLocaleDateString("es")}
+                    </span>
+                    <div>
+                      ${item.resumeId ? `<button type="button" class="rp-btn rp-btn--secondary rp-btn--sm" onclick="viewDocument('${encodeURIComponent(item.resumeId)}')">Ver CV enviado</button>` : ""}
+                    </div>
+                  </div>
+                </article>
+              `;
+            })
+            .join("")}</div>`
+        : (typeof window.ui !== "undefined" && window.ui.emptyState
+            ? window.ui.emptyState({ iconName: "clipboard-list", title: "Sin postulaciones", text: "Todavía no te has postulado a ninguna vacante." })
+            : '<p class="empty-state">Todavía no tienes postulaciones.</p>');
+
+      app.innerHTML = `
+        <div class="head">
+          <small>CANDIDATO</small>
+          <h1>Mis Postulaciones</h1>
+          <p>Consulta el avance y estado de tus procesos de selección en tiempo real.</p>
+        </div>
+        ${items}
+      `;
     } else if (page === "docs" && user.role === "candidato") {
-      app.innerHTML = `<div class="head"><small>CANDIDATO</small><h1>Mis documentos</h1><p>Sube tus archivos para que los reclutadores puedan consultarlos cuando te postules.</p></div><div class="box"><label class="field-label" for="file">Selecciona un archivo PDF, DOC o DOCX (máximo 10 MB)</label><input type="file" id="file" accept=".pdf,.doc,.docx" required><button class="primary small" onclick="addDoc()">Subir documento</button><div id="page-message" class="notice-box" role="status"></div><hr>${renderDocumentList(getDocuments(user))}</div>`;
+      const uploadIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("upload-cloud") : "";
+
+      app.innerHTML = `
+        <div class="head">
+          <small>CANDIDATO</small>
+          <h1>Mis Documentos y Currículum</h1>
+          <p>Sube tu CV para que los reclutadores puedan consultarlo al revisar tus postulaciones.</p>
+        </div>
+
+        <div class="profile-section-card">
+          <h2 class="profile-section-title">Adjuntar Documento</h2>
+          <p class="profile-section-sub">Formatos permitidos: PDF, DOC o DOCX (tamaño máximo: 10 MB).</p>
+
+          <div class="doc-dropzone" onclick="document.getElementById('file').click()">
+            ${uploadIcon}
+            <p style="margin: 0; font-weight: 700; color: var(--rp-text);">Haz clic o arrastra tu archivo aquí</p>
+            <small style="color: var(--rp-text-muted);">PDF, DOC o DOCX hasta 10 MB</small>
+            <input type="file" id="file" accept=".pdf,.doc,.docx" required style="display: none;" onchange="if (this.files[0]) document.getElementById('selected-file-label').textContent = 'Archivo seleccionado: ' + this.files[0].name;" />
+          </div>
+          <div id="selected-file-label" style="margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--rp-primary); text-align: center;"></div>
+
+          <div id="page-message" class="notice-box" role="status" style="margin-top: 14px;"></div>
+
+          <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+            <button class="rp-btn rp-btn--primary" onclick="addDoc()">
+              Subir documento
+            </button>
+          </div>
+        </div>
+
+        <div class="dash-section-header">
+          <h2 class="dash-section-title">Documentos Guardados</h2>
+        </div>
+
+        <div class="profile-section-card">
+          ${renderDocumentList(getDocuments(user))}
+        </div>
+      `;
     } else if (page === "pipeline" && user.role !== "candidato") {
       const vacanciesRes = await (await apiRequest("/api/vacancies?page=1&page_size=100")).json();
       vacanciesCache = vacanciesRes.items;
@@ -298,11 +1247,27 @@ async function view(page, vacancyId = "") {
       const params = new URLSearchParams({ ...candidatePageState, role: "candidato", page: String(candidatePageState.page), page_size: "20" });
       const result = await (await apiRequest(`/api/users?${params}`)).json();
       usersCache = result.items;
-      app.innerHTML = `<div class="head"><small>TALENTO</small><h1>Candidatos</h1><p>Busca y filtra candidatos postulados a vacantes de tu equipo.</p></div><div class="box">${renderCandidateFilters()}${renderCandidates(result.items)}${renderPager(result, "candidates")}</div>`;
+      app.innerHTML = `
+        <div class="head">
+          <small>TALENTO</small>
+          <h1>Directorio de Candidatos</h1>
+          <p>Filtra y revisa los candidatos inscritos en las convocatorias de la plataforma.</p>
+        </div>
+        ${renderCandidateFilters()}
+        ${renderCandidates(result.items)}
+        ${renderPager(result, "candidates")}
+      `;
     } else if (page === "recruiters" && user.role === "administrador") {
       usersCache = await (await apiRequest("/api/users?role=reclutador")).json();
       usersCache = usersCache.items;
-      app.innerHTML = `<div class="head"><small>ADMINISTRACIÓN</small><h1>Reclutadores</h1></div><div class="box">${renderRecruiters(usersCache)}</div>`;
+      app.innerHTML = `
+        <div class="head">
+          <small>ADMINISTRACIÓN</small>
+          <h1>Gestión de Reclutadores</h1>
+          <p>Administra los permisos y accesos de los miembros del equipo de selección.</p>
+        </div>
+        ${renderRecruiters(usersCache)}
+      `;
     } else if (page === "jobs") {
       const params = new URLSearchParams({ ...vacancyPageState, page: String(vacancyPageState.page), page_size: "20" });
       const result = await (await apiRequest(`/api/vacancies?${params}`)).json();
@@ -310,7 +1275,7 @@ async function view(page, vacancyId = "") {
       usersCache = user.role === "administrador"
         ? (await (await apiRequest("/api/users?role=reclutador")).json()).items || []
         : user.role === "reclutador" ? [user] : [];
-      app.innerHTML = `${renderVacancyFilters()}${renderVacancies(result.items)}${renderPager(result, "jobs")}`;
+      app.innerHTML = `${renderVacancies(result.items)}${renderPager(result, "jobs")}`;
     } else if (page === "apply" && user.role === "candidato") {
       vacanciesCache = (await (await apiRequest("/api/vacancies")).json()).items;
       const vacancy = vacanciesCache.find((entry) => entry.id === vacancyId);
@@ -326,6 +1291,11 @@ async function view(page, vacancyId = "") {
       sessionStorage.setItem("recruitpro_pending_application", vacancy.id);
       app.innerHTML = renderApplicationForm(vacancy);
     }
+    setTimeout(() => {
+      if (typeof window.ui !== "undefined" && window.ui.refreshIcons) {
+        window.ui.refreshIcons();
+      }
+    }, 15);
   } catch (error) {
     console.error("No se pudo cargar la pantalla:", error);
     app.innerHTML = `<div class="box notice-box is-error" role="alert">${escapeHtml(error.message)}</div>`;
@@ -334,114 +1304,467 @@ async function view(page, vacancyId = "") {
 
 function renderApplicationForm(vacancy) {
   const candidate = user;
-  return `<div class="head"><small>POSTULACIÓN</small><h1>Completa tu perfil</h1><p>Comparte algunos datos para que el equipo pueda conocerte mejor.</p></div><section class="box application-form-box"><div class="application-vacancy"><span class="vacancy-type">${escapeHtml(vacancy.type)}</span><h2>${escapeHtml(vacancy.title)}</h2><span>${escapeHtml(vacancy.location || "Ubicación por definir")}</span></div><form id="application-form" onsubmit="submitApplication(event)"><div class="application-fields"><label class="field-label" for="application-name">Nombre completo</label><input id="application-name" name="name" required maxlength="100" autocomplete="name" value="${escapeHtml(candidate.name)}"><label class="field-label" for="application-email">Correo electrónico</label><input id="application-email" type="email" name="email" required readonly value="${escapeHtml(candidate.email)}"><label class="field-label" for="application-phone">Teléfono</label><input id="application-phone" type="tel" name="phone" required maxlength="30" autocomplete="tel" placeholder="Ej. +52 55 1234 5678" value="${escapeHtml(candidate.phone || "")}"><label class="field-label" for="application-location">Ciudad o ubicación</label><input id="application-location" name="location" required maxlength="100" autocomplete="address-level2" placeholder="Ej. Ciudad de México" value="${escapeHtml(candidate.location || "")}"><label class="field-label" for="application-resume">Hoja de vida o CV</label><div class="resume-upload"><input id="application-resume" name="resume" type="file" required accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"><span>Formatos PDF, DOC o DOCX · máximo 10 MB</span></div></div><label class="consent-label"><input id="application-consent" name="privacy_consent" type="checkbox" required><span>Acepto que mi perfil y CV se compartan con el administrador y los reclutadores responsables para gestionar esta postulación. Consulta el <a href="privacidad.html" target="_blank" rel="noopener">aviso de privacidad</a>.</span></label><div id="page-message" class="notice-box" role="status"></div><div class="application-actions"><button type="button" class="secondary" onclick="sessionStorage.removeItem('recruitpro_pending_application'); view('jobs')">Cancelar</button><button class="primary small" type="submit">Enviar postulación</button></div></form></section>`;
+  const fileIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("file-text", "rp-icon-sm") : "";
+
+  return `
+    <div class="head">
+      <small>POSTULACIÓN</small>
+      <h1>Completar Postulación</h1>
+      <p>Confirma tus datos y adjunta tu currículum para participar en este proceso.</p>
+    </div>
+
+    <div class="profile-section-card" style="max-width: 760px; margin: 0 auto 24px;">
+      <div style="padding-bottom: 16px; margin-bottom: 18px; border-bottom: 1px solid var(--rp-border);">
+        <span class="rp-badge rp-badge--primary" style="margin-bottom: 6px;">${escapeHtml(vacancy.type)}</span>
+        <h2 style="margin: 0 0 4px 0; font-size: 20px; font-weight: 700; color: var(--rp-text);">${escapeHtml(vacancy.title)}</h2>
+        <span style="font-size: 13px; color: var(--rp-text-muted);">${escapeHtml(vacancy.location || "Ubicación por definir")}</span>
+      </div>
+
+      <form id="application-form" onsubmit="submitApplication(event)">
+        <div class="profile-form-grid">
+          <div>
+            <label class="filter-field-label" for="application-name">Nombre completo</label>
+            <input class="filter-input" id="application-name" name="name" required maxlength="100" autocomplete="name" value="${escapeHtml(candidate.name)}" />
+          </div>
+          <div>
+            <label class="filter-field-label" for="application-email">Correo electrónico</label>
+            <input class="filter-input" id="application-email" type="email" name="email" required readonly value="${escapeHtml(candidate.email)}" style="opacity: 0.75;" />
+          </div>
+          <div>
+            <label class="filter-field-label" for="application-phone">Teléfono de contacto</label>
+            <input class="filter-input" id="application-phone" type="tel" name="phone" required maxlength="30" autocomplete="tel" placeholder="Ej. +52 55 1234 5678" value="${escapeHtml(candidate.phone || "")}" />
+          </div>
+          <div>
+            <label class="filter-field-label" for="application-location">Ciudad o ubicación</label>
+            <input class="filter-input" id="application-location" name="location" required maxlength="100" autocomplete="address-level2" placeholder="Ej. Ciudad de México" value="${escapeHtml(candidate.location || "")}" />
+          </div>
+        </div>
+
+        <div style="margin-bottom: 18px;">
+          <label class="filter-field-label" for="application-resume">Hoja de vida o CV (PDF, DOC o DOCX)</label>
+          <div class="doc-dropzone" onclick="document.getElementById('application-resume').click()" style="padding: 20px;">
+            ${fileIcon}
+            <span style="font-size: 13px; font-weight: 600; color: var(--rp-text);">Selecciona tu archivo de currículum</span>
+            <small style="color: var(--rp-text-muted);">Formatos PDF, DOC o DOCX · Máximo 10 MB</small>
+            <input id="application-resume" name="resume" type="file" required accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display: none;" onchange="if (this.files[0]) document.getElementById('apply-cv-label').textContent = 'Archivo seleccionado: ' + this.files[0].name;" />
+          </div>
+          <div id="apply-cv-label" style="margin-top: 6px; font-size: 12.5px; font-weight: 600; color: var(--rp-primary); text-align: center;"></div>
+        </div>
+
+        <label class="consent-label" style="display: flex; gap: 10px; align-items: flex-start; margin-bottom: 18px; font-size: 12.5px; color: var(--rp-text-2);">
+          <input id="application-consent" name="privacy_consent" type="checkbox" required style="margin-top: 3px;" />
+          <span>Acepto que mi perfil y CV se compartan con el equipo de selección responsable para evaluar esta candidatura según el <a href="privacidad.html" target="_blank" rel="noopener" style="color: var(--rp-primary); font-weight: 600;">aviso de privacidad</a>.</span>
+        </label>
+
+        <div id="page-message" class="notice-box" role="status"></div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 14px; border-top: 1px solid var(--rp-border);">
+          <button type="button" class="rp-btn rp-btn--secondary" onclick="sessionStorage.removeItem('recruitpro_pending_application'); view('jobs')">
+            Cancelar
+          </button>
+          <button class="rp-btn rp-btn--primary" type="submit">
+            Enviar postulación
+          </button>
+        </div>
+      </form>
+    </div>
+  `;
 }
 
-function renderDocumentList(documents) {
-  if (!documents.length) {
-    return '<p class="empty-state">Todavía no has subido documentos.</p>';
-  }
 
-  return `<ul class="document-list">${documents
-    .map((document) => {
-      const name = escapeHtml(documentName(document));
-      const savedFile = typeof document === "object" && document.id;
-
-      return `<li><span class="document-name">${name}</span>${
-        savedFile
-          ? `<button class="document-button" onclick="viewDocument('${encodeURIComponent(document.id)}')">Ver documento</button>`
-          : '<span class="document-legacy">Archivo anterior: no se guardó el contenido</span>'
-      }</li>`;
-    })
-    .join("")}</ul>`;
-}
 
 function renderCandidates(candidates) {
   if (!candidates.length) {
-    return '<p class="empty-state">Todavía no hay candidatos registrados.</p>';
+    return typeof window.ui !== "undefined" && window.ui.emptyState
+      ? window.ui.emptyState({ iconName: "users", title: "Sin candidatos encontrados", text: "No hay postulantes que coincidan con los filtros de búsqueda actuales." })
+      : '<p class="empty-state">No hay candidatos registrados.</p>';
   }
 
-  return `<div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Correo</th><th>Documentos</th>${user.role === "administrador" ? "<th>Acciones</th>" : ""}</tr></thead><tbody>${candidates
-    .map((candidate) => {
-      const documents = getDocuments(candidate);
-      const contents = documents.length
-        ? renderDocumentList(documents)
-        : '<p class="empty-state">Sin documentos</p>';
+  const isAdmin = user.role === "administrador";
 
-      return `<tr><td>${escapeHtml(candidate.name)}</td><td>${escapeHtml(candidate.email)}</td><td><details class="candidate-documents"><summary>${documents.length} documento${documents.length === 1 ? "" : "s"}</summary>${contents}</details></td>${user.role === "administrador" ? `<td><div style="display:flex;gap:6px;align-items:center;"><button class="secondary small" onclick="openEditUserDialog('${encodeURIComponent(candidate.id)}')">Editar</button><button class="secondary small" onclick="promoteRecruiter('${encodeURIComponent(candidate.id)}')">Habilitar reclutador</button><button class="secondary small danger-button" style="color:#dc2626;border-color:#fecaca;" onclick="deleteUserDirect('${encodeURIComponent(candidate.id)}', '${escapeHtml(candidate.name)}')">Eliminar</button></div></td>` : ""}</tr>`;
-    })
-    .join("")}</tbody></table></div>`;
+  return `
+    <div class="rp-table-container">
+      <table class="rp-table">
+        <thead>
+          <tr>
+            <th>Candidato</th>
+            <th>Ubicación</th>
+            <th>Documentos</th>
+            ${isAdmin ? "<th>Acciones</th>" : ""}
+          </tr>
+        </thead>
+        <tbody>
+          ${candidates
+            .map((candidate) => {
+              const avatar = typeof window.ui !== "undefined" && window.ui.avatar
+                ? window.ui.avatar(candidate.name, 36)
+                : getDynamicAvatar(candidate.name, 36);
+
+              const documents = getDocuments(candidate);
+              const docCount = documents.length;
+              const docBadge = docCount
+                ? `<span class="rp-badge rp-badge--primary">${docCount} archivo${docCount === 1 ? "" : "s"}</span>`
+                : `<span class="rp-badge" style="opacity: 0.6;">Sin archivos</span>`;
+
+              return `
+                <tr>
+                  <td>
+                    <div class="table-user-cell">
+                      ${avatar}
+                      <div class="table-user-info">
+                        <span class="table-user-name">${escapeHtml(candidate.name)}</span>
+                        <span class="table-user-email">${escapeHtml(candidate.email)}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span style="font-size: 13px; color: var(--rp-text-2);">${escapeHtml(candidate.location || "No especificada")}</span>
+                  </td>
+                  <td>
+                    <details class="candidate-documents">
+                      <summary style="cursor: pointer; font-size: 13px; font-weight: 600; color: var(--rp-primary);">
+                        ${docBadge}
+                      </summary>
+                      <div style="margin-top: 8px;">
+                        ${docCount ? renderDocumentList(documents) : '<p class="empty-state" style="margin: 4px 0;">Sin documentos adjuntos</p>'}
+                      </div>
+                    </details>
+                  </td>
+                  ${
+                    isAdmin
+                      ? `
+                        <td>
+                          <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                            <button
+                              type="button"
+                              class="rp-btn rp-btn--secondary rp-btn--sm"
+                              onclick="openEditUserDialog('${encodeURIComponent(candidate.id)}')"
+                            >
+                              Editar
+                            </button>
+                            <button
+                              type="button"
+                              class="rp-btn rp-btn--secondary rp-btn--sm"
+                              onclick="promoteRecruiter('${encodeURIComponent(candidate.id)}')"
+                            >
+                              Habilitar reclutador
+                            </button>
+                            <button
+                              type="button"
+                              class="rp-btn rp-btn--danger rp-btn--sm"
+                              onclick="deleteUserDirect('${encodeURIComponent(candidate.id)}', '${escapeHtml(candidate.name)}')"
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        </td>
+                      `
+                      : ""
+                  }
+                </tr>
+              `;
+            })
+            .join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
 }
 
 function renderRecruiters(recruiters) {
   if (!recruiters.length) {
-    return '<p class="empty-state">Todavía no hay reclutadores registrados.</p>';
+    return typeof window.ui !== "undefined" && window.ui.emptyState
+      ? window.ui.emptyState({ iconName: "shield-check", title: "Sin reclutadores", text: "No hay reclutadores dados de alta en el sistema." })
+      : '<p class="empty-state">No hay reclutadores registrados.</p>';
   }
 
-  return `<div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Correo</th><th>Acciones</th></tr></thead><tbody>${recruiters
-    .map(
-      (recruiter) =>
-        `<tr><td>${escapeHtml(recruiter.name)}</td><td>${escapeHtml(recruiter.email)}</td><td><div style="display:flex;gap:6px;align-items:center;"><button class="secondary small" onclick="openEditUserDialog('${encodeURIComponent(recruiter.id)}')">Editar</button><button class="secondary small danger-button" style="color:#dc2626;border-color:#fecaca;" onclick="deleteUserDirect('${encodeURIComponent(recruiter.id)}', '${escapeHtml(recruiter.name)}')">Eliminar</button></div></td></tr>`,
-    )
-    .join("")}</tbody></table></div>`;
+  return `
+    <div class="rp-table-container">
+      <table class="rp-table">
+        <thead>
+          <tr>
+            <th>Reclutador</th>
+            <th>Rol</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${recruiters
+            .map((recruiter) => {
+              const avatar = typeof window.ui !== "undefined" && window.ui.avatar
+                ? window.ui.avatar(recruiter.name, 36)
+                : getDynamicAvatar(recruiter.name, 36);
+
+              return `
+                <tr>
+                  <td>
+                    <div class="table-user-cell">
+                      ${avatar}
+                      <div class="table-user-info">
+                        <span class="table-user-name">${escapeHtml(recruiter.name)}</span>
+                        <span class="table-user-email">${escapeHtml(recruiter.email)}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="rp-badge rp-badge--primary">Reclutador</span>
+                  </td>
+                  <td>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                      <button
+                        type="button"
+                        class="rp-btn rp-btn--secondary rp-btn--sm"
+                        onclick="openEditUserDialog('${encodeURIComponent(recruiter.id)}')"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        class="rp-btn rp-btn--danger rp-btn--sm"
+                        onclick="deleteUserDirect('${encodeURIComponent(recruiter.id)}', '${escapeHtml(recruiter.name)}')"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              `;
+            })
+            .join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
 }
 
 function renderVacancies(vacancies) {
   const canPublish = user.role === "reclutador" || user.role === "administrador";
   const canApply = user.role === "candidato";
-  const vacanciesIntro =
-    user.role === "administrador"
-      ? "Crea, asigna y actualiza las vacantes de la plataforma."
-      : user.role === "reclutador"
-        ? "Publica oportunidades y revisa las postulaciones recibidas."
-        : "Encuentra oportunidades publicadas por los reclutadores.";
   const recruiters = Array.isArray(usersCache) ? usersCache.filter((entry) => entry.role === "reclutador") : [];
-  const ownVacancies = vacancies.filter(
-    (vacancy) => vacancy.recruiterId === user.id,
-  );
-  const vacancyList = vacancies.length
-    ? `<div class="vacancy-list">${vacancies.map(renderVacancy).join("")}</div>`
-    : '<div class="box empty-state">Todavía no hay vacantes publicadas. ¡Vuelve pronto!</div>';
-  const applicationNotice = sessionStorage.getItem("recruitpro_application_success");
-  if (applicationNotice) sessionStorage.removeItem("recruitpro_application_success");
 
-  return `<div class="head"><small>OPORTUNIDADES</small><h1>Vacantes</h1><p>${vacanciesIntro}</p></div>${applicationNotice ? `<div class="application-success" role="status">${escapeHtml(applicationNotice)}</div>` : ""}${
-    canPublish
-      ? `<section class="box vacancy-form-box"><h2>Publicar una vacante</h2><p>Comparte una nueva oportunidad con los candidatos.</p><form id="vacancy-form" onsubmit="publishVacancy(event)"><label class="field-label" for="vacancy-title">Nombre de la vacante</label><input id="vacancy-title" name="title" required maxlength="100" placeholder="Ej. Diseñador de producto"><label class="field-label" for="vacancy-type">Tipo de vacante</label><input id="vacancy-type" name="type" required maxlength="60" placeholder="Ej. Tiempo completo, prácticas, remoto"><label class="field-label" for="vacancy-location">Ubicación</label><input id="vacancy-location" name="location" maxlength="100" placeholder="Ej. Remoto o Ciudad de México">${user.role === "administrador" ? `<label class="field-label" for="vacancy-recruiter">Reclutador asignado</label><select id="vacancy-recruiter" name="recruiterEmail"><option value="">Sin asignar (administrador)</option>${recruiters.map((recruiter) => `<option value="${escapeHtml(recruiter.id)}">${escapeHtml(recruiter.name)} · ${escapeHtml(recruiter.email)}</option>`).join("")}</select>` : ""}<label class="field-label" for="vacancy-description">Descripción</label><textarea id="vacancy-description" name="description" required maxlength="3000" rows="5" placeholder="Describe las responsabilidades y requisitos del puesto"></textarea><div id="page-message" class="notice-box" role="status"></div><button class="primary small" type="submit">Publicar vacante</button></form></section>${user.role === "reclutador" ? `<h2 class="section-title">Vacantes publicadas</h2><p class="muted-copy">Has publicado ${ownVacancies.length} vacante${ownVacancies.length === 1 ? "" : "s"}.</p>` : ""}`
-      : ""
-  }${canApply ? '<h2 class="section-title">Oportunidades disponibles</h2>' : ""}${vacancyList}`;
+  const vacancyList = vacancies.length
+    ? `<div class="vacancies-list-v2 rp-stagger">${vacancies.map(renderVacancy).join("")}</div>`
+    : (typeof window.ui !== "undefined" && window.ui.emptyState
+        ? window.ui.emptyState({ iconName: "briefcase", title: "No hay vacantes publicadas", text: "Ajusta los filtros de búsqueda o publica una nueva vacante." })
+        : '<div class="box empty-state">Todavía no hay vacantes publicadas.</div>');
+
+  const plusIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("plus-circle", "rp-icon-sm") : "";
+
+  return `
+    <div class="head">
+      <small>CONVOCATORIAS</small>
+      <h1>Vacantes Disponibles</h1>
+      <p>
+        ${
+          user.role === "administrador"
+            ? "Crea, asigna y gestiona las vacantes de contratación de la organización."
+            : user.role === "reclutador"
+            ? "Publica convocatorias y revisa las postulaciones recibidas."
+            : "Explora las oportunidades laborales abiertas y postula con tu perfil."
+        }
+      </p>
+    </div>
+
+    ${renderVacancyFilters()}
+
+    ${
+      canPublish
+        ? `
+          <div class="profile-section-card" style="margin-bottom: 24px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+              <div>
+                <h2 class="profile-section-title" style="display: flex; align-items: center; gap: 8px;">
+                  ${plusIcon}
+                  <span>Publicar nueva vacante</span>
+                </h2>
+                <p class="profile-section-sub">Añade los detalles para abrir una nueva convocatoria en la plataforma.</p>
+              </div>
+            </div>
+
+            <form id="vacancy-form" onsubmit="publishVacancy(event)">
+              <div class="profile-form-grid">
+                <div>
+                  <label class="filter-field-label" for="vacancy-title">Título del puesto</label>
+                  <input class="filter-input" id="vacancy-title" name="title" required maxlength="100" placeholder="Ej. Senior Frontend Architect" />
+                </div>
+                <div>
+                  <label class="filter-field-label" for="vacancy-type">Modalidad / Tipo</label>
+                  <input class="filter-input" id="vacancy-type" name="type" required maxlength="60" placeholder="Ej. Tiempo Completo, Remoto" />
+                </div>
+                <div>
+                  <label class="filter-field-label" for="vacancy-location">Ubicación</label>
+                  <input class="filter-input" id="vacancy-location" name="location" maxlength="100" placeholder="Ej. Ciudad de México o Remoto" />
+                </div>
+                ${
+                  user.role === "administrador"
+                    ? `
+                      <div>
+                        <label class="filter-field-label" for="vacancy-recruiter">Reclutador responsable</label>
+                        <select class="filter-input" id="vacancy-recruiter" name="recruiterEmail" required>
+                          <option value="">Selecciona un reclutador</option>
+                          ${recruiters.map((r) => `<option value="${escapeHtml(r.email)}">${escapeHtml(r.name)} (${escapeHtml(r.email)})</option>`).join("")}
+                        </select>
+                      </div>
+                    `
+                    : ""
+                }
+              </div>
+
+              <div style="margin-bottom: 16px;">
+                <label class="filter-field-label" for="vacancy-description">Descripción del rol y requisitos</label>
+                <textarea class="filter-input" id="vacancy-description" name="description" required rows="4" maxlength="3000" placeholder="Describe responsabilidades clave, habilidades técnicas, stack y beneficios..."></textarea>
+              </div>
+
+              <div id="page-message" class="notice-box" role="status"></div>
+
+              <div style="display: flex; justify-content: flex-end;">
+                <button class="rp-btn rp-btn--primary" type="submit">
+                  <span>Publicar vacante</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        `
+        : ""
+    }
+
+    <div class="dash-section-header" style="margin-top: 10px;">
+      <h2 class="dash-section-title">Oportunidades Publicadas</h2>
+    </div>
+
+    ${vacancyList}
+  `;
 }
 
 function renderVacancy(vacancy) {
   const canApply = user.role === "candidato";
-  const applications = Array.isArray(vacancy.applications)
-    ? vacancy.applications
-    : [];
-  const applied = applications.some(
-    (application) => application.email === user.email,
-  );
+  const applications = Array.isArray(vacancy.applications) ? vacancy.applications : [];
+  const applied = applications.some((application) => application.email === user.email);
   const canManage = vacancy.canManage === true;
-  const canReviewApplications =
-    canManage || (user.role === "reclutador" && applications.length > 0);
+  const canReviewApplications = canManage || (user.role === "reclutador" && applications.length > 0);
   const isClosed = vacancy.status === "closed";
 
-  return `<article class="vacancy-card"><div class="vacancy-heading"><div><span class="vacancy-type">${escapeHtml(vacancy.type)}</span><h2>${escapeHtml(vacancy.title)}</h2></div><div class="vacancy-meta">${isClosed ? '<span class="vacancy-status is-closed">Cerrada</span>' : '<span class="vacancy-status">Activa</span>'}${vacancy.location ? `<span class="vacancy-location">${escapeHtml(vacancy.location)}</span>` : ""}</div></div><p class="vacancy-description">${escapeHtml(vacancy.description).replace(/\n/g, "<br>")}</p><div class="vacancy-footer"><span>Publicada por ${escapeHtml(vacancy.recruiterName || "Administrador")}</span>${
-    canApply && !isClosed
-      ? applied
-        ? `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><span class="application-status">Ya te postulaste</span><button type="button" class="kanban-action-btn" style="background: rgba(99, 102, 241, 0.1); color: #4f46e5; border-color: #c7d2fe;" onclick="openCandidateAiFit('${encodeURIComponent(vacancy.id)}')">Análisis de Idoneidad IA</button></div>`
-        : `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><button class="primary small" onclick="applyToVacancy('${encodeURIComponent(vacancy.id)}')">Postularme</button><button type="button" class="kanban-action-btn" style="background: rgba(99, 102, 241, 0.1); color: #4f46e5; border-color: #c7d2fe;" onclick="openCandidateAiFit('${encodeURIComponent(vacancy.id)}')">Análisis de Idoneidad IA</button></div>`
-      : canReviewApplications
-        ? `<div class="vacancy-actions">
-            ${canManage ? `<button class="secondary small" onclick="openEditVacancyDialog('${encodeURIComponent(vacancy.id)}')">Editar</button>` : ""}
-            <button class="kanban-action-btn primary-btn" onclick="goToPipelineForVacancy('${encodeURIComponent(vacancy.id)}')">Ver en Pipeline</button>
-            ${user.role === "administrador" ? `<button class="secondary small danger-button" onclick="deleteVacancy('${encodeURIComponent(vacancy.id)}', '${escapeHtml(vacancy.title)}')">Eliminar</button>` : ""}
-            <details class="applicants"><summary>${applications.length} postulación${applications.length === 1 ? "" : "es"}</summary>${renderApplicants(applications)}</details>
-          </div>`
-        : canApply && isClosed
-          ? '<span class="application-status is-muted">Convocatoria finalizada</span>'
-        : ""
-  }</div></article>`;
+  const mapPinIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("map-pin", "rp-icon-sm") : "";
+  const usersIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("users", "rp-icon-sm") : "";
+
+  return `
+    <article class="vacancy-card-v2" id="vac-${escapeHtml(vacancy.id)}">
+      <div class="vacancy-card-header-v2">
+        <div class="vacancy-title-area">
+          <div class="vacancy-badges-row">
+            <span class="rp-badge rp-badge--primary">${escapeHtml(vacancy.type)}</span>
+            ${isClosed ? '<span class="rp-badge rp-badge--danger">Cerrada</span>' : '<span class="rp-badge rp-badge--success">Activa</span>'}
+            ${vacancy.location ? `<span class="rp-badge" style="gap: 4px;">${mapPinIcon} ${escapeHtml(vacancy.location)}</span>` : ""}
+          </div>
+          <h2 class="vacancy-card-title">${escapeHtml(vacancy.title)}</h2>
+        </div>
+
+        ${
+          canReviewApplications
+            ? `
+              <div class="vacancy-actions-group">
+                <button
+                  type="button"
+                  class="rp-btn rp-btn--secondary rp-btn--sm"
+                  onclick="goToPipelineForVacancy('${encodeURIComponent(vacancy.id)}')"
+                  title="Ver candidatos en Kanban"
+                >
+                  ${usersIcon}
+                  <span>Pipeline (${applications.length})</span>
+                </button>
+                ${
+                  canManage
+                    ? `<button type="button" class="rp-btn rp-btn--ghost rp-btn--sm" onclick="openEditVacancyDialog('${encodeURIComponent(vacancy.id)}')">Editar</button>`
+                    : ""
+                }
+                ${
+                  user.role === "administrador"
+                    ? `<button type="button" class="rp-btn rp-btn--ghost rp-btn--sm" style="color: var(--rp-danger);" onclick="deleteVacancy('${encodeURIComponent(vacancy.id)}', '${escapeHtml(vacancy.title)}')">Eliminar</button>`
+                    : ""
+                }
+              </div>
+            `
+            : ""
+        }
+      </div>
+
+      <p class="vacancy-card-desc">
+        ${escapeHtml(vacancy.description).replace(/\n/g, "<br>")}
+      </p>
+
+      <div class="vacancy-card-footer-v2">
+        <div class="vacancy-publisher-info">
+          <span>Publicada por: <b>${escapeHtml(vacancy.recruiterName || "Administrador")}</b></span>
+          ${vacancy.createdAt ? `<span>· ${new Date(vacancy.createdAt).toLocaleDateString("es")}</span>` : ""}
+        </div>
+
+        <div class="vacancy-actions-group">
+          ${
+            canApply && !isClosed
+              ? applied
+                ? `
+                  <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    <span class="rp-badge rp-badge--success">Ya te postulaste</span>
+                    <button type="button" class="rp-btn rp-btn--secondary rp-btn--sm" onclick="openCandidateAiFit('${encodeURIComponent(vacancy.id)}')">
+                      Análisis de Idoneidad IA
+                    </button>
+                  </div>
+                `
+                : `
+                  <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    <button type="button" class="rp-btn rp-btn--primary rp-btn--sm" onclick="applyToVacancy('${encodeURIComponent(vacancy.id)}')">
+                      Postularme
+                    </button>
+                    <button type="button" class="rp-btn rp-btn--secondary rp-btn--sm" onclick="openCandidateAiFit('${encodeURIComponent(vacancy.id)}')">
+                      Análisis de Idoneidad IA
+                    </button>
+                  </div>
+                `
+              : canApply && isClosed
+              ? '<span class="rp-badge" style="opacity: 0.7;">Convocatoria finalizada</span>'
+              : ""
+          }
+        </div>
+      </div>
+    </article>
+  `;
 }
+
+function renderDocumentList(documents) {
+  if (!documents.length) {
+    return '<p class="empty-state" style="margin: 4px 0;">No hay documentos registrados.</p>';
+  }
+
+  const fileIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("file-text", "rp-icon-sm") : "";
+
+  return `
+    <ul class="document-list" style="display: flex; flex-direction: column; gap: 8px; list-style: none; padding: 0; margin: 0;">
+      ${documents
+        .map((document) => {
+          const name = escapeHtml(documentName(document));
+          const savedFile = typeof document === "object" && document.id;
+
+          return `
+            <li style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--rp-surface-2); border: 1px solid var(--rp-border); border-radius: var(--rp-radius-md); gap: 10px;">
+              <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                ${fileIcon}
+                <span class="document-name" style="font-size: 13px; font-weight: 600; color: var(--rp-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  ${name}
+                </span>
+              </div>
+              ${
+                savedFile
+                  ? `<button type="button" class="rp-btn rp-btn--secondary rp-btn--sm" onclick="viewDocument('${encodeURIComponent(document.id)}')">Ver archivo</button>`
+                  : '<span class="document-legacy" style="font-size: 11px; color: var(--rp-text-muted);">Sin archivo físico</span>'
+              }
+            </li>
+          `;
+        })
+        .join("")}
+    </ul>
+  `;
+}
+
 
 function renderApplicants(applications) {
   if (!applications.length) {
@@ -1243,8 +2566,15 @@ async function logout() {
 
 
 /* ==========================================================================
-   KANBAN PIPELINE FUNCTIONS
+   FASE 4: KANBAN PIPELINE FUNCTIONS (SortableJS, Cards v2, Undo, Confetti)
    ========================================================================== */
+
+let showArchivedRechazadas = false;
+
+function toggleArchivedRechazadas() {
+  showArchivedRechazadas = !showArchivedRechazadas;
+  refreshPipelineBoard();
+}
 
 function renderPipelineView() {
   const vacancyOptions = vacanciesCache
@@ -1254,80 +2584,161 @@ function renderPipelineView() {
     )
     .join("");
 
+  const searchIcon = typeof window.ui !== "undefined" && window.ui.icon
+    ? window.ui.icon("search", "rp-icon-sm")
+    : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>';
+
+  const chevronLeft = typeof window.ui !== "undefined" && window.ui.icon
+    ? window.ui.icon("chevron-left", "rp-icon-sm")
+    : "‹";
+
+  const chevronRight = typeof window.ui !== "undefined" && window.ui.icon
+    ? window.ui.icon("chevron-right", "rp-icon-sm")
+    : "›";
+
+  const stages = [
+    { key: "recibida", title: "Recibidas" },
+    { key: "en_revision", title: "En revisión" },
+    { key: "entrevista", title: "Entrevista" },
+    { key: "oferta", title: "Oferta" },
+    { key: "rechazada", title: "Rechazada" },
+  ];
+
+  const mobileTabsHtml = `
+    <div class="kanban-mobile-tabs" role="tablist" aria-label="Etapas del proceso">
+      ${stages
+        .map(
+          (st) => `
+        <button
+          type="button"
+          role="tab"
+          aria-selected="${mobileActiveStageKey === st.key ? "true" : "false"}"
+          class="kanban-mobile-tab-btn ${mobileActiveStageKey === st.key ? "active" : ""}"
+          onclick="setMobileActiveStage('${st.key}')"
+          id="tab-${st.key}"
+        >
+          <span>${escapeHtml(st.title)}</span>
+        </button>
+      `
+        )
+        .join("")}
+    </div>
+  `;
+
+  setTimeout(() => {
+    initKanbanSortables();
+    if (typeof window.ui !== "undefined" && window.ui.refreshIcons) {
+      window.ui.refreshIcons();
+    }
+  }, 20);
+
   return `
     <div class="head">
-      <small>PROCESO DE CONTRATACIÓN</small>
-      <h1>Pipeline Interactivo (Kanban)</h1>
-      <p>Arrastra y suelta a los candidatos entre las columnas para avanzar o cambiar su etapa en tiempo real.</p>
+      <small>PROCESO DE SELECCIÓN</small>
+      <h1>Pipeline Interactivo</h1>
+      <p>Arrastra candidatos entre columnas para sincronizar su avance, notas y estado en tiempo real.</p>
     </div>
 
     <div class="kanban-wrapper">
-      <div class="kanban-controls">
-        <div class="kanban-filters">
-          <label style="font-weight: 600; font-size: 13px; color: var(--text);">
-            Vacante:
-            <select id="pipeline-vacancy-select" onchange="changePipelineVacancy(this.value)">
-              <option value="">Todas las vacantes</option>
-              ${vacancyOptions}
-            </select>
-          </label>
+      <div class="kanban-controls-bar">
+        <div class="kanban-controls-left">
+          <div class="kanban-search-box">
+            ${searchIcon}
+            <input
+              type="text"
+              class="kanban-search-input"
+              id="pipeline-search"
+              placeholder="Buscar por nombre, correo, vacante o ciudad..."
+              value="${escapeHtml(pipelineSearchQuery)}"
+              oninput="filterPipelineCards(this.value)"
+              aria-label="Buscar candidatos en el tablero"
+            />
+          </div>
 
-          <input
-            type="text"
-            id="pipeline-search"
-            placeholder="Buscar candidato por nombre, correo o ciudad..."
-            value="${escapeHtml(pipelineSearchQuery)}"
-            oninput="filterPipelineCards(this.value)"
-          />
+          <select
+            id="pipeline-vacancy-select"
+            class="kanban-vacancy-select"
+            onchange="changePipelineVacancy(this.value)"
+            aria-label="Filtrar por vacante"
+          >
+            <option value="">Todas las vacantes</option>
+            ${vacancyOptions}
+          </select>
         </div>
 
-        <div class="kanban-stats-pill" id="pipeline-total-stats">
-          Total candidatos: <b>${pipelineApplicationsCache.length}</b>
+        <div class="kanban-controls-right">
+          <div class="kanban-stats-badge" id="pipeline-total-stats">
+            <span>Candidatos:</span>
+            <b id="pipeline-stats-num">${pipelineApplicationsCache.length}</b>
+          </div>
+
+          <button
+            type="button"
+            class="kanban-scroll-btn"
+            onclick="scrollKanban('left')"
+            title="Desplazar hacia la izquierda"
+            aria-label="Desplazar tablero a la izquierda"
+          >
+            ${chevronLeft}
+          </button>
+          <button
+            type="button"
+            class="kanban-scroll-btn"
+            onclick="scrollKanban('right')"
+            title="Desplazar hacia la derecha"
+            aria-label="Desplazar tablero a la derecha"
+          >
+            ${chevronRight}
+          </button>
         </div>
       </div>
 
-      <div id="kanban-board-container">
-        ${renderPipelineBoardOnly()}
+      ${mobileTabsHtml}
+
+      <div class="kanban-board-container-outer">
+        <div id="kanban-board-container">
+          ${renderPipelineBoardOnly()}
+        </div>
       </div>
     </div>
   `;
 }
 
-let showArchivedRechazadas = false;
-
-function toggleArchivedRechazadas() {
-  showArchivedRechazadas = !showArchivedRechazadas;
-  const container = document.getElementById("kanban-board-container");
-  if (container) container.innerHTML = renderPipelineBoardOnly();
-}
-
 function renderPipelineBoardOnly() {
   const stages = [
-    { key: "recibida", title: "Recibidas", icon: "" },
-    { key: "en_revision", title: "En revisión", icon: "" },
-    { key: "entrevista", title: "Entrevista", icon: "" },
-    { key: "oferta", title: "Oferta", icon: "" },
-    { key: "rechazada", title: "Rechazada", icon: "" },
+    { key: "recibida", title: "Recibidas" },
+    { key: "en_revision", title: "En revisión" },
+    { key: "entrevista", title: "Entrevista" },
+    { key: "oferta", title: "Oferta" },
+    { key: "rechazada", title: "Rechazada" },
   ];
 
   const q = pipelineSearchQuery.trim().toLowerCase();
   const filteredApps = q
     ? pipelineApplicationsCache.filter(
         (app) =>
-          app.name.toLowerCase().includes(q) ||
-          app.email.toLowerCase().includes(q) ||
-          (app.location && app.location.toLowerCase().includes(q))
+          (app.name && app.name.toLowerCase().includes(q)) ||
+          (app.email && app.email.toLowerCase().includes(q)) ||
+          (app.location && app.location.toLowerCase().includes(q)) ||
+          (app.vacancyTitle && app.vacancyTitle.toLowerCase().includes(q))
       )
     : pipelineApplicationsCache;
 
+  setTimeout(() => {
+    initKanbanSortables();
+    if (typeof window.ui !== "undefined" && window.ui.refreshIcons) {
+      window.ui.refreshIcons();
+    }
+  }, 0);
+
   return `
-    <div class="kanban-board">
-      ${stages.map((stage) => renderKanbanColumn(stage.key, stage.title, stage.icon, filteredApps)).join("")}
+    <div class="kanban-board" id="kanban-main-board">
+      ${stages.map((stage) => renderKanbanColumn(stage.key, stage.title, filteredApps)).join("")}
     </div>
   `;
 }
 
-function renderKanbanColumn(stageKey, stageTitle, stageIcon, applications) {
+function renderKanbanColumn(stageKey, stageTitle, applications) {
   let columnApps = applications.filter((app) => app.status === stageKey);
   let archivedCount = 0;
 
@@ -1364,36 +2775,46 @@ function renderKanbanColumn(stageKey, stageTitle, stageIcon, applications) {
     columnApps = showArchivedRechazadas ? [...activeApps, ...archivedApps] : activeApps;
   }
 
+  const isMobileActive = mobileActiveStageKey === stageKey;
+
   return `
     <div
-      class="kanban-column stage-${stageKey}"
+      class="kanban-column stage-${stageKey} ${isMobileActive ? "is-mobile-active" : ""}"
       data-stage="${stageKey}"
+      id="kcol-${stageKey}"
       ondragover="kanbanDragOver(event)"
       ondragleave="kanbanDragLeave(event)"
       ondrop="kanbanDrop(event, '${stageKey}')"
     >
       <div class="kanban-col-header">
-        <h3 class="kanban-col-title">
-          <span>${stageIcon}</span>
-          <span>${stageTitle}</span>
-        </h3>
-        <span class="kanban-count ${columnApps.length > 0 ? "count-active" : "count-zero"}">${columnApps.length}${archivedCount > 0 && !showArchivedRechazadas ? ` (+${archivedCount})` : ""}</span>
+        <div class="kanban-col-title-wrap">
+          <span class="kanban-stage-dot"></span>
+          <h3 class="kanban-col-title">${escapeHtml(stageTitle)}</h3>
+        </div>
+        <span class="kanban-count-pill ${columnApps.length > 0 ? "is-active" : "is-zero"}">
+          ${columnApps.length}${archivedCount > 0 && !showArchivedRechazadas ? ` (+${archivedCount})` : ""}
+        </span>
       </div>
 
-      <div class="kanban-cards-list" id="col-list-${stageKey}">
+      <div class="kanban-cards-list" id="col-list-${stageKey}" data-stage="${stageKey}">
         ${
           columnApps.length
-            ? columnApps.map(renderKanbanCard).join("")
+            ? columnApps.map(renderCandidateCard).join("")
             : renderEmptyColumnState(stageKey)
         }
         ${
           stageKey === "rechazada" && archivedCount > 0
             ? `
-              <div style="margin-top: 12px; padding: 10px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 10px; text-align: center;">
-                <small style="display: block; color: #64748b; font-size: 11px; margin-bottom: 6px;">
-                  ${showArchivedRechazadas ? `Mostrando ${archivedCount} archivada(s) (>30m)` : `${archivedCount} postulacion(es) archivada(s) (>30m)`}
+              <div style="margin-top: 12px; padding: 10px; background: var(--rp-surface); border: 1px dashed var(--rp-border); border-radius: var(--rp-radius-md); text-align: center;">
+                <small style="display: block; color: var(--rp-text-muted); font-size: 11px; margin-bottom: 6px;">
+                  ${showArchivedRechazadas ? `Mostrando ${archivedCount} archivada(s) (>30m)` : `${archivedCount} candidatura(s) archivada(s) (>30m)`}
                 </small>
-                <button type="button" class="kanban-action-btn" style="font-size: 11px; padding: 4px 10px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer;" onclick="event.stopPropagation(); toggleArchivedRechazadas()">
+                <button
+                  type="button"
+                  class="rp-btn rp-btn--secondary rp-btn--sm"
+                  style="font-size: 11px; padding: 4px 10px;"
+                  onclick="event.stopPropagation(); toggleArchivedRechazadas()"
+                >
                   ${showArchivedRechazadas ? "Ocultar archivadas" : "Ver archivadas"}
                 </button>
               </div>
@@ -1406,70 +2827,127 @@ function renderKanbanColumn(stageKey, stageTitle, stageIcon, applications) {
 }
 
 function renderCandidateCard(app) {
+  const avatar = typeof window.ui !== "undefined" && window.ui.avatar
+    ? window.ui.avatar(app.name, 36)
+    : getDynamicAvatar(app.name, 36);
+
+  const briefcaseIcon = typeof window.ui !== "undefined" && window.ui.icon
+    ? window.ui.icon("briefcase", "rp-icon-sm")
+    : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>';
+
+  const mailIcon = typeof window.ui !== "undefined" && window.ui.icon
+    ? window.ui.icon("mail", "rp-icon-sm")
+    : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>';
+
+  const phoneIcon = typeof window.ui !== "undefined" && window.ui.icon
+    ? window.ui.icon("phone", "rp-icon-sm")
+    : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
+
+  const mapPinIcon = typeof window.ui !== "undefined" && window.ui.icon
+    ? window.ui.icon("map-pin", "rp-icon-sm")
+    : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>';
+
+  const clockIcon = typeof window.ui !== "undefined" && window.ui.icon
+    ? window.ui.icon("clock", "rp-icon-sm")
+    : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+
+  const moreIcon = typeof window.ui !== "undefined" && window.ui.icon
+    ? window.ui.icon("more-horizontal", "rp-icon-sm")
+    : "⋯";
+
+  const fileIcon = typeof window.ui !== "undefined" && window.ui.icon
+    ? window.ui.icon("file-text", "rp-icon-sm")
+    : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>';
+
+  // AI score visual
+  let aiVisual = "";
+  if (app.aiScore) {
+    aiVisual = typeof window.ui !== "undefined" && window.ui.progressRing
+      ? window.ui.progressRing(app.aiScore, 34, 3.5)
+      : `<span class="kanban-ai-pill score-${app.aiScore >= 80 ? "high" : app.aiScore >= 60 ? "med" : "low"}">★ ${app.aiScore}%</span>`;
+  } else {
+    aiVisual = `
+      <button
+        type="button"
+        class="rp-btn rp-btn--ghost rp-btn--sm"
+        style="font-size: 11px; padding: 2px 7px; color: var(--rp-primary); background: var(--rp-primary-soft);"
+        onclick="event.stopPropagation(); triggerDirectAi('${escapeHtml(app.id)}')"
+        title="Analizar afinidad técnica con IA"
+      >
+        Analizar IA
+      </button>
+    `;
+  }
+
   const resumeBtn = app.resumeId
-    ? `<button class="kanban-action-btn primary-btn" type="button" onclick="event.stopPropagation(); viewDocument('${encodeURIComponent(app.resumeId)}', '${encodeURIComponent(app.id)}')">Ver CV</button>`
+    ? `
+      <button
+        class="rp-btn rp-btn--secondary rp-btn--sm"
+        type="button"
+        onclick="event.stopPropagation(); viewDocument('${encodeURIComponent(app.resumeId)}', '${encodeURIComponent(app.id)}')"
+        title="Ver currículum del candidato"
+        style="padding: 4px 9px; font-size: 11.5px;"
+      >
+        ${fileIcon}
+        <span>CV</span>
+      </button>
+    `
     : "";
 
-  const avatar = getDynamicAvatar(app.name, 34);
+  const isGrabbed = keyboardGrabbedCardId === app.id;
 
   return `
     <div
-      class="kanban-card"
-      draggable="true"
+      class="candidate-card-v2 ${isGrabbed ? "is-keyboard-grabbed" : ""}"
       id="kcard-${escapeHtml(app.id)}"
+      data-id="${escapeHtml(app.id)}"
+      tabindex="0"
+      role="button"
+      aria-label="Candidato ${escapeHtml(app.name)}, etapa ${statusLabel(app.status)}"
+      draggable="true"
       ondragstart="kanbanDragStart(event, '${escapeHtml(app.id)}')"
       ondragend="kanbanDragEnd(event, '${escapeHtml(app.id)}')"
       onclick="openApplicationDetailDialog('${escapeHtml(app.id)}')"
+      onkeydown="handleCardKeyNavigation(event, '${escapeHtml(app.id)}')"
     >
-      <div class="kanban-card-top">
-        <div class="kanban-card-avatar-wrap">
+      <div class="candidate-card-header">
+        <div class="candidate-card-profile">
           ${avatar}
           <div style="min-width: 0; flex: 1;">
-            <h4 class="kanban-card-name">${escapeHtml(app.name)}</h4>
+            <h4 class="candidate-card-name" title="${escapeHtml(app.name)}">${escapeHtml(app.name)}</h4>
           </div>
         </div>
-        ${
-          app.aiScore
-            ? `<span class="kanban-ai-pill ${app.aiScore >= 80 ? "score-high" : app.aiScore >= 60 ? "score-med" : "score-low"}">★ ${app.aiScore}%</span>`
-            : `<button class="kanban-action-btn" style="font-size: 11px; padding: 2px 7px; color: #2563EB; background: #EFF6FF;" type="button" onclick="event.stopPropagation(); triggerDirectAi('${escapeHtml(app.id)}')">Analizar IA</button>`
-        }
+        <div class="candidate-card-ai-wrap" onclick="event.stopPropagation()">
+          ${aiVisual}
+        </div>
       </div>
 
-      <div class="kanban-card-vacancy" title="${escapeHtml(app.vacancyTitle)}">
-        <svg style="width: 12px; height: 12px; color: #64748B; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.25v4.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25v-4.25m16.5 0a2.25 2.25 0 00-2.25-2.25H16.5m3.75 2.25H3.75m16.5 0v-4.25a2.25 2.25 0 00-2.25-2.25H16.5m-1.5-3a2.25 2.25 0 00-2.25-2.25h-1.5a2.25 2.25 0 00-2.25 2.25m3 0H9m6 0a2.25 2.25 0 012.25 2.25v1.5H6.75v-1.5A2.25 2.25 0 019 4.5h6z" />
-        </svg>
-        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(app.vacancyTitle)}</span>
+      <div class="candidate-card-vacancy-chip" title="Vacante: ${escapeHtml(app.vacancyTitle)}">
+        ${briefcaseIcon}
+        <span>${escapeHtml(app.vacancyTitle)}</span>
       </div>
 
-      <div class="kanban-card-meta">
+      <div class="candidate-card-metadata">
         ${
           app.email
-            ? `<div class="kanban-meta-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-                </svg>
+            ? `<div class="candidate-meta-row" title="${escapeHtml(app.email)}">
+                ${mailIcon}
                 <span>${escapeHtml(app.email)}</span>
               </div>`
             : ""
         }
         ${
           app.phone
-            ? `<div class="kanban-meta-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
-                </svg>
+            ? `<div class="candidate-meta-row" title="${escapeHtml(app.phone)}">
+                ${phoneIcon}
                 <span>${escapeHtml(app.phone)}</span>
               </div>`
             : ""
         }
         ${
           app.location
-            ? `<div class="kanban-meta-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-                </svg>
+            ? `<div class="candidate-meta-row" title="${escapeHtml(app.location)}">
+                ${mapPinIcon}
                 <span>${escapeHtml(app.location)}</span>
               </div>`
             : ""
@@ -1478,34 +2956,36 @@ function renderCandidateCard(app) {
 
       ${
         app.status === "rechazada" && app._minutesLeft
-          ? `<div style="margin: 6px 0 2px;"><span style="font-size: 11px; color: #b91c1c; background: #fee2e2; border: 1px solid #fecaca; padding: 2px 7px; border-radius: 6px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">⏱ Se oculta en ${app._minutesLeft} min</span></div>`
+          ? `<div class="rejected-countdown-badge" title="Esta candidatura desaparecerá automáticamente del tablero">
+              ${clockIcon}
+              <span>Se oculta en ${app._minutesLeft} min</span>
+            </div>`
           : ""
       }
 
-      <div class="kanban-card-actions" onclick="event.stopPropagation()">
-        ${resumeBtn}
+      <div class="candidate-card-footer" onclick="event.stopPropagation()">
+        <div class="candidate-card-footer-left">
+          ${resumeBtn}
+          <button
+            type="button"
+            class="rp-btn rp-btn--ghost rp-btn--sm"
+            style="padding: 4px 8px; font-size: 11.5px; color: var(--rp-text-2);"
+            onclick="openApplicationDetailDialog('${escapeHtml(app.id)}')"
+            title="Ver notas y detalles"
+          >
+            Seguimiento
+          </button>
+        </div>
 
         <button
-          class="kanban-action-btn"
           type="button"
-          onclick="openApplicationDetailDialog('${escapeHtml(app.id)}')"
-          title="Ver notas y detalles"
+          class="rp-btn rp-btn--ghost rp-btn--icon rp-btn--sm"
+          aria-label="Más acciones para ${escapeHtml(app.name)}"
+          onclick="openCardActionMenu(event, '${escapeHtml(app.id)}')"
+          title="Más opciones"
         >
-          Seguimiento
+          ${moreIcon}
         </button>
-
-        <select
-          class="kanban-card-stage-select"
-          title="Cambio rápido de etapa"
-          onchange="moveApplicationStageDirect('${escapeHtml(app.id)}', this.value)"
-        >
-          ${["recibida", "en_revision", "entrevista", "oferta", "rechazada"]
-            .map(
-              (stage) =>
-                `<option value="${stage}" ${app.status === stage ? "selected" : ""}>${statusLabel(stage)}</option>`
-            )
-            .join("")}
-        </select>
       </div>
     </div>
   `;
@@ -1513,18 +2993,202 @@ function renderCandidateCard(app) {
 
 const renderKanbanCard = renderCandidateCard;
 
+function openCardActionMenu(e, id) {
+  e.stopPropagation();
+  const app = pipelineApplicationsCache.find((item) => item.id === id);
+  if (!app || typeof window.ui === "undefined" || !window.ui.menu) return;
+
+  const stages = [
+    { key: "recibida", label: "Recibidas" },
+    { key: "en_revision", label: "En revisión" },
+    { key: "entrevista", label: "Entrevista" },
+    { key: "oferta", label: "Oferta 🎉" },
+    { key: "rechazada", label: "Rechazada" },
+  ];
+
+  const items = [
+    {
+      label: "Seguimiento y notas",
+      icon: "file-text",
+      onSelect: () => openApplicationDetailDialog(app.id),
+    },
+    { heading: "Mover a etapa" },
+    ...stages
+      .filter((s) => s.key !== app.status)
+      .map((s) => ({
+        label: s.label,
+        icon: s.key === "rechazada" ? "x-circle" : s.key === "oferta" ? "sparkles" : "arrow-right",
+        onSelect: () => applyApplicationStageChangeWithUndo(app, s.key),
+      })),
+    { separator: true },
+    {
+      label: "Eliminar postulación",
+      icon: "trash-2",
+      danger: true,
+      onSelect: async () => {
+        const ok = await window.ui.confirm({
+          title: "¿Eliminar postulación?",
+          text: `¿Estás seguro de eliminar permanentemente a "${app.name}"? Esta acción borrará sus notas y registros asociados.`,
+          confirmLabel: "Eliminar",
+          danger: true,
+        });
+        if (ok) {
+          try {
+            await apiRequest(`/api/applications/${encodeURIComponent(app.id)}`, { method: "DELETE" });
+            pipelineApplicationsCache = (pipelineApplicationsCache || []).filter((item) => item.id !== app.id);
+            refreshPipelineBoard();
+            updatePipelineStatsCount();
+            window.ui.toast("Postulación eliminada con éxito.", { type: "info" });
+          } catch (err) {
+            window.ui.toast(err.message || "Error al eliminar postulación", { type: "error" });
+          }
+        }
+      },
+    },
+  ];
+
+  window.ui.menu(e.currentTarget, items);
+}
+
+function initKanbanSortables() {
+  if (typeof Sortable === "undefined") return;
+
+  sortableInstances.forEach((inst) => {
+    try {
+      inst.destroy();
+    } catch (_) {}
+  });
+  sortableInstances = [];
+
+  const stageLists = document.querySelectorAll(".kanban-cards-list");
+  stageLists.forEach((listEl) => {
+    const sortable = new Sortable(listEl, {
+      group: "recruitpro-kanban",
+      animation: 200,
+      ghostClass: "sortable-ghost",
+      chosenClass: "sortable-chosen",
+      delay: 0,
+      touchStartThreshold: 4,
+      filter: ".kanban-empty-compact, button, a, select, input",
+      preventOnFilter: false,
+      onEnd: function (evt) {
+        const toList = evt.to;
+        const fromList = evt.from;
+        if (!toList || toList === fromList) return;
+
+        const targetStage = toList.dataset.stage;
+        const cardEl = evt.item;
+        const appId = cardEl.dataset.id;
+        if (!appId || !targetStage) return;
+
+        const app = pipelineApplicationsCache.find((a) => a.id === appId);
+        if (!app) return;
+
+        applyApplicationStageChangeWithUndo(app, targetStage);
+      },
+    });
+    sortableInstances.push(sortable);
+  });
+}
+
+function handleCardKeyNavigation(e, appId) {
+  const app = pipelineApplicationsCache.find((a) => a.id === appId);
+  if (!app) return;
+
+  const stagesOrder = ["recibida", "en_revision", "entrevista", "oferta", "rechazada"];
+  const currentIdx = stagesOrder.indexOf(app.status);
+
+  if (e.key === " " || e.key === "Enter") {
+    e.preventDefault();
+    if (keyboardGrabbedCardId === appId) {
+      keyboardGrabbedCardId = null;
+      refreshPipelineBoard();
+      if (typeof window.ui !== "undefined" && window.ui.toast) {
+        window.ui.toast(`Tarjeta fijada en ${statusLabel(app.status)}`, { type: "info", duration: 2000 });
+      }
+    } else {
+      keyboardGrabbedCardId = appId;
+      refreshPipelineBoard();
+      setTimeout(() => {
+        const cardEl = document.getElementById(`kcard-${appId}`);
+        if (cardEl) cardEl.focus();
+      }, 20);
+      if (typeof window.ui !== "undefined" && window.ui.toast) {
+        window.ui.toast(`Tarjeta seleccionada. Usa ← / → para moverla de etapa o Espacio para soltarla`, { type: "info", duration: 3500 });
+      }
+    }
+  } else if (e.key === "ArrowRight" && keyboardGrabbedCardId === appId) {
+    e.preventDefault();
+    if (currentIdx < stagesOrder.length - 1) {
+      const nextStage = stagesOrder[currentIdx + 1];
+      applyApplicationStageChangeWithUndo(app, nextStage);
+      setTimeout(() => {
+        const cardEl = document.getElementById(`kcard-${appId}`);
+        if (cardEl) cardEl.focus();
+      }, 30);
+    }
+  } else if (e.key === "ArrowLeft" && keyboardGrabbedCardId === appId) {
+    e.preventDefault();
+    if (currentIdx > 0) {
+      const prevStage = stagesOrder[currentIdx - 1];
+      applyApplicationStageChangeWithUndo(app, prevStage);
+      setTimeout(() => {
+        const cardEl = document.getElementById(`kcard-${appId}`);
+        if (cardEl) cardEl.focus();
+      }, 30);
+    }
+  } else if (e.key === "Escape" && keyboardGrabbedCardId === appId) {
+    keyboardGrabbedCardId = null;
+    refreshPipelineBoard();
+  }
+}
+
+function setMobileActiveStage(stageKey) {
+  mobileActiveStageKey = stageKey;
+  document.querySelectorAll(".kanban-mobile-tab-btn").forEach((btn) => {
+    const isThis = btn.id === `tab-${stageKey}`;
+    btn.classList.toggle("active", isThis);
+    btn.setAttribute("aria-selected", isThis ? "true" : "false");
+  });
+  document.querySelectorAll(".kanban-column").forEach((col) => {
+    col.classList.toggle("is-mobile-active", col.dataset.stage === stageKey);
+  });
+}
+
+function scrollKanban(direction) {
+  const board = document.getElementById("kanban-main-board");
+  if (!board) return;
+  const amount = direction === "left" ? -320 : 320;
+  board.scrollBy({ left: amount, behavior: "smooth" });
+}
+
+function refreshPipelineBoard() {
+  const container = document.getElementById("kanban-board-container");
+  if (container) {
+    container.innerHTML = renderPipelineBoardOnly();
+  }
+}
+
+function updatePipelineStatsCount() {
+  const numEl = document.getElementById("pipeline-stats-num");
+  if (numEl && typeof window.ui !== "undefined" && window.ui.countUp) {
+    window.ui.countUp(numEl, pipelineApplicationsCache.length);
+  } else if (numEl) {
+    numEl.textContent = pipelineApplicationsCache.length;
+  }
+}
 
 async function changePipelineVacancy(vacancyId) {
   currentPipelineVacancyId = vacancyId;
   try {
     const appsRes = await (
-      await apiRequest("/api/applications" + (currentPipelineVacancyId ? `?vacancy_id=${encodeURIComponent(currentPipelineVacancyId)}` : ""))
+      await apiRequest(
+        "/api/applications" + (currentPipelineVacancyId ? `?vacancy_id=${encodeURIComponent(currentPipelineVacancyId)}` : "")
+      )
     ).json();
     pipelineApplicationsCache = appsRes.items;
-    const stats = document.getElementById("pipeline-total-stats");
-    if (stats) stats.innerHTML = `Total candidatos: <b>${pipelineApplicationsCache.length}</b>`;
-    const container = document.getElementById("kanban-board-container");
-    if (container) container.innerHTML = renderPipelineBoardOnly();
+    updatePipelineStatsCount();
+    refreshPipelineBoard();
   } catch (err) {
     console.error("Error al filtrar vacante:", err);
   }
@@ -1532,24 +3196,23 @@ async function changePipelineVacancy(vacancyId) {
 
 function filterPipelineCards(query) {
   pipelineSearchQuery = query;
-  const container = document.getElementById("kanban-board-container");
-  if (container) container.innerHTML = renderPipelineBoardOnly();
+  refreshPipelineBoard();
 }
 
-/* Drag and Drop event handlers */
+/* Drag and Drop event handlers (HTML5 Fallback) */
 function kanbanDragStart(e, id) {
   draggedAppId = id;
   e.dataTransfer.setData("text/plain", id);
   e.dataTransfer.effectAllowed = "move";
   const card = document.getElementById(`kcard-${id}`);
   if (card) {
-    setTimeout(() => card.classList.add("is-dragging"), 0);
+    setTimeout(() => card.classList.add("sortable-chosen"), 0);
   }
 }
 
 function kanbanDragEnd(e, id) {
   const card = document.getElementById(`kcard-${id}`);
-  if (card) card.classList.remove("is-dragging");
+  if (card) card.classList.remove("sortable-chosen");
   draggedAppId = null;
 }
 
@@ -1576,48 +3239,103 @@ async function kanbanDrop(e, targetStage) {
   if (!id) return;
 
   const app = pipelineApplicationsCache.find((item) => item.id === id);
-  if (!app) return;
+  if (!app || app.status === targetStage) return;
 
-  if (app.status === targetStage) return;
-
-  await applyApplicationStageChange(app, targetStage);
+  await applyApplicationStageChangeWithUndo(app, targetStage);
 }
 
 async function moveApplicationStageDirect(id, targetStage) {
   const app = pipelineApplicationsCache.find((item) => item.id === id);
   if (!app || app.status === targetStage) return;
-  await applyApplicationStageChange(app, targetStage);
+  await applyApplicationStageChangeWithUndo(app, targetStage);
 }
 
 async function applyApplicationStageChange(app, targetStage) {
+  return applyApplicationStageChangeWithUndo(app, targetStage);
+}
+
+async function applyApplicationStageChangeWithUndo(app, targetStage) {
+  if (!app || app.status === targetStage) return;
+
   const oldStage = app.status;
   const oldRejectedAt = app.rejectedAt;
-  app.status = targetStage; // Optimistic update
+  const oldMinutesLeft = app._minutesLeft;
 
+  // Optimistic update
+  app.status = targetStage;
   if (targetStage === "rechazada") {
     app.rejectedAt = new Date().toISOString();
     app._minutesLeft = 30;
+  } else {
+    delete app._minutesLeft;
   }
 
-  const container = document.getElementById("kanban-board-container");
-  if (container) container.innerHTML = renderPipelineBoardOnly();
+  // Celebratory confetti if moved to "oferta"
+  if (targetStage === "oferta" && typeof confetti === "function") {
+    try {
+      confetti({
+        particleCount: 80,
+        spread: 70,
+        origin: { y: 0.65 },
+        colors: ["#2563EB", "#7C3AED", "#10B981", "#F59E0B"],
+      });
+    } catch (_) {}
+  }
+
+  refreshPipelineBoard();
+
+  if (typeof window.ui !== "undefined" && window.ui.announce) {
+    window.ui.announce(`${app.name} movido a la etapa ${statusLabel(targetStage)}`);
+  }
 
   try {
-    const response = await apiRequest(`/api/applications/${encodeURIComponent(app.id)}`, {
+    await apiRequest(`/api/applications/${encodeURIComponent(app.id)}`, {
       method: "PATCH",
       body: { status: targetStage },
     });
-    const result = await response.json();
-    const toastMsg = targetStage === "rechazada"
-      ? `${escapeHtml(app.name)} movido a Rechazada (se ocultará del tablero en 30 min)`
-      : `${escapeHtml(app.name)} movido a: ${statusLabel(targetStage)}`;
-    showKanbanToast(toastMsg);
+
+    const label = statusLabel(targetStage);
+    const msg = targetStage === "rechazada"
+      ? `${app.name} movido a Rechazada (se ocultará en 30 min)`
+      : `${app.name} movido a: ${label}`;
+
+    if (typeof window.ui !== "undefined" && window.ui.toast) {
+      window.ui.toast(msg, {
+        type: "success",
+        actionLabel: "Deshacer",
+        duration: 5000,
+        onAction: async () => {
+          app.status = oldStage;
+          app.rejectedAt = oldRejectedAt;
+          app._minutesLeft = oldMinutesLeft;
+          refreshPipelineBoard();
+          try {
+            await apiRequest(`/api/applications/${encodeURIComponent(app.id)}`, {
+              method: "PATCH",
+              body: { status: oldStage },
+            });
+            window.ui.toast(`Se restauró a ${app.name} en ${statusLabel(oldStage)}`, { type: "info" });
+          } catch (revertErr) {
+            window.ui.toast("Error al revertir etapa", { type: "error" });
+          }
+        },
+      });
+    } else {
+      showKanbanToast(msg);
+    }
   } catch (error) {
     console.error("Error al actualizar etapa:", error);
-    app.status = oldStage; // Revert
+    // Rollback state
+    app.status = oldStage;
     app.rejectedAt = oldRejectedAt;
-    if (container) container.innerHTML = renderPipelineBoardOnly();
-    showKanbanToast("" + (error.message || "No se pudo cambiar la etapa"), true);
+    app._minutesLeft = oldMinutesLeft;
+    refreshPipelineBoard();
+
+    if (typeof window.ui !== "undefined" && window.ui.toast) {
+      window.ui.toast(error.message || "No se pudo cambiar la etapa", { type: "error" });
+    } else {
+      showKanbanToast("" + (error.message || "No se pudo cambiar la etapa"), true);
+    }
   }
 }
 
@@ -1724,7 +3442,22 @@ async function saveApplicationDetailUpdate(e) {
 async function deleteCurrentApplication() {
   const id = document.getElementById("app-detail-id").value;
   if (!id) return;
-  if (!confirm("¿Estás seguro de que deseas eliminar permanentemente esta postulación de la plataforma?")) return;
+
+  const app = (pipelineApplicationsCache || []).find((item) => item.id === id);
+  const name = app ? app.name : "esta postulación";
+
+  let confirmed = false;
+  if (typeof window.ui !== "undefined" && window.ui.confirm) {
+    confirmed = await window.ui.confirm({
+      title: "¿Eliminar postulación?",
+      text: `¿Estás seguro de que deseas eliminar permanentemente la postulación de ${name}?`,
+      confirmLabel: "Eliminar",
+      danger: true,
+    });
+  } else {
+    confirmed = confirm(`¿Estás seguro de que deseas eliminar permanentemente la postulación de ${name}?`);
+  }
+  if (!confirmed) return;
 
   try {
     await apiRequest(`/api/applications/${encodeURIComponent(id)}`, {
@@ -1733,25 +3466,35 @@ async function deleteCurrentApplication() {
 
     pipelineApplicationsCache = (pipelineApplicationsCache || []).filter((item) => item.id !== id);
     closeApplicationDetailDialog();
-    showKanbanToast("Postulación eliminada exitosamente.");
-    const container = document.getElementById("kanban-board-container");
-    if (container) container.innerHTML = renderPipelineBoardOnly();
-    const stats = document.getElementById("pipeline-total-stats");
-    if (stats) stats.innerHTML = `Total candidatos: <b>${pipelineApplicationsCache.length}</b>`;
+    if (typeof window.ui !== "undefined" && window.ui.toast) {
+      window.ui.toast("Postulación eliminada exitosamente.", { type: "info" });
+    } else {
+      showKanbanToast("Postulación eliminada exitosamente.");
+    }
+    refreshPipelineBoard();
+    updatePipelineStatsCount();
   } catch (error) {
     console.error("Error al eliminar postulación:", error);
-    alert(error.message || "No se pudo eliminar la postulación.");
+    if (typeof window.ui !== "undefined" && window.ui.toast) {
+      window.ui.toast(error.message || "No se pudo eliminar la postulación.", { type: "error" });
+    } else {
+      alert(error.message || "No se pudo eliminar la postulación.");
+    }
   }
 }
 
 /* Toast alert notification */
 let toastTimeout = null;
 function showKanbanToast(message, isError = false) {
+  if (typeof window.ui !== "undefined" && window.ui.toast) {
+    window.ui.toast(message, { type: isError ? "error" : "success" });
+    return;
+  }
   const toast = document.getElementById("kanban-toast");
   if (!toast) return;
 
   const iconSvg = isError
-    ? `<svg style="width: 18px; height: 18px; color: #fca5a5; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>`
+    ? `<svg style="width: 18px; height: 18px; color: #fca5a5; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`
     : `<svg style="width: 18px; height: 18px; color: #86efac; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>`;
 
   toast.innerHTML = `
@@ -1779,13 +3522,39 @@ async function initializeDashboard() {
     }
     const items =
       user.role === "candidato"
-        ? [["home", "Inicio"], ["jobs", "Vacantes"], ["applications", "Mis postulaciones"], ["profile", "Mi perfil"], ["docs", "Documentos"]]
+        ? [["home", "Inicio", "home"], ["jobs", "Vacantes", "briefcase"], ["applications", "Mis postulaciones", "send"], ["profile", "Mi perfil", "user"], ["docs", "Mis documentos", "file-text"]]
         : user.role === "reclutador"
-          ? [["home", "Inicio"], ["pipeline", "Pipeline (Kanban)"], ["jobs", "Vacantes"], ["candidates", "Candidatos"]]
-          : [["home", "Inicio"], ["pipeline", "Pipeline (Kanban)"], ["jobs", "Vacantes"], ["candidates", "Candidatos"], ["recruiters", "Reclutadores"]];
-    nav.innerHTML = items
-      .map(([page, title]) => `<button type="button" data-page="${page}" onclick="view('${page}')">${title}</button>`)
-      .join("");
+          ? [["home", "Inicio", "home"], ["pipeline", "Proceso de selección", "kanban"], ["jobs", "Vacantes", "briefcase"], ["candidates", "Candidatos", "users"]]
+          : [["home", "Inicio", "home"], ["pipeline", "Proceso de selección", "kanban"], ["jobs", "Vacantes", "briefcase"], ["candidates", "Candidatos", "users"], ["recruiters", "Equipo de selección", "user-check"]];
+    
+    nav.innerHTML = `
+      <div id="nav-pill" class="rp-nav-pill"></div>
+      ${items
+        .map(([page, title]) => `<button type="button" data-page="${page}" onclick="view('${page}')">${title}</button>`)
+        .join("")}
+    `;
+
+    // Renderizar menú móvil
+    const mobileList = document.getElementById("mobile-nav-list");
+    if (mobileList) {
+      mobileList.innerHTML = items
+        .map(([page, title, iconName]) => `
+          <button type="button" class="rp-mobile-nav-btn" data-page="${page}" onclick="view('${page}'); closeMobileMenu();">
+            <i data-lucide="${iconName}" class="rp-icon rp-icon-sm"></i>
+            <span>${title}</span>
+          </button>
+        `)
+        .join("");
+    }
+
+    // Inicializar tema y refrescar iconos
+    if (window.ui && window.ui.theme) {
+      ui.theme.apply(ui.theme.get());
+    }
+    if (window.ui && typeof window.ui.refreshIcons === "function") {
+      ui.refreshIcons();
+    }
+    setTimeout(updateNavPill, 100);
 
     const pendingApplicationId = sessionStorage.getItem("recruitpro_pending_application");
     if (user.role === "candidato" && pendingApplicationId) {
@@ -1810,20 +3579,32 @@ function goToPipelineForVacancy(encodedId) {
 
 async function deleteVacancy(encodedId, title) {
   const id = decodeURIComponent(encodedId);
-  if (!confirm(`¿Estás seguro de que deseas eliminar permanentemente la vacante "${title}" y todas sus postulaciones asociadas? Esta acción es irreversible.`)) {
-    return;
+  let confirmed = false;
+  if (typeof window.ui !== "undefined" && window.ui.confirm) {
+    confirmed = await window.ui.confirm({
+      title: "¿Eliminar vacante?",
+      text: `¿Estás seguro de que deseas eliminar permanentemente la vacante "${title}" y todas sus postulaciones asociadas? Esta acción no se puede deshacer.`,
+      confirmLabel: "Eliminar vacante",
+      danger: true,
+    });
+  } else {
+    confirmed = confirm(`¿Estás seguro de que deseas eliminar la vacante "${title}"?`);
   }
+  if (!confirmed) return;
 
   try {
     await apiRequest(`/api/vacancies/${encodeURIComponent(id)}`, { method: "DELETE" });
-    showKanbanToast(`Vacante "${title}" eliminada con éxito.`);
+    if (typeof window.ui !== "undefined" && window.ui.toast) {
+      window.ui.toast(`Vacante "${title}" eliminada con éxito.`, { type: "info" });
+    } else {
+      showKanbanToast(`Vacante "${title}" eliminada con éxito.`);
+    }
     await view("jobs");
   } catch (error) {
     console.error("Error al eliminar vacante:", error);
     showMessage(error.message || "No se pudo eliminar la vacante.", true);
   }
 }
-
 
 /* ==========================================================================
    AI RECRUITMENT & SCREENING FUNCTIONS
@@ -2067,12 +3848,28 @@ async function triggerDirectAi(appId) {
 
 async function deleteUserDirect(encodedId, name) {
   const id = decodeURIComponent(encodedId);
-  if (!confirm(`¿Estás seguro de que deseas eliminar permanentemente la cuenta de "${name}"? Esta acción borrará todas sus postulaciones, documentos y accesos.`)) return;
+  let confirmed = false;
+  if (typeof window.ui !== "undefined" && window.ui.confirm) {
+    confirmed = await window.ui.confirm({
+      title: "¿Eliminar cuenta de usuario?",
+      text: `¿Estás seguro de eliminar permanentemente la cuenta de "${name}"? Se borrarán sus postulaciones, documentos y accesos.`,
+      confirmLabel: "Eliminar usuario",
+      danger: true,
+    });
+  } else {
+    confirmed = confirm(`¿Estás seguro de que deseas eliminar la cuenta de "${name}"?`);
+  }
+  if (!confirmed) return;
+
   try {
     await apiRequest(`/api/users/${encodeURIComponent(id)}`, { method: "DELETE" });
     const currentPage = nav.querySelector("button.active")?.dataset.page || "home";
     await view(currentPage);
-    showKanbanToast(`Cuenta de ${name} eliminada con éxito.`);
+    if (typeof window.ui !== "undefined" && window.ui.toast) {
+      window.ui.toast(`Cuenta de ${name} eliminada con éxito.`, { type: "info" });
+    } else {
+      showKanbanToast(`Cuenta de ${name} eliminada con éxito.`);
+    }
   } catch (error) {
     console.error("Error al eliminar usuario:", error);
     alert(error.message || "No se pudo eliminar el usuario.");
@@ -2095,3 +3892,266 @@ setInterval(() => {
     container.innerHTML = renderPipelineBoardOnly();
   }
 }, 60000);
+
+
+/* ==========================================================================
+   FASE 3: LAYOUT GLOBAL, NAVEGACIÓN CON PILL, MENÚ MÓVIL Y COMMAND PALETTE
+   ========================================================================== */
+
+function updateNavPill() {
+  const navEl = document.getElementById("nav");
+  const pill = document.getElementById("nav-pill");
+  if (!navEl || !pill) return;
+  const activeBtn = navEl.querySelector("button.active");
+  if (activeBtn) {
+    pill.style.opacity = "1";
+    pill.style.transform = `translateX(${activeBtn.offsetLeft}px)`;
+    pill.style.width = `${activeBtn.offsetWidth}px`;
+  } else {
+    pill.style.opacity = "0";
+  }
+}
+
+window.addEventListener("resize", updateNavPill);
+window.addEventListener("scroll", () => {
+  const topbar = document.getElementById("site-header");
+  if (topbar) {
+    topbar.classList.toggle("is-scrolled", window.scrollY > 8);
+  }
+}, { passive: true });
+
+function toggleMobileMenu() {
+  const drawer = document.getElementById("mobile-drawer");
+  const btn = document.getElementById("mobile-menu-btn");
+  if (!drawer) return;
+  const isOpen = drawer.classList.toggle("is-open");
+  if (btn) btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+  drawer.setAttribute("aria-hidden", isOpen ? "false" : "true");
+}
+
+function closeMobileMenu() {
+  const drawer = document.getElementById("mobile-drawer");
+  const btn = document.getElementById("mobile-menu-btn");
+  if (drawer) drawer.classList.remove("is-open");
+  if (btn) btn.setAttribute("aria-expanded", "false");
+}
+
+/* Command Palette (Ctrl + K) */
+let commandPaletteItems = [];
+let commandPaletteSelectedIndex = 0;
+
+function openCommandPalette() {
+  const dlg = document.getElementById("rp-cmd-dialog");
+  const input = document.getElementById("rp-cmd-input");
+  if (!dlg) return;
+  closeMobileMenu();
+  buildGlobalCommandIndex();
+  renderCommandPaletteResults("");
+  try {
+    dlg.showModal();
+  } catch (e) {}
+  if (input) {
+    input.value = "";
+    setTimeout(() => input.focus(), 60);
+  }
+  if (window.ui && typeof window.ui.refreshIcons === "function") {
+    window.ui.refreshIcons(dlg);
+  }
+}
+
+function closeCommandPalette() {
+  const dlg = document.getElementById("rp-cmd-dialog");
+  if (dlg && dlg.open) dlg.close();
+}
+
+function buildGlobalCommandIndex() {
+  commandPaletteItems = [];
+
+  if (user) {
+    const navList =
+      user.role === "candidato"
+        ? [["home", "Inicio", "home"], ["jobs", "Vacantes disponibles", "briefcase"], ["applications", "Mis postulaciones", "send"], ["profile", "Mi perfil", "user"], ["docs", "Mis documentos", "file-text"]]
+        : [["home", "Inicio", "home"], ["pipeline", "Proceso de selección", "kanban"], ["jobs", "Vacantes", "briefcase"], ["candidates", "Candidatos", "users"], ["profile", "Mi perfil", "user"]];
+    if (user.role === "administrador") {
+      navList.push(["recruiters", "Equipo de selección", "user-check"]);
+    }
+
+    navList.forEach(([page, label, iconName]) => {
+      commandPaletteItems.push({
+        type: "nav",
+        category: "Navegación",
+        label: label,
+        icon: iconName,
+        action: () => { view(page); closeCommandPalette(); }
+      });
+    });
+  }
+
+  commandPaletteItems.push({
+    type: "action",
+    category: "Acciones rápidas",
+    label: "Alternar modo oscuro / claro",
+    icon: "sun-moon",
+    action: () => { ui.theme.toggle(); closeCommandPalette(); }
+  });
+  commandPaletteItems.push({
+    type: "action",
+    category: "Acciones rápidas",
+    label: "Ver portal público de empleo",
+    icon: "external-link",
+    action: () => { window.open("empleos.html", "_blank"); closeCommandPalette(); }
+  });
+
+  if (user && user.role !== "candidato") {
+    commandPaletteItems.push({
+      type: "action",
+      category: "Acciones rápidas",
+      label: "Publicar nueva vacante",
+      icon: "plus-circle",
+      action: () => { view("jobs"); closeCommandPalette(); }
+    });
+  }
+
+  if (Array.isArray(pipelineApplicationsCache)) {
+    pipelineApplicationsCache.slice(0, 15).forEach((app) => {
+      commandPaletteItems.push({
+        type: "candidate",
+        category: "Candidatos",
+        label: `${app.name} (${app.vacancyTitle || "Candidato"})`,
+        detail: `${app.email} · Match ${app.aiScore || 0}%`,
+        icon: "user",
+        action: () => {
+          view("pipeline");
+          setTimeout(() => openApplicationDetailDialog(app.id), 250);
+          closeCommandPalette();
+        }
+      });
+    });
+  }
+
+  if (Array.isArray(vacanciesCache)) {
+    vacanciesCache.forEach((v) => {
+      commandPaletteItems.push({
+        type: "vacancy",
+        category: "Vacantes",
+        label: v.title,
+        detail: `${v.type || "Tiempo completo"} · ${v.location || "Remoto"}`,
+        icon: "briefcase",
+        action: () => {
+          view("pipeline", v.id);
+          closeCommandPalette();
+        }
+      });
+    });
+  }
+}
+
+function handleCommandPaletteSearch(query) {
+  renderCommandPaletteResults(query);
+}
+
+function renderCommandPaletteResults(query) {
+  const resultsEl = document.getElementById("rp-cmd-results");
+  if (!resultsEl) return;
+
+  const q = (query || "").trim().toLowerCase();
+  const filtered = q
+    ? commandPaletteItems.filter((item) =>
+        item.label.toLowerCase().includes(q) ||
+        (item.detail && item.detail.toLowerCase().includes(q)) ||
+        (item.category && item.category.toLowerCase().includes(q))
+      )
+    : commandPaletteItems.slice(0, 10);
+
+  if (!filtered.length) {
+    resultsEl.innerHTML = `
+      <div style="padding: 32px 16px; text-align: center; color: var(--rp-text-muted);">
+        <i data-lucide="search-x" class="rp-icon" style="width: 32px; height: 32px; margin-bottom: 8px; opacity: 0.5;"></i>
+        <p style="margin: 0; font-size: 13.5px; font-weight: 500;">No se encontraron resultados para "${escapeHtml(query)}"</p>
+      </div>
+    `;
+    if (window.ui && typeof window.ui.refreshIcons === "function") {
+      window.ui.refreshIcons(resultsEl);
+    }
+    return;
+  }
+
+  commandPaletteSelectedIndex = 0;
+  const groups = {};
+  filtered.forEach((it, idx) => {
+    groups[it.category] = groups[it.category] || [];
+    groups[it.category].push({ item: it, index: idx });
+  });
+
+  let html = "";
+  Object.entries(groups).forEach(([category, items]) => {
+    html += `<div class="rp-cmd-section-title">${escapeHtml(category)}</div>`;
+    items.forEach(({ item, index }) => {
+      html += `
+        <button type="button" class="rp-cmd-item ${index === 0 ? "is-selected" : ""}" data-idx="${index}" onclick="executeCommandPaletteItem(${index})">
+          <div class="rp-cmd-item-left">
+            <i data-lucide="${escapeHtml(item.icon || "arrow-right")}" class="rp-icon rp-icon-sm" style="color: var(--rp-text-muted);"></i>
+            <div>
+              <span style="font-weight: 600;">${escapeHtml(item.label)}</span>
+              ${item.detail ? `<span style="font-size: 11.5px; color: var(--rp-text-muted); margin-left: 6px;">${escapeHtml(item.detail)}</span>` : ""}
+            </div>
+          </div>
+          <i data-lucide="corner-down-left" class="rp-icon rp-icon-sm" style="opacity: 0.4;"></i>
+        </button>
+      `;
+    });
+  });
+
+  resultsEl.innerHTML = html;
+  if (window.ui && typeof window.ui.refreshIcons === "function") {
+    window.ui.refreshIcons(resultsEl);
+  }
+}
+
+function executeCommandPaletteItem(index) {
+  const item = commandPaletteItems[index];
+  if (item && typeof item.action === "function") {
+    item.action();
+  }
+}
+
+// Global Keyboard Shortcuts
+window.addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+    e.preventDefault();
+    openCommandPalette();
+    return;
+  }
+  const cmdDlg = document.getElementById("rp-cmd-dialog");
+  if (cmdDlg && cmdDlg.open) {
+    if (e.key === "Escape") {
+      closeCommandPalette();
+      return;
+    }
+    const items = [...cmdDlg.querySelectorAll(".rp-cmd-item")];
+    if (!items.length) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      commandPaletteSelectedIndex = (commandPaletteSelectedIndex + 1) % items.length;
+      items.forEach((it, i) => it.classList.toggle("is-selected", i === commandPaletteSelectedIndex));
+      items[commandPaletteSelectedIndex].scrollIntoView({ block: "nearest" });
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      commandPaletteSelectedIndex = (commandPaletteSelectedIndex - 1 + items.length) % items.length;
+      items.forEach((it, i) => it.classList.toggle("is-selected", i === commandPaletteSelectedIndex));
+      items[commandPaletteSelectedIndex].scrollIntoView({ block: "nearest" });
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const selected = items[commandPaletteSelectedIndex];
+      if (selected) selected.click();
+    }
+  }
+});
+
+// Close command dialog on click outside
+document.addEventListener("click", (e) => {
+  const dlg = document.getElementById("rp-cmd-dialog");
+  if (dlg && dlg.open && e.target === dlg) {
+    closeCommandPalette();
+  }
+});

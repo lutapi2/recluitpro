@@ -129,6 +129,17 @@ async def lifespan(_: FastAPI):
                         pass
     Base.metadata.create_all(bind=engine)
     try:
+        from sqlalchemy import inspect, text
+        with engine.connect() as conn:
+            inspector = inspect(conn)
+            cols = [c["name"] for c in inspector.get_columns("documents")]
+            if "file_data" not in cols:
+                sql_type = "BLOB" if engine.dialect.name == "sqlite" else "BYTEA"
+                conn.execute(text(f"ALTER TABLE documents ADD COLUMN file_data {sql_type}"))
+                conn.commit()
+    except Exception:
+        pass
+    try:
         from .database import SessionLocal
         with SessionLocal() as db:
             admin_user = db.scalar(select(User).where(User.email == "luctapi89@gmail.com").limit(1))
@@ -434,7 +445,7 @@ def vacancy_data(vacancy: Vacancy, viewer: User, *, include_page_details: bool =
     }
 
 
-def save_upload(upload: UploadFile) -> tuple[Path, str, str, int]:
+def save_upload(upload: UploadFile) -> tuple[Path, str, str, int, bytes]:
     suffix = Path(upload.filename or "").suffix.lower()
     file_type = ALLOWED_FILES.get(suffix)
     if not file_type:
@@ -456,10 +467,11 @@ def save_upload(upload: UploadFile) -> tuple[Path, str, str, int]:
             raise HTTPException(status_code=415, detail="El documento DOCX no es válido.") from error
 
     storage_name = str(uuid4())
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     target = UPLOAD_DIR / storage_name
     with target.open("xb") as output:
         output.write(content)
-    return target, storage_name, media_type, len(content)
+    return target, storage_name, media_type, len(content), content
 
 
 def get_document_or_404(db: Session, document_id: str) -> Document:
@@ -1171,13 +1183,14 @@ def upload_document(
     verify_csrf(request)
     viewer = current_user(request, db)
     require_role(viewer, Role.CANDIDATE)
-    path, storage_name, media_type, size = save_upload(file)
+    path, storage_name, media_type, size, content_bytes = save_upload(file)
     document = Document(
         owner_id=viewer.id,
         original_name=Path(file.filename or "documento").name[:255],
         media_type=media_type,
         storage_name=storage_name,
         size=size,
+        file_data=content_bytes,
     )
     db.add(document)
     try:
@@ -1195,25 +1208,54 @@ def download_document(document_id: str, request: Request, db: Session = Depends(
     document = get_document_or_404(db, document_id)
     if not can_read_document(db, viewer, document):
         raise HTTPException(status_code=404, detail="No se encontró el documento.")
+    
     path = UPLOAD_DIR / document.storage_name
-    if not path.is_file():
+    
+    # 1. Si no existe en disco o está vacío:
+    if not path.is_file() or path.stat().st_size == 0:
         alt_paths = [
             ROOT.parent / "recruitpro-data" / "private_uploads" / document.storage_name,
+            ROOT / "recruitpro-data" / "private_uploads" / document.storage_name,
             Path("/tmp/recruitpro-data/private_uploads") / document.storage_name,
             ROOT / "backend" / "seed_uploads" / document.storage_name,
         ]
+        restored = False
         for ap in alt_paths:
-            if ap.is_file():
-                path = ap
-                break
-        if not path.is_file():
+            if ap.is_file() and ap.stat().st_size > 0:
+                try:
+                    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(ap, path)
+                    restored = True
+                    break
+                except Exception:
+                    path = ap
+                    restored = True
+                    break
+
+        # 2. Si no está en disco, RESTAURARLO DESDE LA BASE DE DATOS (file_data)
+        if not restored:
             UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-            cand_name = document.owner.name if document.owner else "Candidato"
-            cand_email = document.owner.email if document.owner else "candidato@recruitpro.com"
-            doc_name = document.original_name or "cv.pdf"
-            fallback_bytes = generate_fallback_pdf(cand_name, cand_email, doc_name)
-            with open(path, "wb") as f_out:
-                f_out.write(fallback_bytes)
+            if document.file_data and len(document.file_data) > 0:
+                with open(path, "wb") as f_out:
+                    f_out.write(document.file_data)
+                restored = True
+            elif not path.is_file() or path.stat().st_size == 0:
+                # Fallback de emergencia solo si la fila antigua no tenía bytes
+                cand_name = document.owner.name if document.owner else "Candidato"
+                cand_email = document.owner.email if document.owner else "candidato@recruitpro.com"
+                doc_name = document.original_name or "cv.pdf"
+                fallback_bytes = generate_fallback_pdf(cand_name, cand_email, doc_name)
+                with open(path, "wb") as f_out:
+                    f_out.write(fallback_bytes)
+
+    # 3. Backfill automático: si el archivo existe en disco pero aún no en la BD
+    if path.is_file() and path.stat().st_size > 0 and (document.file_data is None or len(document.file_data) == 0):
+        try:
+            document.file_data = path.read_bytes()
+            db.commit()
+        except Exception:
+            pass
+
     doc_media = document.media_type or "application/pdf"
     doc_fname = document.original_name or "cv.pdf"
     return FileResponse(
@@ -1255,13 +1297,14 @@ def apply_to_vacancy(
         )
     ):
         raise HTTPException(status_code=409, detail="Ya te postulaste a esta vacante.")
-    path, storage_name, media_type, size = save_upload(resume)
+    path, storage_name, media_type, size, content_bytes = save_upload(resume)
     document = Document(
         owner_id=candidate.id,
         original_name=Path(resume.filename or "cv").name[:255],
         media_type=media_type,
         storage_name=storage_name,
         size=size,
+        file_data=content_bytes,
     )
     candidate.name = name.strip()
     candidate.phone = phone.strip()
@@ -1544,6 +1587,12 @@ def ai_analyze_application(
     if application.resume:
         file_path = UPLOAD_DIR / application.resume.storage_name
         orig_name = application.resume.original_name or ""
+        if (not file_path.exists() or file_path.stat().st_size == 0) and application.resume.file_data:
+            try:
+                UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+                file_path.write_bytes(application.resume.file_data)
+            except Exception:
+                pass
         resume_text = extract_text_from_file(file_path, orig_name)
 
     analysis = analyze_compatibility(
@@ -1584,6 +1633,12 @@ def ai_analyze_candidate_vacancy_fit(
     if latest_doc:
         file_path = UPLOAD_DIR / latest_doc.storage_name
         orig_name = latest_doc.original_name or ""
+        if (not file_path.exists() or file_path.stat().st_size == 0) and latest_doc.file_data:
+            try:
+                UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+                file_path.write_bytes(latest_doc.file_data)
+            except Exception:
+                pass
         resume_text = extract_text_from_file(file_path, orig_name)
 
     analysis = analyze_compatibility(
@@ -1684,13 +1739,14 @@ def public_apply(
     if existing_app:
         raise HTTPException(status_code=409, detail="Ya tienes una postulación activa para esta vacante.")
 
-    path, storage_name, media_type, size = save_upload(resume)
+    path, storage_name, media_type, size, content_bytes = save_upload(resume)
     document = Document(
         owner_id=user.id,
         original_name=Path(resume.filename or "cv_documento").name[:255],
         media_type=media_type,
         storage_name=storage_name,
         size=size,
+        file_data=content_bytes,
     )
     db.add(document)
     db.commit()
