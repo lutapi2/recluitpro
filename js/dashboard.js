@@ -503,7 +503,7 @@ function renderAdminOrRecruiterHome(summary, applications, vacancies) {
           ${isAdmin ? "Panel de Administración" : "Panel de Reclutamiento"}
         </span>
         <h1 class="dash-greeting-title">
-          ${greeting}, ${escapeHtml(firstName)} <span class="dash-wave">👋</span>
+          ${greeting}, ${escapeHtml(firstName)} <span class="rp-user-badge"><span class="rp-pulse-dot is-online"></span> Activo</span>
         </h1>
         <p class="dash-greeting-sub">
           ${
@@ -763,7 +763,7 @@ function renderCandidateHome(summary, applications, vacancies) {
       <div class="dash-header-main">
         <span class="dash-tag">Portal del Candidato</span>
         <h1 class="dash-greeting-title">
-          ${greeting}, ${escapeHtml(firstName)} <span class="dash-wave">👋</span>
+          ${greeting}, ${escapeHtml(firstName)} <span class="rp-user-badge"><span class="rp-pulse-dot is-online"></span> Activo</span>
         </h1>
         <p class="dash-greeting-sub">
           Consulta el estado de tus procesos de selección y encuentra oportunidades profesionales afines a tu perfil.
@@ -787,7 +787,7 @@ function renderCandidateHome(summary, applications, vacancies) {
         ? `
           <div class="candidate-hero-banner has-offer">
             <div class="candidate-hero-content">
-              <span class="rp-badge rp-badge--success" style="width: fit-content;">🎉 ¡Oferta formal recibida!</span>
+              <span class="rp-badge rp-badge--success" style="width: fit-content;"><i data-lucide="award" class="rp-icon rp-icon-sm"></i> Oferta formal recibida</span>
               <h2 class="candidate-hero-title">Tienes una propuesta de contratación</h2>
               <p class="candidate-hero-text">
                 El equipo de reclutamiento ha aprobado tu perfil y te ha extendido una oferta formal. Revisa los detalles de tu postulación en la sección de postulaciones.
@@ -802,7 +802,7 @@ function renderCandidateHome(summary, applications, vacancies) {
         ? `
           <div class="candidate-hero-banner" style="border-color: rgba(139, 92, 246, 0.3); background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(59, 130, 246, 0.06));">
             <div class="candidate-hero-content">
-              <span class="rp-badge rp-badge--primary" style="width: fit-content;">📅 Entrevista en curso</span>
+              <span class="rp-badge rp-badge--primary" style="width: fit-content;"><i data-lucide="calendar" class="rp-icon rp-icon-sm"></i> Entrevista en curso</span>
               <h2 class="candidate-hero-title">Avanzaste a la etapa de entrevista</h2>
               <p class="candidate-hero-text">
                 Uno de tus procesos está en fase de entrevista técnica o panel. Nuestro equipo se pondrá en contacto contigo para coordinar fechas y horarios.
@@ -1149,7 +1149,7 @@ async function view(page, vacancyId = "") {
                     isOffer
                       ? `
                         <div style="display: flex; align-items: center; gap: 8px; padding: 12px 14px; background: rgba(16, 185, 129, 0.1); border-radius: var(--rp-radius-md); border: 1px solid rgba(16, 185, 129, 0.25); color: #047857; margin: 4px 0;">
-                          <span style="font-size: 18px;">🎉</span>
+                          <i data-lucide="award" class="rp-icon" style="color: #059669; width: 22px; height: 22px;"></i>
                           <span style="font-size: 13.5px; font-weight: 600;">
                             ¡Felicitaciones! Has recibido una Oferta formal de empleo. Nuestro equipo se pondrá en contacto para coordinar los siguientes pasos.
                           </span>
@@ -1162,7 +1162,7 @@ async function view(page, vacancyId = "") {
                     isInterview
                       ? `
                         <div style="display: flex; align-items: center; gap: 8px; padding: 12px 14px; background: rgba(139, 92, 246, 0.1); border-radius: var(--rp-radius-md); border: 1px solid rgba(139, 92, 246, 0.25); color: #5b21b6; margin: 4px 0;">
-                          <span style="font-size: 18px;">📅</span>
+                          <i data-lucide="calendar" class="rp-icon" style="color: #7c3aed; width: 22px; height: 22px;"></i>
                           <span style="font-size: 13.5px; font-weight: 600;">
                             Has avanzado a la etapa de Entrevista. Te contactaremos pronto con los detalles de agenda y panel.
                           </span>
@@ -1796,7 +1796,7 @@ function renderApplicants(applications) {
         .map((recruiter) => `<option value="${escapeHtml(recruiter.id)}" ${application.assignedRecruiterId === recruiter.id ? "selected" : ""}>${escapeHtml(recruiter.name)}</option>`)
         .join("");
 
-      return `<li class="application-card"><div class="applicant-heading"><span><b>${escapeHtml(application.name)}</b> · ${escapeHtml(application.email)} ${application.aiScore ? `<span class="kanban-ai-pill ${application.aiScore >= 80 ? "score-high" : application.aiScore >= 60 ? "score-med" : "score-low"}">★ Match IA: ${application.aiScore}%</span>` : ""} <small class="applicant-details">${details}</small></span><button class="document-button" onclick=\"viewDocument('${encodeURIComponent(application.resumeId)}', '${encodeURIComponent(application.id)}')\">Ver CV</button></div><div class="application-controls"><label>Etapa<select id="stage-${escapeHtml(application.id)}">${["recibida", "en_revision", "entrevista", "oferta", "rechazada"].map((stage) => `<option value="${stage}" ${application.status === stage ? "selected" : ""}>${statusLabel(stage)}</option>`).join("")}</select></label><label>Responsable<select id="assignee-${escapeHtml(application.id)}"><option value="">Sin asignar</option>${recruiterOptions}</select></label><label class="note-field">Nota interna<textarea id="note-${escapeHtml(application.id)}" maxlength="2000" rows="2" placeholder="Añade contexto o próximos pasos"></textarea></label><button class="primary small" onclick="saveApplicationUpdate('${encodeURIComponent(application.id)}')">Guardar seguimiento</button></div><details class="application-history"><summary>Historial y notas (${(application.activities || []).length})</summary><ul>${history || "<li>Sin actividad registrada.</li>"}</ul></details></li>`;
+      return `<li class="application-card"><div class="applicant-heading"><span><b>${escapeHtml(application.name)}</b> · ${escapeHtml(application.email)} ${application.aiScore ? `<span class="kanban-ai-pill ${application.aiScore >= 80 ? "score-high" : application.aiScore >= 60 ? "score-med" : "score-low"}">Match IA: ${application.aiScore}%</span>` : ""} <small class="applicant-details">${details}</small></span><button class="document-button" onclick=\"viewDocument('${encodeURIComponent(application.resumeId)}', '${encodeURIComponent(application.id)}')\">Ver CV</button></div><div class="application-controls"><label>Etapa<select id="stage-${escapeHtml(application.id)}">${["recibida", "en_revision", "entrevista", "oferta", "rechazada"].map((stage) => `<option value="${stage}" ${application.status === stage ? "selected" : ""}>${statusLabel(stage)}</option>`).join("")}</select></label><label>Responsable<select id="assignee-${escapeHtml(application.id)}"><option value="">Sin asignar</option>${recruiterOptions}</select></label><label class="note-field">Nota interna<textarea id="note-${escapeHtml(application.id)}" maxlength="2000" rows="2" placeholder="Añade contexto o próximos pasos"></textarea></label><button class="primary small" onclick="saveApplicationUpdate('${encodeURIComponent(application.id)}')">Guardar seguimiento</button></div><details class="application-history"><summary>Historial y notas (${(application.activities || []).length})</summary><ul>${history || "<li>Sin actividad registrada.</li>"}</ul></details></li>`;
     })
     .join("")}</ul>`;
 }
@@ -2015,7 +2015,7 @@ async function viewDocument(encodedId, optionalAppId = null) {
         frame.srcdoc = `
           <html><body style="font-family: system-ui, -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f8fafc; color: #334155; text-align: center; padding: 24px; box-sizing: border-box;">
             <div style="background: white; padding: 32px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05); max-width: 420px;">
-              <div style="font-size: 42px; margin-bottom: 12px;">📄</div>
+              <div style="margin-bottom: 14px;"><svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto; display: block;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg></div>
               <h3 style="margin: 0 0 8px 0; color: #0f172a; font-size: 18px;">Documento Curricular Registrado</h3>
               <p style="margin: 0 0 16px 0; font-size: 14px; color: #64748b; line-height: 1.5;">El postulante adjuntó su CV al registrar la postulación.</p>
               <div style="background: #f1f5f9; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-family: monospace; color: #334155; margin-bottom: 16px; word-break: break-all;">ID Documento: ${escapeHtml(id)}</div>
@@ -2031,7 +2031,7 @@ async function viewDocument(encodedId, optionalAppId = null) {
       frame.srcdoc = `
         <html><body style="font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f8fafc; color: #475569; text-align: center; padding: 20px;">
           <div>
-            <div style="font-size: 36px; margin-bottom: 12px;">📋</div>
+            <div style="margin-bottom: 14px;"><svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto; display: block;"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg></div>
             <h3 style="margin: 0 0 8px 0; color: #1e293b;">Postulación sin documento adjunto</h3>
             <p style="font-size: 13px; color: #64748b;">El candidato no adjuntó archivo o fue registrado manualmente.</p>
           </div>
@@ -2088,7 +2088,7 @@ function setupSplitEvaluationPanel(app) {
   let detectedRating = 0;
   if (app.activities) {
     for (const act of app.activities) {
-      if (act.note && act.note.includes("⭐")) {
+      if (act.note && (act.note.includes("Calificación") || act.note.includes("estrella"))) {
         const match = act.note.match(/(\d)\/5/);
         if (match) {
           detectedRating = parseInt(match[1], 10);
@@ -2249,8 +2249,8 @@ async function saveSplitEvaluation() {
 
   let fullNote = rawNote;
   if (currentCandidateRating > 0) {
-    const starStr = "★".repeat(currentCandidateRating);
-    const ratingPrefix = `[Calificación: ${starStr} (${currentCandidateRating}/5)]`;
+    const starStr = "".repeat(currentCandidateRating);
+    const ratingPrefix = `[Calificación: ${currentCandidateRating}/5 estrellas]`;
     fullNote = rawNote ? `${ratingPrefix} ${rawNote}` : ratingPrefix;
   }
 
@@ -2864,7 +2864,7 @@ function renderCandidateCard(app) {
   if (app.aiScore) {
     aiVisual = typeof window.ui !== "undefined" && window.ui.progressRing
       ? window.ui.progressRing(app.aiScore, 34, 3.5)
-      : `<span class="kanban-ai-pill score-${app.aiScore >= 80 ? "high" : app.aiScore >= 60 ? "med" : "low"}">★ ${app.aiScore}%</span>`;
+      : `<span class="kanban-ai-pill score-${app.aiScore >= 80 ? "high" : app.aiScore >= 60 ? "med" : "low"}"><i data-lucide="sparkles" class="rp-icon rp-icon-sm"></i> ${app.aiScore}%</span>`;
   } else {
     aiVisual = `
       <button
@@ -3002,7 +3002,7 @@ function openCardActionMenu(e, id) {
     { key: "recibida", label: "Recibidas" },
     { key: "en_revision", label: "En revisión" },
     { key: "entrevista", label: "Entrevista" },
-    { key: "oferta", label: "Oferta 🎉" },
+    { key: "oferta", label: "Oferta" },
     { key: "rechazada", label: "Rechazada" },
   ];
 
@@ -4153,5 +4153,89 @@ document.addEventListener("click", (e) => {
   const dlg = document.getElementById("rp-cmd-dialog");
   if (dlg && dlg.open && e.target === dlg) {
     closeCommandPalette();
+  }
+});
+
+/* ==========================================================================
+   ADVANCED B2B SAAS SHORTCUTS: LINEAR-STYLE KEYBOARD FIRST NAVIGATION
+   G+H (Home), G+P (Pipeline), G+V (Vacancies), G+C (Candidates), G+E (Equipo)
+   N (New Vacancy), / (Quick Search), ? (Show Shortcuts Help)
+   ========================================================================== */
+
+let pendingKeyChord = null;
+let chordTimeout = null;
+
+document.addEventListener("keydown", (e) => {
+  // Ignore shortcuts when inside an active input, textarea or contenteditable
+  const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : "";
+  const isInput = activeTag === "input" || activeTag === "textarea" || activeTag === "select" || document.activeElement.isContentEditable;
+  
+  // Don't trigger if Ctrl / Cmd / Alt is pressed (except Ctrl+K handled separately)
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (isInput) return;
+
+  const key = e.key.toLowerCase();
+
+  // 1. Two-key chord starting with "g" (Go to...)
+  if (pendingKeyChord === "g") {
+    clearTimeout(chordTimeout);
+    pendingKeyChord = null;
+    if (key === "h") {
+      e.preventDefault();
+      view("home");
+      if (window.ui && window.ui.toast) window.ui.toast("Navegando a Inicio", { duration: 1500 });
+      return;
+    } else if (key === "p") {
+      e.preventDefault();
+      view("pipeline");
+      if (window.ui && window.ui.toast) window.ui.toast("Navegando a Proceso de selección", { duration: 1500 });
+      return;
+    } else if (key === "v") {
+      e.preventDefault();
+      view("jobs");
+      if (window.ui && window.ui.toast) window.ui.toast("Navegando a Vacantes", { duration: 1500 });
+      return;
+    } else if (key === "c") {
+      e.preventDefault();
+      view("candidates");
+      if (window.ui && window.ui.toast) window.ui.toast("Navegando a Candidatos", { duration: 1500 });
+      return;
+    } else if (key === "e") {
+      e.preventDefault();
+      view("recruiters");
+      if (window.ui && window.ui.toast) window.ui.toast("Navegando a Equipo de selección", { duration: 1500 });
+      return;
+    }
+  }
+
+  if (key === "g") {
+    pendingKeyChord = "g";
+    chordTimeout = setTimeout(() => { pendingKeyChord = null; }, 1200);
+    return;
+  }
+
+  // 2. Single-key shortcuts
+  if (key === "/") {
+    e.preventDefault();
+    openCommandPalette();
+    return;
+  } else if (key === "n" && (user?.role === "administrador" || user?.role === "reclutador")) {
+    e.preventDefault();
+    view("jobs");
+    setTimeout(() => {
+      const titleInput = document.getElementById("job-title");
+      if (titleInput) {
+        titleInput.focus();
+        titleInput.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 250);
+    if (window.ui && window.ui.toast) window.ui.toast("Crear nueva vacante (formulario activo)", { duration: 2000 });
+    return;
+  } else if (key === "?") {
+    e.preventDefault();
+    if (window.ui && window.ui.toast) {
+      window.ui.toast("Atajos: G+H Inicio · G+P Pipeline · G+V Vacantes · G+C Candidatos · N Nueva vacante · / Buscar", { duration: 6000 });
+    }
+    return;
   }
 });

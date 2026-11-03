@@ -341,3 +341,130 @@
   outline: 2px solid var(--rp-primary) !important;
   outline-offset: 2px !important;
 }
+
+/* ==========================================================================
+   ADVANCED B2B SAAS DESIGN: LINEAR / VERCEL / ASHBY STYLING
+   ========================================================================== */
+
+/* Live Status Pulse Dots (Ashby ATS Real-Time Indicators) */
+.rp-pulse-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  position: relative;
+  vertical-align: middle;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+.rp-pulse-dot.is-online {
+  background-color: #10b981;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: rp-pulse-emerald 2s infinite;
+}
+.rp-pulse-dot.is-interview {
+  background-color: #8b5cf6;
+  box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7);
+  animation: rp-pulse-purple 2s infinite;
+}
+.rp-pulse-dot.is-review {
+  background-color: #0ea5e9;
+  box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.7);
+  animation: rp-pulse-sky 2s infinite;
+}
+
+@keyframes rp-pulse-emerald {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
+  70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+@keyframes rp-pulse-purple {
+  0% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.6); }
+  70% { box-shadow: 0 0 0 6px rgba(139, 92, 246, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+}
+@keyframes rp-pulse-sky {
+  0% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.6); }
+  70% { box-shadow: 0 0 0 6px rgba(14, 165, 233, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0); }
+}
+
+.rp-user-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  background: var(--rp-surface-2);
+  border: 1px solid var(--rp-border);
+  color: var(--rp-text-2);
+  vertical-align: middle;
+  margin-left: 8px;
+  letter-spacing: 0.02em;
+}
+
+/* Linear-Grade Tactile Card Borders & Inset Lighting */
+.card, .vacancy-card-v2, .candidate-card-v2, .dash-metric-card {
+  transition: transform var(--rp-dur-fast) var(--rp-ease), 
+              border-color var(--rp-dur-fast) ease, 
+              box-shadow var(--rp-dur-fast) var(--rp-ease);
+}
+.card:hover, .vacancy-card-v2:hover, .candidate-card-v2:hover, .dash-metric-card:hover {
+  border-color: rgba(37, 99, 235, 0.4) !important;
+}
+[data-theme="dark"] .card:hover, 
+[data-theme="dark"] .vacancy-card-v2:hover, 
+[data-theme="dark"] .candidate-card-v2:hover, 
+[data-theme="dark"] .dash-metric-card:hover {
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  box-shadow: 0 0 24px -4px rgba(255, 255, 255, 0.05), 0 8px 24px -4px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Vector Star Rating Scorecard */
+.star-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.star-btn {
+  background: transparent !important;
+  border: none !important;
+  padding: 4px;
+  cursor: pointer;
+  color: #cbd5e1;
+  transition: transform 120ms ease, color 120ms ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+[data-theme="dark"] .star-btn {
+  color: #3f3f46;
+}
+.star-btn:hover {
+  transform: scale(1.18);
+  color: #f59e0b !important;
+}
+.star-btn.active {
+  color: #f59e0b !important;
+}
+
+/* Kbd Badges for Power-Users (Linear Style) */
+.rp-nav-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--rp-font);
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--rp-surface-2);
+  border: 1px solid var(--rp-border);
+  color: var(--rp-text-muted);
+  margin-left: 6px;
+  opacity: 0.85;
+}

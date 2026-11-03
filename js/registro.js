@@ -42,10 +42,10 @@ async function register() {
   if (subTip) subTip.style.display = "none";
 
   const messages = [
-    "✨ Creando tu espacio en RecruitPro...",
-    "🔐 Cifrando credenciales de seguridad...",
-    "⚡ Inicializando base de datos...",
-    "🚀 Casi listo, preparando tu panel de control..."
+    "Creando tu espacio en RecruitPro...",
+    "Cifrando credenciales de seguridad...",
+    "Inicializando base de datos...",
+    "Casi listo, preparando tu panel de control..."
   ];
   let msgIndex = 0;
   let progressVal = 18;
@@ -107,7 +107,7 @@ async function register() {
     }
     if (statusText) {
       statusText.classList.add("success");
-      statusText.textContent = "✓ ¡Cuenta creada con éxito! Entrando...";
+      statusText.textContent = "¡Cuenta creada con éxito! Entrando...";
     }
 
     // Acceso directo e inmediato al panel
