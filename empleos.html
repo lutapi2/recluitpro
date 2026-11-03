@@ -8,6 +8,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/tokens.css?v=4.0" />
+    <link rel="stylesheet" href="css/components.css?v=4.0" />
     <style>
       .careers-hero {
         background: linear-gradient(135deg, #0b1220 0%, #172554 100%);
@@ -201,6 +203,48 @@
       .file-dropzone:hover {
         border-color: var(--blue);
         background: #eff6ff;
+      }
+
+      [data-theme="dark"] .careers-search-bar {
+        background: var(--rp-surface);
+        box-shadow: var(--rp-shadow-lg);
+      }
+      [data-theme="dark"] .careers-search-bar input,
+      [data-theme="dark"] .careers-search-bar select {
+        background: var(--rp-surface-2);
+        color: var(--rp-text);
+        border-color: var(--rp-border);
+      }
+      [data-theme="dark"] .public-vacancy-card {
+        background: var(--rp-surface);
+        border-color: var(--rp-border);
+      }
+      [data-theme="dark"] .public-vacancy-info h2 {
+        color: var(--rp-text);
+      }
+      [data-theme="dark"] .public-vacancy-desc {
+        color: var(--rp-text-2);
+      }
+      [data-theme="dark"] .public-badge {
+        background: var(--rp-surface-2);
+        color: var(--rp-text-2);
+      }
+      [data-theme="dark"] .public-modal {
+        background: var(--rp-surface);
+        color: var(--rp-text);
+        border-color: var(--rp-border);
+      }
+      [data-theme="dark"] .public-modal-header {
+        background: var(--rp-surface);
+        border-bottom-color: var(--rp-border);
+      }
+      [data-theme="dark"] #apply-modal-title {
+        color: var(--rp-text) !important;
+      }
+      [data-theme="dark"] .file-dropzone {
+        background: var(--rp-surface-2);
+        border-color: var(--rp-border);
+        color: var(--rp-text);
       }
     </style>
   </head>
@@ -447,5 +491,7 @@
 
       loadPublicJobs();
     </script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js" defer></script>
+    <script src="js/ui.js?v=4.0"></script>
   </body>
 </html>
