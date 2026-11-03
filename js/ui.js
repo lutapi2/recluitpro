@@ -211,7 +211,7 @@
   const THEME_KEY = "recruitpro_theme";
   const theme = {
     get() {
-      return localStorage.getItem(THEME_KEY) || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      return localStorage.getItem(THEME_KEY) || "light";
     },
     apply(value, animate = false) {
       const root = document.documentElement;
