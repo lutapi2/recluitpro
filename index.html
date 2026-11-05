@@ -3,97 +3,334 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RecruitPro | Iniciar sesión</title>
+    <title>RecruitPro | Toda tu gestión administrativa en un solo lugar</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="css/tokens.css?v=6.0" />
     <link rel="stylesheet" href="css/components.css?v=6.0" />
+    <link rel="stylesheet" href="css/pdf-theme.css?v=1.0" />
   </head>
-  <body>
-    <div class="auth">
-      <section class="brand">
-        <div class="logo" style="display:flex;align-items:center;gap:10px;"><svg class="logo-mark-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="rp-logo-grad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#3b82f6"/>
-      <stop offset="100%" stop-color="#0ea5e9"/>
-    </linearGradient>
-  </defs>
-  <rect x="2" y="2" width="20" height="20" rx="6" fill="url(#rp-logo-grad)"/>
-  <path d="M12 7L13.4 10.6L17 12L13.4 13.4L12 17L10.6 13.4L7 12L10.6 10.6L12 7Z" fill="white"/>
-</svg> <span>RecruitPro</span></div>
-        <div>
-          <small>TALENT MANAGEMENT PLATFORM</small>
-          <h1>Conecta talento con oportunidades.</h1>
-          <p>
-            Plataforma profesional para candidatos, reclutadores y
-            administradores.
-          </p>
+  <body class="pdf-landing-page">
+    <!-- Barra Superior Sutil -->
+    <header class="pdf-landing-topbar">
+      <a href="index.html" class="pdf-landing-logo" aria-label="RecruitPro Inicio">
+        <div class="pdf-logo-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L3 7V12C3 17.5 6.8 22.6 12 24C17.2 22.6 21 17.5 21 12V7L12 2Z" fill="currentColor" fill-opacity="0.2" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M9 12L11 14L15 10" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </div>
-        <div class="features">
-          <span>01 · Candidatos<br /><b>Gestiona tu perfil.</b></span>
-          <span>02 · Reclutadores<br /><b>Consulta candidatos.</b></span>
-          <span>03 · Administración<br /><b>Supervisa la plataforma.</b></span>
+        <span>RecruitPro</span>
+      </a>
+
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <a href="empleos.html" class="pdf-hero-btn-secondary" style="padding: 9px 18px; font-size: 13px;">
+          <i data-lucide="briefcase" style="width: 16px; height: 16px;"></i>
+          <span>Convocatorias Abiertas</span>
+        </a>
+        <button type="button" class="pdf-hero-btn-primary" onclick="openLoginModal()" style="padding: 9px 20px; font-size: 13px;">
+          <i data-lucide="log-in" style="width: 16px; height: 16px;"></i>
+          <span>Iniciar sesión</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Contenedor Principal (PDF Pantalla 1: Página Principal) -->
+    <main class="pdf-landing-container">
+      <!-- Columna Izquierda: Hero Textual -->
+      <section class="pdf-hero-left">
+        <div class="pdf-hero-badge">
+          <span class="pdf-badge-dot"></span>
+          <span>Nueva plataforma</span>
+        </div>
+
+        <h1 class="pdf-hero-title">
+          Toda tu <span class="pdf-hero-highlight">gestión administrativa</span><br />
+          en un solo lugar
+        </h1>
+
+        <p class="pdf-hero-desc">
+          Una plataforma integral para administrar los procesos de la institución de forma ágil, segura y con trazabilidad total. Centraliza, controla y decide mejor.
+        </p>
+
+        <div class="pdf-hero-actions">
+          <button type="button" class="pdf-hero-btn-primary" onclick="openLoginModal()" id="hero-login-btn">
+            <i data-lucide="arrow-right-circle" style="width: 18px; height: 18px;"></i>
+            <span>Iniciar sesión</span>
+          </button>
+          <button type="button" class="pdf-hero-btn-secondary" onclick="openHowItWorksModal()">
+            <i data-lucide="play-circle" style="width: 18px; height: 18px;"></i>
+            <span>Ver cómo funciona</span>
+          </button>
         </div>
       </section>
-      <section class="panel">
-        <div class="card">
-          <h2>Bienvenido de nuevo</h2>
-          <p>Ingresa tus credenciales para continuar.</p>
-          <div id="error" class="error"></div>
-          <label>
-            Correo electrónico
-            <input id="email" type="email" placeholder="nombre@correo.com" autocomplete="email" required />
-          </label>
-          <label>
-            Contraseña
-            <div class="password">
-              <input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                autocomplete="current-password"
-                required
-              />
-              <button type="button" onclick="togglePassword()" aria-label="Mostrar u ocultar contraseña">◉</button>
-            </div>
-          </label>
-                    <button id="login-btn" class="primary" onclick="login()">Iniciar sesión</button>
 
-          <!-- Tarjeta de estado de autenticación ultra moderna (Linear / Stripe style) -->
-          <div id="auth-status-card" class="auth-status-card" style="display: none;">
-            <div class="auth-status-icon-wrap">
-              <div class="auth-spinner"></div>
-              <svg class="auth-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-              </svg>
-            </div>
-            <div class="auth-status-texts">
-              <p id="auth-status-title" class="auth-status-title">Verificando credenciales...</p>
-              <p id="auth-status-subtitle" class="auth-status-subtitle">Conectando con el servidor seguro...</p>
-            </div>
-            <div class="auth-bottom-progress-track">
-              <div id="auth-bottom-progress-bar" class="auth-bottom-progress-bar"></div>
-            </div>
+      <!-- Columna Derecha: Tarjeta Ilustrativa Window (PDF Screen 1) -->
+      <section class="pdf-hero-right">
+        <div class="pdf-hero-card-window">
+          <!-- Tres puntos de la ventana -->
+          <div class="pdf-window-header">
+            <span class="pdf-win-dot" style="background: #ef4444;"></span>
+            <span class="pdf-win-dot" style="background: #f59e0b;"></span>
+            <span class="pdf-win-dot" style="background: #22c55e;"></span>
           </div>
 
-          <!-- Acceso discreto para candidatos -->
-          <div class="candidate-banner-card">
-            <span class="banner-badge">¿Buscas trabajo?</span>
-            <p class="banner-desc">Conoce nuestras vacantes abiertas y postúlate en 1 minuto:</p>
-            <a href="empleos.html" class="banner-btn">Ver vacantes abiertas →</a>
+          <!-- Lista de Estados de Procesos Ilustrativos -->
+          <div class="pdf-window-list">
+            <!-- Item 1: Aprobado -->
+            <div class="pdf-win-item">
+              <div class="pdf-win-item-icon pdf-win-icon-green">
+                <i data-lucide="file-check"></i>
+              </div>
+              <div class="pdf-win-lines">
+                <div class="pdf-win-line pdf-win-line-long"></div>
+                <div class="pdf-win-line pdf-win-line-short"></div>
+              </div>
+              <span class="pdf-win-badge pdf-badge-green">Aprobado</span>
+            </div>
+
+            <!-- Item 2: En proceso -->
+            <div class="pdf-win-item">
+              <div class="pdf-win-item-icon pdf-win-icon-amber">
+                <i data-lucide="clock"></i>
+              </div>
+              <div class="pdf-win-lines">
+                <div class="pdf-win-line pdf-win-line-long"></div>
+                <div class="pdf-win-line pdf-win-line-short"></div>
+              </div>
+              <span class="pdf-win-badge pdf-badge-amber">En proceso</span>
+            </div>
+
+            <!-- Item 3: Pendiente -->
+            <div class="pdf-win-item">
+              <div class="pdf-win-item-icon pdf-win-icon-blue">
+                <i data-lucide="file-text"></i>
+              </div>
+              <div class="pdf-win-lines">
+                <div class="pdf-win-line pdf-win-line-long"></div>
+                <div class="pdf-win-line pdf-win-line-short"></div>
+              </div>
+              <span class="pdf-win-badge pdf-badge-blue">Pendiente</span>
+            </div>
+
+            <!-- Item 4: Firmado -->
+            <div class="pdf-win-item">
+              <div class="pdf-win-item-icon pdf-win-icon-teal">
+                <i data-lucide="edit-3"></i>
+              </div>
+              <div class="pdf-win-lines">
+                <div class="pdf-win-line pdf-win-line-long"></div>
+                <div class="pdf-win-line pdf-win-line-short"></div>
+              </div>
+              <span class="pdf-win-badge pdf-badge-teal">Firmado</span>
+            </div>
           </div>
-          <p class="center"><a href="recuperar.html">¿Olvidaste tu contraseña?</a></p>
-          <p class="center">
-            ¿No tienes una cuenta? <a href="registro.html">Crear cuenta</a>
-          </p>
         </div>
       </section>
+    </main>
+
+    <!-- Botón Flotante Tutorial (PDF Screen 1, 2, 3) -->
+    <button type="button" class="pdf-floating-tutorial" onclick="openTutorialModal()" aria-label="Abrir Tutorial">
+      <i data-lucide="play" style="width: 14px; height: 14px; fill: currentColor;"></i>
+      <span>Tutorial</span>
+    </button>
+
+    <!-- Modal de Iniciar Sesión (Integrado con backend y auth.js) -->
+    <div id="login-modal" class="pdf-login-modal" onclick="handleLoginModalBackdrop(event)">
+      <div class="pdf-login-card">
+        <button type="button" class="pdf-modal-close-btn" onclick="closeLoginModal()" aria-label="Cerrar modal">×</button>
+        <h2>Bienvenido de nuevo</h2>
+        <p>Ingresa tus credenciales para continuar al sistema institucional.</p>
+
+        <div id="error" class="error"></div>
+
+        <form onsubmit="event.preventDefault(); login();">
+          <label for="email">Correo electrónico</label>
+          <input id="email" type="email" placeholder="nombre@correo.com" autocomplete="email" required />
+
+          <label for="password">Contraseña</label>
+          <div class="password">
+            <input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              autocomplete="current-password"
+              required
+            />
+            <button type="button" onclick="togglePassword()" aria-label="Mostrar u ocultar contraseña">◉</button>
+          </div>
+
+          <button id="login-btn" type="submit" class="primary">Iniciar sesión</button>
+        </form>
+
+        <!-- Tarjeta de estado de autenticación (auth.js) -->
+        <div id="auth-status-card" class="auth-status-card" style="display: none; margin-top: 16px;">
+          <div class="auth-status-icon-wrap">
+            <div class="auth-spinner"></div>
+            <svg class="auth-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+            </svg>
+          </div>
+          <div class="auth-status-texts">
+            <p id="auth-status-title" class="auth-status-title">Verificando credenciales...</p>
+            <p id="auth-status-subtitle" class="auth-status-subtitle">Conectando con el servidor seguro...</p>
+          </div>
+          <div class="auth-bottom-progress-track">
+            <div id="auth-bottom-progress-bar" class="auth-bottom-progress-bar"></div>
+          </div>
+        </div>
+
+        <!-- Banner para candidatos -->
+        <div class="candidate-banner-card" style="margin-top: 20px; background: rgba(255, 255, 255, 0.04); border-color: rgba(34, 197, 94, 0.2);">
+          <span class="banner-badge" style="background: rgba(34, 197, 94, 0.2); color: #86efac;">¿Buscas trabajo?</span>
+          <p class="banner-desc" style="color: #cbd5e1;">Conoce nuestras convocatorias abiertas y postúlate en 1 minuto:</p>
+          <a href="empleos.html" class="banner-btn" style="background: #16a34a; color: #fff;">Ver convocatorias abiertas →</a>
+        </div>
+
+        <p class="center" style="margin-top: 18px; font-size: 13px;"><a href="recuperar.html" style="color: #86efac; text-decoration: none;">¿Olvidaste tu contraseña?</a></p>
+        <p class="center" style="margin-top: 8px; font-size: 13px; color: #94a3b8;">
+          ¿No tienes una cuenta? <a href="registro.html" style="color: #86efac; font-weight: 700; text-decoration: none;">Crear cuenta</a>
+        </p>
+      </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js" defer></script>
+
+    <!-- Modal "Ver cómo funciona" (Explicación del Flujo) -->
+    <div id="how-modal" class="pdf-login-modal" onclick="if(event.target===this) closeHowItWorksModal()">
+      <div class="pdf-login-card" style="width: min(600px, 100%);">
+        <button type="button" class="pdf-modal-close-btn" onclick="closeHowItWorksModal()" aria-label="Cerrar">×</button>
+        <h2 style="display:flex; align-items:center; gap:10px;">
+          <i data-lucide="layers" style="color:#22c55e;"></i>
+          <span>Flujo de Trabajo RecruitPro</span>
+        </h2>
+        <p>Conoce los 4 pasos del sistema de selección institucional:</p>
+
+        <div style="display:flex; flex-direction:column; gap:12px; margin: 18px 0;">
+          <div style="display:flex; gap:12px; align-items:flex-start; background:rgba(255,255,255,0.04); padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.08);">
+            <span style="background:#16a34a; color:#fff; border-radius:50%; width:24px; height:24px; display:grid; place-items:center; font-weight:800; font-size:12px; flex-shrink:0;">1</span>
+            <div>
+              <b style="color:#f0fdf4; font-size:14px;">Página Principal & Acceso Unificado</b>
+              <p style="color:#94a3b8; font-size:12.5px; margin:2px 0 0;">Autenticación con protección CSRF, sesiones cifradas y portal público de convocatorias.</p>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:12px; align-items:flex-start; background:rgba(255,255,255,0.04); padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.08);">
+            <span style="background:#16a34a; color:#fff; border-radius:50%; width:24px; height:24px; display:grid; place-items:center; font-weight:800; font-size:12px; flex-shrink:0;">2</span>
+            <div>
+              <b style="color:#f0fdf4; font-size:14px;">Sistema de Selección & Módulos</b>
+              <p style="color:#94a3b8; font-size:12.5px; margin:2px 0 0;">Menú lateral con Mesa de Ayudas, gestión de Empresas, Selección, RRHH, Activos y Tareas.</p>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:12px; align-items:flex-start; background:rgba(255,255,255,0.04); padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.08);">
+            <span style="background:#16a34a; color:#fff; border-radius:50%; width:24px; height:24px; display:grid; place-items:center; font-weight:800; font-size:12px; flex-shrink:0;">3</span>
+            <div>
+              <b style="color:#f0fdf4; font-size:14px;">Procesos de Selección & Documentos</b>
+              <p style="color:#94a3b8; font-size:12.5px; margin:2px 0 0;">Panel oscuro de filtros avanzados, métricas en tiempo real y tabla de postulantes activos.</p>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:12px; align-items:flex-start; background:rgba(255,255,255,0.04); padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.08);">
+            <span style="background:#16a34a; color:#fff; border-radius:50%; width:24px; height:24px; display:grid; place-items:center; font-weight:800; font-size:12px; flex-shrink:0;">4</span>
+            <div>
+              <b style="color:#f0fdf4; font-size:14px;">Documentos para Aprobación & Formalización</b>
+              <p style="color:#94a3b8; font-size:12.5px; margin:2px 0 0;">Acordeón con lista de verificación (Contratos, Bancarios, Laboral) y visor dividido con dictamen técnico.</p>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" class="primary" onclick="closeHowItWorksModal(); openLoginModal();" style="width:100%;">
+          Entendido, Iniciar sesión
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal Tutorial Interactivo -->
+    <div id="tutorial-modal" class="pdf-login-modal" onclick="if(event.target===this) closeTutorialModal()">
+      <div class="pdf-login-card" style="width: min(540px, 100%);">
+        <button type="button" class="pdf-modal-close-btn" onclick="closeTutorialModal()" aria-label="Cerrar">×</button>
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+          <div style="width:36px; height:36px; border-radius:50%; background:#16a34a; color:#fff; display:grid; place-items:center;">
+            <i data-lucide="play" style="width:18px; height:18px; fill:currentColor;"></i>
+          </div>
+          <div>
+            <h2 style="font-size:20px; margin:0;">Guía Interactiva Tutorial</h2>
+            <small style="color:#86efac;">RecruitPro · Sistema Administrativo</small>
+          </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.05); padding:16px; border-radius:12px; border:1px solid rgba(34,197,94,0.2); margin-bottom:16px;">
+          <h4 style="color:#86efac; margin:0 0 6px; font-size:14px;">¿Cómo navegar por la plataforma?</h4>
+          <ul style="margin:0; padding-left:18px; color:#cbd5e1; font-size:13px; line-height:1.7;">
+            <li><b>Accede con tu cuenta institucional:</b> Si eres candidato, administrador o reclutador, tus permisos se asignan automáticamente.</li>
+            <li><b>Menú lateral:</b> Consulta <i>Procesos de Selección</i> para revisar los documentos cargados por cada aspirante.</li>
+            <li><b>Aprobación ágil:</b> Haz clic en el icono de carpeta/ojo de cada fila para abrir la lista de verificación (Contratos, Davivienda, Antecedentes) y aprobar o rechazar con un clic.</li>
+            <li><b>Mesa de Ayudas:</b> Si requieres soporte o necesitas reportar una incidencia técnica, usa el acceso rápido en el menú lateral.</li>
+          </ul>
+        </div>
+
+        <button type="button" class="primary" onclick="closeTutorialModal()">
+          Cerrar Tutorial
+        </button>
+      </div>
+    </div>
+
+    <!-- Scripts del Sistema -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
     <script src="js/ui.js?v=6.0"></script>
     <script src="js/auth.js"></script>
+    <script>
+      function openLoginModal() {
+        const modal = document.getElementById("login-modal");
+        if (modal) {
+          modal.classList.add("is-open");
+          setTimeout(() => document.getElementById("email")?.focus(), 100);
+        }
+      }
+
+      function closeLoginModal() {
+        const modal = document.getElementById("login-modal");
+        if (modal) modal.classList.remove("is-open");
+      }
+
+      function handleLoginModalBackdrop(event) {
+        if (event.target === document.getElementById("login-modal")) {
+          closeLoginModal();
+        }
+      }
+
+      function openHowItWorksModal() {
+        const modal = document.getElementById("how-modal");
+        if (modal) modal.classList.add("is-open");
+      }
+
+      function closeHowItWorksModal() {
+        const modal = document.getElementById("how-modal");
+        if (modal) modal.classList.remove("is-open");
+      }
+
+      function openTutorialModal() {
+        const modal = document.getElementById("tutorial-modal");
+        if (modal) modal.classList.add("is-open");
+      }
+
+      function closeTutorialModal() {
+        const modal = document.getElementById("tutorial-modal");
+        if (modal) modal.classList.remove("is-open");
+      }
+
+      // Si la URL viene con hash #login, abrir modal directamente
+      if (window.location.hash === "#login") {
+        openLoginModal();
+      }
+
+      // Inicializar iconos de Lucide
+      window.addEventListener("DOMContentLoaded", () => {
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+          window.lucide.createIcons();
+        }
+      });
+    </script>
   </body>
 </html>
