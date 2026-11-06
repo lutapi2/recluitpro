@@ -230,37 +230,47 @@ async def lifespan(_: FastAPI):
     try:
         from .database import SessionLocal
         with SessionLocal() as db:
-            admin_user = db.scalar(select(User).where(User.email == "luctapi89@gmail.com").limit(1))
-            if not db.scalar(select(User).where(User.email == "admin@recruitpro.internal").limit(1)):
-                db.add(User(
-                    id="a0000000-0000-0000-0000-000000000001",
-                    name="Administrador CECAR",
-                    email="admin@recruitpro.internal",
-                    password_hash=password_hash.hash("admin-password-1234"),
-                    role=Role.ADMIN,
-                    faculty="Gestión del Talento Humano",
-                    campus="Sede Principal Sincelejo",
-                    email_verified_at=utc_now(),
-                    last_activity_at=utc_now(),
-                    privacy_consent_at=utc_now(),
-                    privacy_consent_version=PRIVACY_CONSENT_VERSION,
-                ))
-                db.commit()
-            if not admin_user:
-                db.add(User(
-                    id="7c8ed709-87fc-404d-9dc3-e118d1f62191",
-                    name="Lucas Tapia",
-                    email="luctapi89@gmail.com",
-                    password_hash="$argon2id$v=19$m=65536,t=3,p=4$dvtLAEUGZ96eW00Sc5pHMA$XMZ5CBcyF0c0DanwRCg6DConjnhetEAo56HEd9jgv/c",
-                    role=Role.ADMIN,
-                    faculty="Facultad de Educación y Ciencias Sociales",
-                    campus="Sede Principal Sincelejo",
-                    email_verified_at=utc_now(),
-                    last_activity_at=utc_now(),
-                    privacy_consent_at=utc_now(),
-                    privacy_consent_version=PRIVACY_CONSENT_VERSION,
-                ))
-                db.commit()
+            try:
+                if not db.scalar(select(User.id).where(User.email == "admin@recruitpro.internal").limit(1)):
+                    db.add(User(
+                        id="a0000000-0000-0000-0000-000000000001",
+                        name="Administrador CECAR",
+                        email="admin@recruitpro.internal",
+                        password_hash=password_hash.hash("admin-password-1234"),
+                        role=Role.ADMIN,
+                        faculty="Gestión del Talento Humano",
+                        campus="Sede Principal Sincelejo",
+                        email_verified_at=utc_now(),
+                        last_activity_at=utc_now(),
+                        privacy_consent_at=utc_now(),
+                        privacy_consent_version=PRIVACY_CONSENT_VERSION,
+                    ))
+                    db.commit()
+            except Exception:
+                db.rollback()
+
+            admin_user = None
+            try:
+                admin_user = db.scalar(select(User).where(User.email == "luctapi89@gmail.com").limit(1))
+                if not admin_user:
+                    new_admin = User(
+                        id="7c8ed709-87fc-404d-9dc3-e118d1f62191",
+                        name="Lucas Tapia",
+                        email="luctapi89@gmail.com",
+                        password_hash="$argon2id$v=19$m=65536,t=3,p=4$dvtLAEUGZ96eW00Sc5pHMA$XMZ5CBcyF0c0DanwRCg6DConjnhetEAo56HEd9jgv/c",
+                        role=Role.ADMIN,
+                        faculty="Facultad de Educación y Ciencias Sociales",
+                        campus="Sede Principal Sincelejo",
+                        email_verified_at=utc_now(),
+                        last_activity_at=utc_now(),
+                        privacy_consent_at=utc_now(),
+                        privacy_consent_version=PRIVACY_CONSENT_VERSION,
+                    )
+                    db.add(new_admin)
+                    db.commit()
+                    admin_user = new_admin
+            except Exception:
+                db.rollback()
 
             # Seed Discard Reasons
             default_discard_reasons = [
@@ -272,49 +282,74 @@ async def lifespan(_: FastAPI):
                 ("desistimiento_voluntario", "DES-DESIST", "Desistimiento voluntario del aspirante", "El candidato solicitó formalmente el retiro de su postulación del proceso."),
             ]
             for dr_id, dr_code, dr_name, dr_desc in default_discard_reasons:
-                if not db.scalar(select(DiscardReason.id).where(DiscardReason.id == dr_id).limit(1)):
-                    db.add(DiscardReason(id=dr_id, code=dr_code, name=dr_name, description=dr_desc, active=True))
-            db.commit()
+                try:
+                    if not db.scalar(select(DiscardReason.id).where(DiscardReason.id == dr_id).limit(1)):
+                        db.add(DiscardReason(id=dr_id, code=dr_code, name=dr_name, description=dr_desc, active=True))
+                        db.commit()
+                except Exception:
+                    db.rollback()
 
             # Seed CECAR Vacancies
-            if not db.scalar(select(Vacancy.id).where(Vacancy.id == "f77546e6-aa0f-4346-8b25-e83f644eb134")):  # if not db.scalar(select(Vacancy.id).where(Vacancy.title.like("%docente cátedra%")).limit(1)):
-                db.add(Vacancy(
-                    id="f77546e6-aa0f-4346-8b25-e83f644eb134",
-                    code="CONV-2026-DOC-01",
-                    title="Aspirante: Nuevo a docente cátedra",
-                    type="Cátedra Universitaria",
-                    location="Sincelejo, Sucre",
-                    faculty="Facultad de Educación y Ciencias Sociales",
-                    program="Licenciatura en Educación Infantil",
-                    campus="Sede Principal Sincelejo",
-                    academic_period="2026-2",
-                    vacancies_count=2,
-                    modality="Presencial",
-                    description="Convocatoria pública institucional de méritos para proveer horas de cátedra docente en el programa de Licenciatura en Educación Infantil. Se requiere título profesional en educación o áreas afines, especialización o maestría y mínimo 1 año de experiencia docente universitaria.",
-                    status="active",
-                    opening_date=utc_now() - timedelta(days=5),
-                    closing_date=utc_now() + timedelta(days=25),
-                    recruiter_id="7c8ed709-87fc-404d-9dc3-e118d1f62191",
-                ))
-                db.add(Vacancy(
-                    id="e928ec9d-4615-4dd3-ba17-81438fb5b0fd",
-                    code="CONV-2026-ING-02",
-                    title="Docente Tiempo Completo - Ingeniería de Software y Sistemas",
-                    type="Tiempo completo",
-                    location="Sincelejo / Híbrido",
-                    faculty="Facultad de Ingeniería",
-                    program="Ingeniería de Sistemas",
-                    campus="Sede Principal Sincelejo",
-                    academic_period="2026-2",
-                    vacancies_count=1,
-                    modality="Tiempo Completo",
-                    description="Convocatoria para docente de tiempo completo en áreas de ingeniería de software, arquitectura en la nube y desarrollo web. Requisitos: Profesional en Ingeniería de Sistemas, Maestría afín, experiencia investigativa demostrable.",
-                    status="active",
-                    opening_date=utc_now() - timedelta(days=2),
-                    closing_date=utc_now() + timedelta(days=30),
-                    recruiter_id="7c8ed709-87fc-404d-9dc3-e118d1f62191",
-                ))
-                db.commit()
+            cecar_vacancies_data = [
+                (
+                    "f77546e6-aa0f-4346-8b25-e83f644eb134",
+                    "CONV-2026-DOC-01",
+                    "Aspirante: Nuevo a docente cátedra",
+                    "Cátedra Universitaria",
+                    "Sincelejo, Sucre",
+                    "Facultad de Educación y Ciencias Sociales",
+                    "Licenciatura en Educación Infantil",
+                    "Sede Principal Sincelejo",
+                    "2026-2",
+                    2,
+                    "Presencial",
+                    "Convocatoria pública institucional de méritos para proveer horas de cátedra docente en el programa de Licenciatura en Educación Infantil. Se requiere título profesional en educación o áreas afines, especialización o maestría y mínimo 1 año de experiencia docente universitaria.",
+                    5,
+                    25,
+                ),
+                (
+                    "e928ec9d-4615-4dd3-ba17-81438fb5b0fd",
+                    "CONV-2026-ING-02",
+                    "Docente Tiempo Completo - Ingeniería de Software y Sistemas",
+                    "Tiempo completo",
+                    "Sincelejo / Híbrido",
+                    "Facultad de Ingeniería",
+                    "Ingeniería de Sistemas",
+                    "Sede Principal Sincelejo",
+                    "2026-2",
+                    1,
+                    "Tiempo Completo",
+                    "Convocatoria para docente de tiempo completo en áreas de ingeniería de software, arquitectura en la nube y desarrollo web. Requisitos: Profesional en Ingeniería de Sistemas, Maestría afín, experiencia investigativa demostrable.",
+                    2,
+                    30,
+                ),
+            ]
+            valid_recruiter_id = admin_user.id if admin_user else None
+            for v_id, v_code, v_title, v_type, v_loc, v_fac, v_prog, v_camp, v_per, v_cnt, v_mod, v_desc, d_open, d_close in cecar_vacancies_data:
+                try:
+                    exists = db.scalar(select(Vacancy.id).where(or_(Vacancy.id == v_id, Vacancy.code == v_code)).limit(1))
+                    if not exists:
+                        db.add(Vacancy(
+                            id=v_id,
+                            code=v_code,
+                            title=v_title,
+                            type=v_type,
+                            location=v_loc,
+                            faculty=v_fac,
+                            program=v_prog,
+                            campus=v_camp,
+                            academic_period=v_per,
+                            vacancies_count=v_cnt,
+                            modality=v_mod,
+                            description=v_desc,
+                            status="active",
+                            opening_date=utc_now() - timedelta(days=d_open),
+                            closing_date=utc_now() + timedelta(days=d_close),
+                            recruiter_id=valid_recruiter_id,
+                        ))
+                        db.commit()
+                except Exception:
+                    db.rollback()
     except Exception as exc:
         logging.getLogger("recruitpro").warning("Startup seed notice: %s", exc)
     yield
