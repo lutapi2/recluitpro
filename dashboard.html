@@ -15,128 +15,82 @@
     <link rel="stylesheet" href="css/pdf-theme.css?v=1.0" />
   </head>
   <body>
-    <!-- Layout Estructurado con Barra Lateral (PDF Screen 2 & 3) -->
-    <div class="pdf-dashboard-shell">
-      <!-- Menú Lateral Institucional Verde Bosque -->
-      <aside class="pdf-sidebar" id="pdf-sidebar">
-        <div class="pdf-sidebar-brand">
-          <div class="pdf-sidebar-avatar-circle">
-            <i data-lucide="user"></i>
-          </div>
-          <span class="pdf-sidebar-brand-title">Dashboard</span>
-        </div>
-
-        <nav class="pdf-sidebar-nav" id="sidebar-nav">
-          <button type="button" class="pdf-sidebar-link" onclick="openMesaDeAyudas()" data-nav="mesa" title="Mesa de Ayudas">
-            <i data-lucide="headphones"></i>
-            <span>Mesa de Ayudas</span>
-          </button>
-          <button type="button" class="pdf-sidebar-link" onclick="view('procesos')" data-nav="procesos" title="Procesos de selección">
-            <i data-lucide="folder-check"></i>
-            <span>Procesos de selección</span>
-          </button>
-          <button type="button" class="pdf-sidebar-link" onclick="view('home')" data-nav="home" title="Inicio / General">
-            <i data-lucide="layout-dashboard"></i>
-            <span>Inicio</span>
-          </button>
-          <button type="button" class="pdf-sidebar-link" onclick="view('jobs')" data-nav="jobs" title="Vacantes y convocatorias">
-            <i data-lucide="briefcase"></i>
-            <span>Vacantes</span>
-          </button>
-          <button type="button" class="pdf-sidebar-link" onclick="view('candidates')" data-nav="candidates" title="Directorio de candidatos">
-            <i data-lucide="users"></i>
-            <span>Candidatos</span>
-          </button>
-        </nav>
-
-        <div class="pdf-sidebar-footer">
-          <button type="button" class="pdf-sidebar-logout-btn" onclick="logout()" title="Cerrar sesión">
-            <i data-lucide="log-out"></i>
-            <span>Cerrar Sesión</span>
-          </button>
-        </div>
-      </aside>
-
-      <!-- Área Principal de Contenido -->
-      <div class="pdf-main-container">
         <header class="topbar" id="site-header">
-          <a class="brand-link" href="dashboard.html" aria-label="RecruitPro, inicio">
-            <div class="pdf-logo-icon" style="width: 32px; height: 32px; border-radius: 8px;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L3 7V12C3 17.5 6.8 22.6 12 24C17.2 22.6 21 17.5 21 12V7L12 2Z" fill="currentColor" fill-opacity="0.2" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M9 12L11 14L15 10" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-            <span class="logo-name">RecruitPro</span>
-          </a>
+      <a class="brand-link" href="dashboard.html" aria-label="RecruitPro, inicio">
+        <div class="pdf-logo-icon" style="width: 32px; height: 32px; border-radius: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L3 7V12C3 17.5 6.8 22.6 12 24C17.2 22.6 21 17.5 21 12V7L12 2Z" fill="currentColor" fill-opacity="0.2" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M9 12L11 14L15 10" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="logo-name">RecruitPro</span>
+      </a>
 
-          <!-- Disparador de Paleta de Comandos (Ctrl + K) -->
-          <button type="button" class="rp-search-trigger" onclick="openCommandPalette()" aria-label="Buscar o comandos (Ctrl + K)">
-            <i data-lucide="search" class="rp-icon rp-icon-sm"></i>
-            <span class="search-label">Buscar o comandos...</span>
-            <kbd class="rp-kbd">Ctrl K</kbd>
-          </button>
+      <!-- Disparador de Paleta de Comandos (Ctrl + K) -->
+      <button type="button" class="rp-search-trigger" onclick="openCommandPalette()" aria-label="Buscar o comandos (Ctrl + K)">
+        <i data-lucide="search" class="rp-icon rp-icon-sm"></i>
+        <span class="search-label">Buscar o comandos...</span>
+        <kbd class="rp-kbd">Ctrl K</kbd>
+      </button>
 
-          <!-- Navegación Principal con Pill Deslizante -->
-          <nav id="nav" class="rp-nav" aria-label="Navegación principal">
-            <div id="nav-pill" class="rp-nav-pill"></div>
-          </nav>
+      <!-- Navegación Principal con Pill Deslizante -->
+      <nav id="nav" class="rp-nav" aria-label="Navegación principal">
+        <div id="nav-pill" class="rp-nav-pill"></div>
+      </nav>
 
-          <div class="account">
-            <a href="empleos.html" target="_blank" class="kanban-action-btn" style="text-decoration: none; font-size: 12px; font-weight: 600;" title="Ver portal público de empleo">
-              <i data-lucide="external-link" class="rp-icon rp-icon-sm"></i>
-              <span>Portal de Empleos</span>
-            </a>
+      <div class="account">
+        <button type="button" class="kanban-action-btn" onclick="openMesaDeAyudas()" style="font-size: 12px; font-weight: 600;" title="Mesa de Ayudas Institucional CECAR">
+          <i data-lucide="headphones" class="rp-icon rp-icon-sm"></i>
+          <span>Mesa de Ayudas</span>
+        </button>
+        <a href="empleos.html" target="_blank" class="kanban-action-btn" style="text-decoration: none; font-size: 12px; font-weight: 600;" title="Ver portal público de empleo">
+          <i data-lucide="external-link" class="rp-icon rp-icon-sm"></i>
+          <span>Portal de Empleos</span>
+        </a>
 
-            <!-- Botón de Modo Oscuro (Sol / Luna) -->
-            <button type="button" class="rp-btn rp-btn--ghost rp-btn--icon rp-btn--sm theme-toggle-btn" data-theme-toggle onclick="ui.theme.toggle()" aria-label="Cambiar tema">
-              <i data-lucide="moon" class="rp-icon"></i>
-            </button>
+        <!-- Botón de Modo Oscuro (Sol / Luna) -->
+        <button type="button" class="rp-btn rp-btn--ghost rp-btn--icon rp-btn--sm theme-toggle-btn" data-theme-toggle onclick="ui.theme.toggle()" aria-label="Cambiar tema">
+          <i data-lucide="moon" class="rp-icon"></i>
+        </button>
 
-            <div class="profile" aria-label="Perfil de usuario">
-              <span id="avatar" class="avatar" aria-hidden="true"></span>
-              <span class="profile-details">
-                <b id="user"></b>
-                <span id="user-role"></span>
-              </span>
-            </div>
-
-            <button class="logout-button" onclick="logout()" title="Cerrar sesión">
-              <i data-lucide="log-out" class="rp-icon rp-icon-sm"></i>
-              <span class="logout-text">Salir</span>
-            </button>
-
-            <!-- Botón Hamburguesa Móvil -->
-            <button type="button" class="rp-btn rp-btn--ghost rp-btn--icon rp-hamburger-btn" id="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Abrir menú de navegación" aria-expanded="false">
-              <i data-lucide="menu" class="rp-icon"></i>
-            </button>
-          </div>
-        </header>
-
-        <!-- Menú Drawer Móvil Colapsable -->
-        <div id="mobile-drawer" class="rp-mobile-drawer" aria-hidden="true" style="display: none;">
-          <div id="mobile-nav-list" class="rp-mobile-nav-list"></div>
-          <div style="display: flex; gap: 8px; margin-top: auto; padding-top: 14px; border-top: 1px solid var(--rp-border);">
-            <button type="button" class="rp-btn rp-btn--secondary" style="flex: 1;" onclick="ui.theme.toggle()">
-              <i data-lucide="moon" class="rp-icon rp-icon-sm"></i>
-              <span>Modo oscuro</span>
-            </button>
-            <button type="button" class="rp-btn rp-btn--danger" style="flex: 1;" onclick="logout()">
-              <i data-lucide="log-out" class="rp-icon rp-icon-sm"></i>
-              <span>Cerrar sesión</span>
-            </button>
-          </div>
+        <div class="profile" aria-label="Perfil de usuario">
+          <span id="avatar" class="avatar" aria-hidden="true"></span>
+          <span class="profile-details">
+            <b id="user"></b>
+            <span id="user-role"></span>
+          </span>
         </div>
 
-        <main id="app" class="content"></main>
+        <button class="logout-button" onclick="logout()" title="Cerrar sesión">
+          <i data-lucide="log-out" class="rp-icon rp-icon-sm"></i>
+          <span class="logout-text">Salir</span>
+        </button>
+
+        <!-- Botón Hamburguesa Móvil -->
+        <button type="button" class="rp-btn rp-btn--ghost rp-btn--icon rp-hamburger-btn" id="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Abrir menú de navegación" aria-expanded="false">
+          <i data-lucide="menu" class="rp-icon"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Menú Drawer Móvil Colapsable -->
+    <div id="mobile-drawer" class="rp-mobile-drawer" aria-hidden="true" style="display: none;">
+      <div id="mobile-nav-list" class="rp-mobile-nav-list"></div>
+      <div style="display: flex; gap: 8px; margin-top: auto; padding-top: 14px; border-top: 1px solid var(--rp-border);">
+        <button type="button" class="rp-btn rp-btn--secondary" style="flex: 1;" onclick="ui.theme.toggle()">
+          <i data-lucide="moon" class="rp-icon rp-icon-sm"></i>
+          <span>Modo oscuro</span>
+        </button>
+        <button type="button" class="rp-btn rp-btn--danger" style="flex: 1;" onclick="logout()">
+          <i data-lucide="log-out" class="rp-icon rp-icon-sm"></i>
+          <span>Cerrar sesión</span>
+        </button>
       </div>
     </div>
 
-    <!-- Botón Flotante Tutorial (PDF Screen 1, 2, 3) -->
-    <button type="button" class="pdf-floating-tutorial" onclick="openTutorialModal()" aria-label="Abrir Tutorial">
-      <i data-lucide="play" style="width: 14px; height: 14px; fill: currentColor;"></i>
-      <span>Tutorial</span>
-    </button>
+    <main id="app" class="content"></main>
+
+    
 
     <!-- Dialog para Visor de CVs y Documentos (PDF Screen 4: Documentos para aprobación) -->
     <dialog
@@ -611,60 +565,7 @@
       </div>
     </dialog>
 
-    <!-- Dialog Tutorial Interactivo (PDF Screen 1, 2, 3) -->
-    <dialog id="tutorial-dialog" class="pdf-approval-dialog" style="max-width: 620px; height: auto;">
-      <div class="preview-header" style="background: #0b1f16; color: #fff; padding: 16px 20px; border-bottom: 1px solid rgba(34,197,94,0.3);">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <div style="width: 32px; height: 32px; border-radius: 50%; background: #16a34a; color: #fff; display: grid; place-items: center;">
-            <i data-lucide="play" style="width: 16px; height: 16px; fill: currentColor;"></i>
-          </div>
-          <div>
-            <h2 style="margin: 0; font-size: 16px; color: #fff;">Tutorial del Sistema de Gestión</h2>
-            <small style="color: #86efac;">RecruitPro · Guía Rápida por Pantallas</small>
-          </div>
-        </div>
-        <button class="preview-close" type="button" onclick="closeTutorialModal()" style="color: #fff; background: rgba(255,255,255,0.15);">×</button>
-      </div>
-      <div class="edit-modal-body" style="padding: 22px;">
-        <div style="display: flex; flex-direction: column; gap: 14px;">
-          <div style="display: flex; gap: 12px; align-items: flex-start; background: var(--rp-surface-2); padding: 12px; border-radius: 10px; border: 1px solid var(--rp-border);">
-            <span style="background: #16a34a; color: #fff; border-radius: 50%; width: 22px; height: 22px; display: grid; place-items: center; font-weight: 800; font-size: 11px; flex-shrink: 0;">1</span>
-            <div>
-              <b style="font-size: 13.5px; color: var(--rp-text);">Página Principal</b>
-              <p style="margin: 2px 0 0; font-size: 12.5px; color: var(--rp-text-muted);">Acceso seguro y centralizado para candidatos, reclutadores y directores.</p>
-            </div>
-          </div>
-
-          <div style="display: flex; gap: 12px; align-items: flex-start; background: var(--rp-surface-2); padding: 12px; border-radius: 10px; border: 1px solid var(--rp-border);">
-            <span style="background: #16a34a; color: #fff; border-radius: 50%; width: 22px; height: 22px; display: grid; place-items: center; font-weight: 800; font-size: 11px; flex-shrink: 0;">2</span>
-            <div>
-              <b style="font-size: 13.5px; color: var(--rp-text);">Sistema de Selección</b>
-              <p style="margin: 2px 0 0; font-size: 12.5px; color: var(--rp-text-muted);">Módulos de acceso rápido: Empresas, Selección, RRHH, Activos, Tareas y Reportes.</p>
-            </div>
-          </div>
-
-          <div style="display: flex; gap: 12px; align-items: flex-start; background: var(--rp-surface-2); padding: 12px; border-radius: 10px; border: 1px solid var(--rp-border);">
-            <span style="background: #16a34a; color: #fff; border-radius: 50%; width: 22px; height: 22px; display: grid; place-items: center; font-weight: 800; font-size: 11px; flex-shrink: 0;">3</span>
-            <div>
-              <b style="font-size: 13.5px; color: var(--rp-text);">Procesos de Selección</b>
-              <p style="margin: 2px 0 0; font-size: 12.5px; color: var(--rp-text-muted);">Panel oscuro con filtros de contratación, métricas de 6 estados y tabla interactiva.</p>
-            </div>
-          </div>
-
-          <div style="display: flex; gap: 12px; align-items: flex-start; background: var(--rp-surface-2); padding: 12px; border-radius: 10px; border: 1px solid var(--rp-border);">
-            <span style="background: #16a34a; color: #fff; border-radius: 50%; width: 22px; height: 22px; display: grid; place-items: center; font-weight: 800; font-size: 11px; flex-shrink: 0;">4</span>
-            <div>
-              <b style="font-size: 13.5px; color: var(--rp-text);">Documentos para Aprobación</b>
-              <p style="margin: 2px 0 0; font-size: 12.5px; color: var(--rp-text-muted);">Acordeón con lista de documentos (Contratos, Davivienda, etc.) y aprobación en un clic.</p>
-            </div>
-          </div>
-        </div>
-
-        <div style="margin-top: 18px; display: flex; justify-content: flex-end;">
-          <button type="button" class="primary small" onclick="closeTutorialModal()">Entendido</button>
-        </div>
-      </div>
-    </dialog>
+    
 
     <!-- Dialog Reportes y Exportación Especializada CECAR (RF-079, RF-096, RF-097) -->
     <dialog id="report-dialog" class="pdf-approval-dialog" style="max-width: 960px; height: auto;">
