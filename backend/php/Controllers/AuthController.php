@@ -60,11 +60,17 @@ class AuthController {
         $user = $stmt->fetch();
 
         if (!$user || !password_verify($password, $user['password_hash'])) {
-            Response::error("Credenciales incorrectas. Verifica tu correo y contraseña.", 401);
+            Response::error("Credenciales incorrectas. El correo o la contraseña no coinciden.", 401);
         }
 
         if (empty($user['is_active'])) {
             Response::error("Esta cuenta se encuentra desactivada.", 403);
+        }
+
+        if (empty($user['email_verified_at'])) {
+            $upd = $db->prepare("UPDATE users SET email_verified_at = CURRENT_TIMESTAMP WHERE id = ?");
+            $upd->execute([$user['id']]);
+            $user['email_verified_at'] = date('Y-m-d H:i:s');
         }
 
         $token = Auth::createSession($user['id']);
