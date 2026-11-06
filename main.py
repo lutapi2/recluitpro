@@ -692,6 +692,18 @@ def user_data(user: User, db: Session, viewer: User) -> dict:
     }
 
 
+def safe_iso(val: Any) -> str | None:
+    if val is None:
+        return None
+    if isinstance(val, str):
+        return val
+    if hasattr(val, "isoformat"):
+        try:
+            return val.isoformat()
+        except Exception:
+            return str(val)
+    return str(val)
+
 def vacancy_data(vacancy: Vacancy, viewer: User, *, include_page_details: bool = True) -> dict:
     recruiter = vacancy.recruiter
     is_staff = viewer.role in (Role.ADMIN, Role.RECRUITER, Role.TALENTO_HUMANO, Role.REVIEWER)
@@ -756,9 +768,9 @@ def vacancy_data(vacancy: Vacancy, viewer: User, *, include_page_details: bool =
         "modality": getattr(vacancy, "modality", "Presencial"),
         "description": vacancy.description,
         "status": vacancy.status,
-        "openingDate": vacancy.opening_date.isoformat() if getattr(vacancy, "opening_date", None) else None,
-        "closingDate": vacancy.closing_date.isoformat() if getattr(vacancy, "closing_date", None) else None,
-        "createdAt": vacancy.created_at.isoformat(),
+        "openingDate": safe_iso(getattr(vacancy, "opening_date", None)),
+        "closingDate": safe_iso(getattr(vacancy, "closing_date", None)),
+        "createdAt": safe_iso(getattr(vacancy, "created_at", None)) or datetime.now(timezone.utc).isoformat(),
         "recruiter": {
             "id": recruiter.id,
             "name": recruiter.name,
@@ -3298,37 +3310,48 @@ def list_vacancies(
     status_filter: str = "",
     q: str = "",
     location: str = "",
+    vacancy_type: str = "",
+    sort: str = "created_at",
+    order: str = "desc",
     page: int = 1,
     page_size: int = 50,
     db: Session = Depends(get_db),
 ):
-    viewer = current_user(request, db)
-    stmt = select(Vacancy).options(joinedload(Vacancy.recruiter), joinedload(Vacancy.applications))
-    if viewer.role == Role.RECRUITER:
-        stmt = stmt.where(
-            or_(
-                Vacancy.recruiter_id == viewer.id,
-                Vacancy.applications.any(Application.assigned_recruiter_id == viewer.id),
+    try:
+        viewer = current_user(request, db)
+        stmt = select(Vacancy).options(joinedload(Vacancy.recruiter), joinedload(Vacancy.applications))
+        if viewer.role == Role.RECRUITER:
+            stmt = stmt.where(
+                or_(
+                    Vacancy.recruiter_id == viewer.id,
+                    Vacancy.applications.any(Application.assigned_recruiter_id == viewer.id),
+                )
             )
-        )
-    if status_filter.strip():
-        stmt = stmt.where(Vacancy.status == status_filter.strip())
-    if q.strip():
-        qs = f"%{q.strip().lower()}%"
-        stmt = stmt.where(or_(func.lower(Vacancy.title).like(qs), func.lower(Vacancy.description).like(qs)))
-    if location.strip():
-        stmt = stmt.where(func.lower(Vacancy.location).like(f"%{location.strip().lower()}%"))
+        if status_filter.strip():
+            stmt = stmt.where(Vacancy.status == status_filter.strip())
+        if q.strip():
+            qs = f"%{q.strip().lower()}%"
+            stmt = stmt.where(or_(func.lower(Vacancy.title).like(qs), func.lower(Vacancy.description).like(qs)))
+        if location.strip():
+            stmt = stmt.where(func.lower(Vacancy.location).like(f"%{location.strip().lower()}%"))
+        if vacancy_type.strip():
+            stmt = stmt.where(func.lower(Vacancy.type).like(f"%{vacancy_type.strip().lower()}%"))
 
-    vacancies = db.scalars(stmt.order_by(Vacancy.created_at.desc())).unique().all()
-    
-    result = []
-    for v in vacancies:
-        if faculty.strip() and faculty.strip().lower() not in getattr(v, "faculty", "").lower():
-            continue
-        if campus.strip() and campus.strip().lower() not in getattr(v, "campus", "").lower():
-            continue
-        result.append(vacancy_data(v, viewer))
-    return {"items": result, "total": len(result)}
+        vacancies = db.scalars(stmt.order_by(Vacancy.created_at.desc())).unique().all()
+        
+        result = []
+        for v in vacancies:
+            fac = (getattr(v, "faculty", "") or "").lower()
+            cam = (getattr(v, "campus", "") or "").lower()
+            if faculty.strip() and faculty.strip().lower() not in fac:
+                continue
+            if campus.strip() and campus.strip().lower() not in cam:
+                continue
+            result.append(vacancy_data(v, viewer))
+        return {"items": result, "total": len(result), "page": page, "page_size": page_size}
+    except Exception as e:
+        logger.exception("Error al listar vacantes: %s", e)
+        raise HTTPException(status_code=500, detail=f"No se pudieron cargar las vacantes: {str(e)}")
 
 
 @app.post("/api/vacancies", status_code=201)

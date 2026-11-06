@@ -406,11 +406,21 @@ async function apiRequest(url, options = {}) {
     throw new Error("Tu sesión expiró. Inicia sesión de nuevo.");
   }
   if (!response.ok) {
-    const result = await response.json().catch(() => ({}));
-    const detail = Array.isArray(result.detail)
-      ? result.detail.map((item) => item.msg).join(" ")
-      : result.detail;
-    throw new Error(detail || "No se pudo completar la solicitud.");
+    let detail = "";
+    try {
+      const result = await response.json();
+      detail = Array.isArray(result.detail)
+        ? result.detail.map((item) => item.msg).join(" ")
+        : (result.detail || result.error || result.message || "");
+    } catch {
+      try {
+        const text = await response.text();
+        if (text && text.length < 250) {
+          detail = text.replace(/<[^>]+>/g, " ").trim();
+        }
+      } catch {}
+    }
+    throw new Error(detail || `Error del servidor (${response.status} ${response.statusText || ""}). Intenta de nuevo.`);
   }
   if (response.status === 204) return null;
   return response;
@@ -1445,13 +1455,21 @@ async function view(page, vacancyId = "") {
         ${renderRecruiters(usersCache)}
       `;
     } else if (page === "jobs") {
-      const params = new URLSearchParams({ ...vacancyPageState, page: String(vacancyPageState.page), page_size: "20" });
-      const result = await (await apiRequest(`/api/vacancies?${params}`)).json();
-      vacanciesCache = result.items;
+      const cleanParams = {};
+      for (const [k, v] of Object.entries(vacancyPageState)) {
+        if (v !== "" && v !== null && v !== undefined) cleanParams[k] = v;
+      }
+      cleanParams.page = String(vacancyPageState.page || 1);
+      cleanParams.page_size = "20";
+      const params = new URLSearchParams(cleanParams);
+      const vacRes = await apiRequest(`/api/vacancies?${params}`);
+      const result = await vacRes.json();
+      const items = Array.isArray(result.items) ? result.items : (Array.isArray(result) ? result : []);
+      vacanciesCache = items;
       usersCache = user.role === "administrador"
         ? (await (await apiRequest("/api/users?role=reclutador")).json()).items || []
         : user.role === "reclutador" ? [user] : [];
-      app.innerHTML = `${renderVacancies(result.items)}${renderPager(result, "jobs")}`;
+      app.innerHTML = `${renderVacancies(items)}${renderPager(result || { total: items.length, page: 1, page_size: 20 }, "jobs")}`;
     } else if (page === "apply" && user.role === "candidato") {
       vacanciesCache = (await (await apiRequest("/api/vacancies")).json()).items || [];
       const vacancy = vacanciesCache.find((entry) => entry.id === vacancyId) || {
