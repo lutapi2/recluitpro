@@ -851,7 +851,7 @@ def register(payload: RegisterRequest, request: Request, response: Response, db:
         email=email,
         password_hash=password_hash.hash(payload.password),
         role=Role.CANDIDATE,
-        email_verified_at=None,
+        email_verified_at=utc_now(),
         last_activity_at=utc_now(),
         privacy_consent_at=utc_now(),
         privacy_consent_version=PRIVACY_CONSENT_VERSION,
@@ -867,25 +867,13 @@ def register(payload: RegisterRequest, request: Request, response: Response, db:
         logger.exception("Error al registrar cuenta: %s", error)
         raise HTTPException(status_code=500, detail="Error interno al registrar la cuenta.") from error
 
-    token = issue_email_token(db, user, "verify_email")
-    verification_link = (
-        os.getenv("PUBLIC_BASE_URL", str(request.base_url).rstrip("/"))
-        + f"/verificar.html?token={quote(token)}"
-    )
-    email_sent = notify_account_link(
-        user.email,
-        "Activa tu cuenta de RecruitPro",
-        f"Hola, {user.name}",
-        "Para comenzar a postularte y acceder al sistema, confirma tu correo electrónico:",
-        verification_link,
-    )
-    logger.info("Enlace de verificación para %s: %s", user.email, verification_link)
-
+    create_session(response, db, user, request)
     return {
-        "message": "Tu cuenta fue creada. Revisa tu correo para activarla.",
-        "emailSent": email_sent,
-        "token": token,
+        "message": "Cuenta creada y activada exitosamente.",
+        "emailSent": False,
+        "token": "auto-verified",
         "redirect": "dashboard.html",
+        "user": user_data(user, db, user),
     }
 
 
@@ -898,9 +886,11 @@ def login(payload: LoginRequest, request: Request, response: Response, db: Sessi
     password_matches = password_hash.verify(payload.password, stored_hash)
     if not user or not password_matches:
         raise HTTPException(status_code=401, detail="Correo o contraseña incorrectos.")
+    # email verification completely disabled - auto-verify if needed
     if user.email_verified_at is None:
-        raise HTTPException(status_code=403, detail="Debes verificar tu correo antes de iniciar sesión.")
+        user.email_verified_at = utc_now()
     user.last_activity_at = utc_now()
+    db.commit()
     create_session(response, db, user, request)
     return user_data(user, db, user)
 

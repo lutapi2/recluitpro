@@ -1,0 +1,89 @@
+%PDF-1.4
+1 0 obj
+<<
+  /Type /Catalog
+  /Pages 2 0 R
+>>
+endobj
+2 0 obj
+<<
+  /Type /Pages
+  /Kids [3 0 R]
+  /Count 1
+>>
+endobj
+3 0 obj
+<<
+  /Type /Page
+  /Parent 2 0 R
+  /MediaBox [0 0 612 792]
+  /Contents 4 0 R
+  /Resources <<
+    /Font <<
+      /F1 <<
+        /Type /Font
+        /Subtype /Type1
+        /BaseFont /Helvetica
+      >>
+    >>
+  >>
+>>
+endobj
+4 0 obj
+<< /Length 750 >>
+stream
+BT
+/F1 16 Tf
+50 730 Td
+(DAVID ECHEVERRI - INGENIERO DE SOFTWARE SENIOR & ARQUITECTO) Tj
+0 -26 Td
+/F1 11 Tf
+(Correo: david.echeverri@corporativo.com | Telefono: +57 315 890 1234 | Bogota) Tj
+0 -24 Td
+/F1 12 Tf
+(PERFIL PROFESIONAL) Tj
+0 -18 Td
+/F1 10 Tf
+(Ingeniero con 8 anos de experiencia comprobable liderando equipos de desarrollo backend.) Tj
+0 -14 Td
+(Especialista en desarrollo con Python, FastAPI, Django y SQLAlchemy.) Tj
+0 -14 Td
+(Amplio dominio de bases de datos relacionales PostgreSQL, modelado, indexacion y optimizacion.) Tj
+0 -14 Td
+(Arquitectura de microservicios con Docker, Kubernetes, mensajeria asincrona y despliegues en AWS.) Tj
+0 -24 Td
+(TRAYECTORIA LABORAL Y LOGROS) Tj
+0 -18 Td
+(1. Arquitecto de Software Principal - Soluciones Cloud SAS 2021 a 2026) Tj
+0 -14 Td
+(- Diseno y migracion de sistema central a microservicios con FastAPI y PostgreSQL.) Tj
+0 -14 Td
+(- Implementacion de contenedores Docker y orquestacion en Kubernetes AWS EKS.) Tj
+0 -14 Td
+(- Reduccion de tiempos de latencia en peticiones criticas en un 42 por ciento.) Tj
+0 -18 Td
+(2. Ingeniero Backend Senior - Fintech Andina 2018 a 2021) Tj
+0 -14 Td
+(- Desarrollo de APIs financieras seguras con Python, autenticacion OAuth2 y cifrado.) Tj
+0 -24 Td
+(COMPETENCIAS CLAVE) Tj
+0 -18 Td
+(Python, FastAPI, PostgreSQL, Docker, Kubernetes, AWS, Microservicios, Git, CI/CD, Agile.) Tj
+ET
+endstream
+endobj
+xref
+0 5
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000300 00000 n 
+trailer
+<<
+  /Size 5
+  /Root 1 0 R
+>>
+startxref
+1100
+%%EOF
