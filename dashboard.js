@@ -1466,9 +1466,19 @@ async function view(page, vacancyId = "") {
       const result = await vacRes.json();
       const items = Array.isArray(result.items) ? result.items : (Array.isArray(result) ? result : []);
       vacanciesCache = items;
-      usersCache = user.role === "administrador"
-        ? (await (await apiRequest("/api/users?role=reclutador")).json()).items || []
-        : user.role === "reclutador" ? [user] : [];
+      if (user.role === "administrador") {
+        try {
+          const uRes = await apiRequest("/api/users?role=reclutador");
+          const uData = await uRes.json();
+          usersCache = uData.items || [];
+        } catch {
+          usersCache = [];
+        }
+      } else if (user.role === "reclutador") {
+        usersCache = [user];
+      } else {
+        usersCache = [];
+      }
       app.innerHTML = `${renderVacancies(items)}${renderPager(result || { total: items.length, page: 1, page_size: 20 }, "jobs")}`;
     } else if (page === "apply" && user.role === "candidato") {
       vacanciesCache = (await (await apiRequest("/api/vacancies")).json()).items || [];
@@ -1848,7 +1858,7 @@ function renderVacancy(vacancy) {
   const canApply = user.role === "candidato";
   const applications = Array.isArray(vacancy.applications) ? vacancy.applications : [];
   const applied = applications.some((application) => application.email === user.email);
-  const canManage = vacancy.canManage === true;
+  const canManage = user.role === "administrador" || vacancy.canManage === true || (user.role === "reclutador" && (vacancy.recruiterId === user.id || (vacancy.recruiter && vacancy.recruiter.id === user.id)));
   const canReviewApplications = canManage || (user.role === "reclutador" && applications.length > 0);
   const isClosed = vacancy.status === "closed";
 
@@ -3810,6 +3820,11 @@ async function deleteVacancy(encodedId, title) {
     await view("jobs");
   } catch (error) {
     console.error("Error al eliminar vacante:", error);
+    if (typeof window.ui !== "undefined" && window.ui.toast) {
+      window.ui.toast(error.message || "No se pudo eliminar la vacante.", { type: "danger" });
+    } else {
+      alert(error.message || "No se pudo eliminar la vacante.");
+    }
     showMessage(error.message || "No se pudo eliminar la vacante.", true);
   }
 }

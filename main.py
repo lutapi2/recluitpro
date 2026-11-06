@@ -579,7 +579,7 @@ def issue_email_token(db: Session, user: User, purpose: str) -> str:
     expires_in = timedelta(hours=1) if purpose == "password_reset" else timedelta(hours=24)
     db.add(
         EmailToken(
-            user_id=user.id,
+            owner_id=user.id,
             token_hash=hash_token(token),
             purpose=purpose,
             expires_at=utc_now() + expires_in,
@@ -704,22 +704,21 @@ def safe_iso(val: Any) -> str | None:
             return str(val)
     return str(val)
 
-def vacancy_data(vacancy: Vacancy, viewer: User, *, include_page_details: bool = True) -> dict:
+def vacancy_data(vacancy: Vacancy, viewer: User | None = None, *, include_page_details: bool = True) -> dict:
     recruiter = vacancy.recruiter
-    is_staff = viewer.role in (Role.ADMIN, Role.RECRUITER, Role.TALENTO_HUMANO, Role.REVIEWER)
-    can_manage_vacancy = viewer.role == Role.ADMIN or (
-        viewer.role in (Role.RECRUITER, Role.TALENTO_HUMANO) and vacancy.recruiter_id == viewer.id
-    )
-    visible_applications = vacancy.applications
-    if viewer.role == Role.RECRUITER and not can_manage_vacancy:
-        visible_applications = [
-            item for item in vacancy.applications if item.assigned_recruiter_id == viewer.id
-        ]
-    can_see_applications = viewer.role == Role.ADMIN or (
-        is_staff and bool(visible_applications)
-    )
+    is_staff = bool(viewer and viewer.role in (Role.ADMIN, Role.RECRUITER, Role.TALENTO_HUMANO, Role.REVIEWER))
+    can_manage_vacancy = bool(viewer and (
+        viewer.role == Role.ADMIN or (
+            viewer.role in (Role.RECRUITER, Role.TALENTO_HUMANO) and vacancy.recruiter_id == viewer.id
+        )
+    ))
     applications = []
-    if can_see_applications:
+    if is_staff:
+        visible_applications = vacancy.applications
+        if viewer and viewer.role == Role.RECRUITER and not can_manage_vacancy:
+            visible_applications = [
+                item for item in vacancy.applications if item.assigned_recruiter_id == viewer.id
+            ]
         applications = [
             {
                 "id": item.id,
@@ -732,7 +731,7 @@ def vacancy_data(vacancy: Vacancy, viewer: User, *, include_page_details: bool =
                 "aiScore": item.ai_score,
                 "aiVerdict": item.ai_verdict,
                 "aiSummary": item.ai_summary,
-                "appliedAt": item.created_at.isoformat(),
+                "appliedAt": safe_iso(getattr(item, "created_at", None)),
                 "status": item.status,
                 "documentStatus": getattr(item, "document_status", "pendiente"),
                 "version": getattr(item, "version", 1),
@@ -747,13 +746,24 @@ def vacancy_data(vacancy: Vacancy, viewer: User, *, include_page_details: bool =
                         "toStatus": activity.to_status,
                         "note": activity.note,
                         "author": activity.author.name if activity.author else "Sistema",
-                        "createdAt": activity.created_at.isoformat(),
+                        "createdAt": safe_iso(getattr(activity, "created_at", None)),
                     }
-                    for activity in item.activities
+                    for activity in (item.activities or [])
                 ],
             }
-            for item in visible_applications
+            for item in (visible_applications or [])
         ]
+    elif viewer and viewer.role == Role.CANDIDATE:
+        applications = [
+            {
+                "id": item.id,
+                "email": viewer.email,
+                "status": item.status,
+            }
+            for item in (vacancy.applications or [])
+            if item.candidate_id == viewer.id or (item.candidate and item.candidate.email == viewer.email)
+        ]
+
     return {
         "id": vacancy.id,
         "code": getattr(vacancy, "code", "CONV-2026"),
@@ -771,11 +781,14 @@ def vacancy_data(vacancy: Vacancy, viewer: User, *, include_page_details: bool =
         "openingDate": safe_iso(getattr(vacancy, "opening_date", None)),
         "closingDate": safe_iso(getattr(vacancy, "closing_date", None)),
         "createdAt": safe_iso(getattr(vacancy, "created_at", None)) or datetime.now(timezone.utc).isoformat(),
+        "canManage": can_manage_vacancy,
         "recruiter": {
             "id": recruiter.id,
             "name": recruiter.name,
             "email": recruiter.email,
         } if recruiter else None,
+        "recruiterName": recruiter.name if recruiter else "Administrador",
+        "recruiterId": recruiter.id if recruiter else None,
         "applications": applications,
     }
 
@@ -1266,6 +1279,23 @@ def create_or_get_draft_application(
     if not payload.privacy_consent:
         raise HTTPException(status_code=422, detail="Debes aceptar el tratamiento de datos para iniciar la postulación.")
 
+    # Buscar documento previo del candidato o crear registro borrador seguro
+    latest_doc = db.scalar(
+        select(Document).where(Document.owner_id == user.id).order_by(Document.created_at.desc()).limit(1)
+    )
+    if not latest_doc:
+        doc_id = str(uuid4())
+        latest_doc = Document(
+            id=doc_id,
+            owner_id=user.id,
+            original_name="Hoja de Vida (CECAR HV).pdf",
+            media_type="application/pdf",
+            storage_name=doc_id,
+            size=0,
+        )
+        db.add(latest_doc)
+        db.flush()
+
     # Crear borrador
     app = Application(
         id=str(uuid4()),
@@ -1274,6 +1304,7 @@ def create_or_get_draft_application(
         name=user.name,
         phone=user.phone or "",
         location=user.location or "",
+        resume_id=latest_doc.id,
         status="borrador",
         document_status="pendiente",
         version=1,
@@ -3163,7 +3194,7 @@ def create_ticket(
 
     ticket = HelpTicket(
         id=str(uuid4()),
-        user_id=user.id,
+        owner_id=user.id,
         category=payload.category,
         subject=payload.subject.strip(),
         message=payload.message.strip(),
@@ -3317,10 +3348,15 @@ def list_vacancies(
     page_size: int = 50,
     db: Session = Depends(get_db),
 ):
+    viewer = None
     try:
         viewer = current_user(request, db)
+    except HTTPException:
+        viewer = None
+
+    try:
         stmt = select(Vacancy).options(joinedload(Vacancy.recruiter), joinedload(Vacancy.applications))
-        if viewer.role == Role.RECRUITER:
+        if viewer and viewer.role == Role.RECRUITER:
             stmt = stmt.where(
                 or_(
                     Vacancy.recruiter_id == viewer.id,
@@ -3329,6 +3365,8 @@ def list_vacancies(
             )
         if status_filter.strip():
             stmt = stmt.where(Vacancy.status == status_filter.strip())
+        elif viewer and viewer.role == Role.CANDIDATE:
+            stmt = stmt.where(Vacancy.status.in_(["active", "draft"]))
         if q.strip():
             qs = f"%{q.strip().lower()}%"
             stmt = stmt.where(or_(func.lower(Vacancy.title).like(qs), func.lower(Vacancy.description).like(qs)))
@@ -3351,7 +3389,7 @@ def list_vacancies(
         return {"items": result, "total": len(result), "page": page, "page_size": page_size}
     except Exception as e:
         logger.exception("Error al listar vacantes: %s", e)
-        raise HTTPException(status_code=500, detail=f"No se pudieron cargar las vacantes: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"No se pudieron cargar las vacantes: {str(e)})")
 
 
 @app.post("/api/vacancies", status_code=201)
@@ -3398,8 +3436,38 @@ def delete_vacancy(vacancy_id: str, request: Request, db: Session = Depends(get_
     vacancy = db.get(Vacancy, vacancy_id)
     if not vacancy:
         raise HTTPException(status_code=404, detail="Convocatoria no encontrada.")
-    db.delete(vacancy)
-    db.commit()
+    try:
+        from sqlalchemy import text
+        # Borrado en cascada exhaustivo mediante subconsultas estándar (compatible SQLite y Postgres)
+        cascade_sqls = [
+            "DELETE FROM item_reviews WHERE item_id IN (SELECT id FROM application_items WHERE application_id IN (SELECT id FROM applications WHERE vacancy_id = :vid))",
+            "DELETE FROM item_supports WHERE item_id IN (SELECT id FROM application_items WHERE application_id IN (SELECT id FROM applications WHERE vacancy_id = :vid))",
+            "DELETE FROM application_items WHERE application_id IN (SELECT id FROM applications WHERE vacancy_id = :vid)",
+            "DELETE FROM application_activities WHERE application_id IN (SELECT id FROM applications WHERE vacancy_id = :vid)",
+            "DELETE FROM interview_evaluations WHERE interview_id IN (SELECT id FROM interviews WHERE application_id IN (SELECT id FROM applications WHERE vacancy_id = :vid))",
+            "DELETE FROM interviews WHERE application_id IN (SELECT id FROM applications WHERE vacancy_id = :vid)",
+            "DELETE FROM classroom_tests WHERE application_id IN (SELECT id FROM applications WHERE vacancy_id = :vid)",
+            "DELETE FROM test_results WHERE application_id IN (SELECT id FROM applications WHERE vacancy_id = :vid)",
+            "DELETE FROM subsanacion_requests WHERE application_id IN (SELECT id FROM applications WHERE vacancy_id = :vid)",
+            "DELETE FROM occupational_exams WHERE application_id IN (SELECT id FROM applications WHERE vacancy_id = :vid)",
+            "DELETE FROM employment_bindings WHERE application_id IN (SELECT id FROM applications WHERE vacancy_id = :vid)",
+            "DELETE FROM hiring_dossiers WHERE application_id IN (SELECT id FROM applications WHERE vacancy_id = :vid)",
+            "DELETE FROM institutional_integrations WHERE application_id IN (SELECT id FROM applications WHERE vacancy_id = :vid)",
+            "DELETE FROM applications WHERE vacancy_id = :vid",
+            "DELETE FROM interview_slots WHERE vacancy_id = :vid",
+            "DELETE FROM selection_work_plans WHERE vacancy_id = :vid",
+            "DELETE FROM vacancies WHERE id = :vid"
+        ]
+        for sql in cascade_sqls:
+            try:
+                db.execute(text(sql), {"vid": vacancy_id})
+            except Exception as sub_err:
+                logger.debug("Cascade sql notice (%s): %s", sql, sub_err)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logger.exception("Error al eliminar vacante: %s", e)
+        raise HTTPException(status_code=500, detail=f"No se pudo eliminar la vacante: {str(e)}")
     return Response(status_code=204)
 
 

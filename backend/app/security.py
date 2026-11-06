@@ -28,9 +28,18 @@ def hash_token(token: str) -> str:
 
 def verify_csrf(request: Request) -> None:
     origin = request.headers.get("origin")
-    expected_origin = f"{request.url.scheme}://{request.headers.get('host', '')}"
-    if origin and origin != expected_origin:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Origen de solicitud no válido.")
+    scheme = request.headers.get("x-forwarded-proto") or request.url.scheme
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host", "")
+    valid_origins = {
+        f"https://{host}",
+        f"http://{host}",
+        f"{scheme}://{host}"
+    }
+    if origin and origin.rstrip("/") not in {vo.rstrip("/") for vo in valid_origins}:
+        from urllib.parse import urlparse
+        origin_host = urlparse(origin).netloc
+        if origin_host != host:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Origen de solicitud no válido.")
     cookie = request.cookies.get(CSRF_COOKIE, "")
     header = request.headers.get("x-csrf-token", "")
     if not cookie or not header or not hmac.compare_digest(cookie, header):

@@ -90,7 +90,7 @@ class Router {
                         $handler($input, $params);
                     }
                     return;
-                } catch (Exception $e) {
+                } catch (Throwable $e) {
                     Response::error($e->getMessage(), 500);
                     return;
                 }

@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from enum import StrEnum
 from uuid import uuid4
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, LargeBinary, String, Text, UniqueConstraint
+from sqlalchemy import TypeDecorator, Boolean, DateTime, Enum, ForeignKey, Integer, LargeBinary, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship, deferred
 
 from .database import Base
@@ -24,6 +24,31 @@ class Role(StrEnum):
     AUDITOR = "auditor"
 
 
+class RoleType(TypeDecorator):
+    impl = String(50)
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        if isinstance(value, Role):
+            return value.value
+        val_str = str(value).lower()
+        for r in Role:
+            if r.value == val_str or r.name.lower() == val_str:
+                return r.value
+        return str(value)
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        val_str = str(value).lower()
+        for r in Role:
+            if r.value == val_str or r.name.lower() == val_str:
+                return r
+        return value
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -31,7 +56,7 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(100))
     email: Mapped[str] = mapped_column(String(254), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(255))
-    role: Mapped[Role] = mapped_column(Enum(Role, native_enum=False), default=Role.CANDIDATE)
+    role: Mapped[Role] = mapped_column(RoleType(), default=Role.CANDIDATE)
     phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
     location: Mapped[str | None] = mapped_column(String(100), nullable=True)
     faculty: Mapped[str | None] = mapped_column(String(150), nullable=True, default="Facultad de Educación y Ciencias Sociales")
