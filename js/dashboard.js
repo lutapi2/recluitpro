@@ -389,8 +389,12 @@ async function apiRequest(url, options = {}) {
     headers: { ...(options.headers || {}) },
   };
   if (request.body && !(request.body instanceof FormData)) {
-    request.headers["Content-Type"] = "application/json";
-    request.body = JSON.stringify(request.body);
+    if (!request.headers["Content-Type"]) {
+      request.headers["Content-Type"] = "application/json";
+    }
+    if (typeof request.body !== "string") {
+      request.body = JSON.stringify(request.body);
+    }
   }
   if (request.method && request.method !== "GET") {
     request.headers["X-CSRF-Token"] = await csrfToken();

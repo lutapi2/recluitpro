@@ -18,7 +18,7 @@ from typing import Literal, Any
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request, Response, UploadFile, status
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import func, or_, select, text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
@@ -359,7 +359,19 @@ app = FastAPI(title="RecruitPro | Sistema de Selección CECAR", version="3.0.0",
 logger = logging.getLogger("recruitpro")
 
 
-class RegisterRequest(BaseModel):
+class FlexModel(BaseModel):
+    @model_validator(mode="before")
+    @classmethod
+    def _parse_raw_string(cls, data):
+        if isinstance(data, str):
+            try:
+                import json
+                return json.loads(data)
+            except Exception:
+                pass
+        return data
+
+class RegisterRequest(FlexModel):
     name: str = Field(min_length=1, max_length=100)
     email: str = Field(min_length=3, max_length=254)
     password: str = Field(min_length=6, max_length=128)
@@ -367,12 +379,12 @@ class RegisterRequest(BaseModel):
     privacy_consent: bool
 
 
-class LoginRequest(BaseModel):
+class LoginRequest(FlexModel):
     email: str = Field(min_length=3, max_length=254)
     password: str = Field(min_length=1, max_length=128)
 
 
-class VacancyRequest(BaseModel):
+class VacancyRequest(FlexModel):
     title: str = Field(min_length=1, max_length=120)
     type: str = Field(min_length=1, max_length=60)
     code: str | None = None
@@ -388,13 +400,13 @@ class VacancyRequest(BaseModel):
     status: str = "active"
 
 
-class ProfileRequest(BaseModel):
+class ProfileRequest(FlexModel):
     name: str = Field(min_length=1, max_length=100)
     phone: str = Field(default="", max_length=30)
     location: str = Field(default="", max_length=100)
 
 
-class AdminUserRequest(BaseModel):
+class AdminUserRequest(FlexModel):
     name: str = Field(min_length=1, max_length=100)
     email: str = Field(min_length=3, max_length=254)
     role: str = "candidato"
@@ -402,29 +414,29 @@ class AdminUserRequest(BaseModel):
     campus: str | None = "Sede Principal Sincelejo"
 
 
-class PasswordChangeRequest(BaseModel):
+class PasswordChangeRequest(FlexModel):
     current_password: str = Field(min_length=1, max_length=128)
     new_password: str = Field(min_length=12, max_length=128)
 
 
-class PasswordResetRequest(BaseModel):
+class PasswordResetRequest(FlexModel):
     email: str = Field(min_length=3, max_length=254)
 
 
-class PasswordResetConfirmRequest(BaseModel):
+class PasswordResetConfirmRequest(FlexModel):
     token: str = Field(min_length=20, max_length=200)
     new_password: str = Field(min_length=12, max_length=128)
 
 
-class DeleteAccountRequest(BaseModel):
+class DeleteAccountRequest(FlexModel):
     current_password: str = Field(min_length=1, max_length=128)
 
 
-class TokenRequest(BaseModel):
+class TokenRequest(FlexModel):
     token: str = Field(min_length=20, max_length=200)
 
 
-class ApplicationUpdateRequest(BaseModel):
+class ApplicationUpdateRequest(FlexModel):
     status: Literal[
         "borrador", "recibida", "enviada", "en_revision", "subsanacion_requerida",
         "habilitada", "preseleccionada", "entrevista", "entrevistada",
@@ -436,43 +448,43 @@ class ApplicationUpdateRequest(BaseModel):
 
 
 # --- Pydantic Models for Specific System Requirements ---
-class ItemCreateRequest(BaseModel):
+class ItemCreateRequest(FlexModel):
     item_type: str = Field(min_length=2, max_length=50) # HV-006, etc.
     section: str = Field(min_length=2, max_length=60)   # formacion, experiencia, etc.
     title: str = Field(min_length=1, max_length=255)
     data: dict[str, Any] = Field(default_factory=dict)
 
 
-class ItemUpdateRequest(BaseModel):
+class ItemUpdateRequest(FlexModel):
     title: str | None = None
     data: dict[str, Any] | None = None
 
 
-class ItemReviewRequest(BaseModel):
+class ItemReviewRequest(FlexModel):
     result: Literal["aprobado", "observado", "rechazado"]
     reason: str | None = None
     observation: str | None = None
 
 
-class SubsanacionCreateRequest(BaseModel):
+class SubsanacionCreateRequest(FlexModel):
     days: int = Field(default=5, ge=1, le=30)
     general_note: str | None = None
 
 
-class PreselectRequest(BaseModel):
+class PreselectRequest(FlexModel):
     justification: str | None = "Cumple con los requisitos mínimos documentales y de perfil."
 
 
-class DiscardRequest(BaseModel):
+class DiscardRequest(FlexModel):
     discard_reason_id: str
     note: str = Field(min_length=3, max_length=1000)
 
 
-class InternalNoteRequest(BaseModel):
+class InternalNoteRequest(FlexModel):
     note: str = Field(min_length=1, max_length=2000)
 
 
-class InterviewSlotCreateRequest(BaseModel):
+class InterviewSlotCreateRequest(FlexModel):
     vacancy_id: str
     start_time: datetime
     end_time: datetime
@@ -481,7 +493,7 @@ class InterviewSlotCreateRequest(BaseModel):
     max_capacity: int = 1
 
 
-class InterviewScheduleRequest(BaseModel):
+class InterviewScheduleRequest(FlexModel):
     slot_id: str | None = None
     scheduled_at: datetime
     duration_minutes: int = 45
@@ -490,19 +502,19 @@ class InterviewScheduleRequest(BaseModel):
     committee_members: list[str] = Field(default_factory=list)
 
 
-class InterviewRespondRequest(BaseModel):
+class InterviewRespondRequest(FlexModel):
     action: Literal["confirmar", "reprogramar"]
     reason: str | None = None
 
 
-class InterviewEvaluationRequest(BaseModel):
+class InterviewEvaluationRequest(FlexModel):
     criteria_scores: dict[str, int] = Field(default_factory=dict)
     total_score: int = Field(ge=0, le=100)
     concept: Literal["favorable", "favorable_con_reservas", "no_favorable"]
     notes: str | None = None
 
 
-class TestResultCreateRequest(BaseModel):
+class TestResultCreateRequest(FlexModel):
     test_type: Literal["psicotecnica", "conocimiento"]
     name: str = Field(min_length=1, max_length=120)
     score: int = Field(ge=0, le=100)
@@ -510,7 +522,7 @@ class TestResultCreateRequest(BaseModel):
     notes: str | None = None
 
 
-class ClassroomTestCreateRequest(BaseModel):
+class ClassroomTestCreateRequest(FlexModel):
     topic: str = Field(min_length=1, max_length=200)
     rubric: dict[str, Any] = Field(default_factory=dict)
     score: int = Field(ge=0, le=100)
@@ -518,35 +530,35 @@ class ClassroomTestCreateRequest(BaseModel):
     notes: str | None = None
 
 
-class OccupationalExamRequest(BaseModel):
+class OccupationalExamRequest(FlexModel):
     provider: str = "IPS Salud Ocupacional CECAR"
     fitness_concept: Literal["apto", "apto_con_restricciones", "no_apto", "pendiente"]
     restrictions: str | None = None
 
 
-class HiringDossierRequest(BaseModel):
+class HiringDossierRequest(FlexModel):
     checklist: dict[str, bool] = Field(default_factory=dict)
     contract_status: Literal["pendiente", "en_tramite", "firmado", "rechazado", "formalizado"] = "en_tramite"
     contract_type: str = "Cátedra Universitaria"
     notes: str | None = None
 
 
-class ConfirmBindingRequest(BaseModel):
+class ConfirmBindingRequest(FlexModel):
     employee_code: str = Field(min_length=2, max_length=50)
     start_date: datetime
 
 
-class HelpTicketCreateRequest(BaseModel):
+class HelpTicketCreateRequest(FlexModel):
     category: str = Field(min_length=1, max_length=60)
     subject: str = Field(min_length=3, max_length=150)
     message: str = Field(min_length=5, max_length=2000)
 
 
-class HelpTicketReplyRequest(BaseModel):
+class HelpTicketReplyRequest(FlexModel):
     response: str = Field(min_length=1, max_length=2000)
 
 
-class DraftApplicationRequest(BaseModel):
+class DraftApplicationRequest(FlexModel):
     vacancy_id: str
     privacy_consent: bool
 
@@ -2593,7 +2605,7 @@ def add_classroom_test(
 # DECISIÓN FINAL, BANCO DE TALENTO Y CIERRE (RF-073 a RF-076, RN-015, RN-021)
 # ==============================================================================
 
-class FinalDecisionRequest(BaseModel):
+class FinalDecisionRequest(FlexModel):
     result: Literal["seleccionada", "no_seleccionada", "elegible"]
     fundamento: str = Field(min_length=5, max_length=1500)
 
@@ -2639,7 +2651,7 @@ def record_final_decision(
     return {"message": "Decisión final registrada con éxito.", "status": app.status}
 
 
-class TalentBankConsentRequest(BaseModel):
+class TalentBankConsentRequest(FlexModel):
     consent: bool
 
 

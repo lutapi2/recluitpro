@@ -62,6 +62,15 @@ class Router {
             }
         }
 
+        if (is_string($input)) {
+            $secondDecoded = json_decode($input, true);
+            if (is_array($secondDecoded)) {
+                $input = $secondDecoded;
+            } else {
+                $input = [];
+            }
+        }
+
         foreach ($this->routes as $route) {
             if ($route['method'] !== $method) continue;
 
