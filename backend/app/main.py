@@ -3049,7 +3049,8 @@ def export_report_csv(
             row.append(r.get("discardReason", ""))
         elif report_type == "seleccionados":
             row.append(r.get("formalizationStatus", ""))
-        csv_lines.append(";".join(f'"{str(val).replace('"', '""')}"' for val in row))
+        escaped_row = ['"' + str(val).replace('"', '""') + '"' for val in row]
+        csv_lines.append(";".join(escaped_row))
 
     csv_content = b"\xef\xbb\xbf" + "\r\n".join(csv_lines).encode("utf-8")
     filename = f"reporte_cecar_{report_type}_{datetime.now().strftime('%Y%m%d')}.csv"
