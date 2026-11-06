@@ -21,8 +21,8 @@ dialog:not([open]) {
 
   /* Backward Compatibility Aliases */
   --bg: var(--bg-app);
-  --blue: #2563EB;
-  --dark: #0B1220;
+  --blue: #10B981;
+  --dark: #07140e;
   --text: #0F172A;
   --muted: #64748B;
   --line: #E2E8F0;
@@ -34,11 +34,11 @@ dialog:not([open]) {
   --text-subtle: #94A3B8;
 
   /* Brand / Primary */
-  --primary: #2563EB;
-  --primary-hover: #1D4ED8;
-  --primary-active: #1E40AF;
-  --primary-glow: rgba(37, 99, 235, 0.35);
-  --primary-subtle: #EFF6FF;
+  --primary: #10B981;
+  --primary-hover: #059669;
+  --primary-active: #047857;
+  --primary-glow: rgba(16, 185, 129, 0.35);
+  --primary-subtle: #ECFDF5;
 
   /* Status Colors */
   --success: #10B981;
@@ -128,8 +128,9 @@ a:focus-visible {
   position: relative;
   overflow: hidden;
   background-image:
-    radial-gradient(ellipse at 15% 85%, rgba(14, 165, 233, 0.12), transparent 42%),
-    linear-gradient(145deg, #0b1220, #111d35);
+    radial-gradient(ellipse at 15% 85%, rgba(16, 185, 129, 0.18), transparent 45%),
+    radial-gradient(ellipse at 85% 15%, rgba(34, 197, 94, 0.12), transparent 40%),
+    linear-gradient(145deg, #07140e, #0c2419);
 }
 
 .brand:after {
@@ -140,7 +141,7 @@ a:focus-visible {
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    rgba(37, 99, 235, 0.45),
+    rgba(16, 185, 129, 0.35),
     transparent 70%
   );
   right: -180px;
@@ -165,7 +166,7 @@ a:focus-visible {
 
 .brand small,
 .head small {
-  color: #93c5fd;
+  color: #34d399;
   font-weight: 800;
   letter-spacing: 0.12em;
 }
@@ -178,7 +179,7 @@ a:focus-visible {
 }
 
 .brand p {
-  color: #b8c4d6;
+  color: #a7f3d0;
   font-size: 18px;
   line-height: 1.6;
   max-width: 520px;
@@ -192,9 +193,11 @@ a:focus-visible {
 
 .features span {
   padding: 18px;
-  border: 1px solid #ffffff18;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  background: rgba(7, 20, 14, 0.55);
+  backdrop-filter: blur(8px);
   border-radius: 15px;
-  color: #9aa9bd;
+  color: #6ee7b7;
   font-size: 12px;
 }
 
@@ -268,10 +271,11 @@ a:focus-visible {
   padding: 13px;
   border: 0;
   border-radius: 11px;
-  background: linear-gradient(135deg, #2563eb, #0ea5e9);
+  background: linear-gradient(135deg, #10b981, #059669);
   color: #fff;
   font-weight: 800;
   cursor: pointer;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
   transition:
     transform 180ms ease,
     box-shadow 180ms ease,
@@ -280,7 +284,8 @@ a:focus-visible {
 
 .primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.24);
+  background: linear-gradient(135deg, #059669, #047857);
+  box-shadow: 0 10px 24px rgba(16, 185, 129, 0.45);
   filter: saturate(1.08);
 }
 
@@ -529,8 +534,8 @@ a:focus-visible {
   display: grid;
   place-items: center;
   border-radius: 13px;
-  background: linear-gradient(145deg, #2563eb, #0ea5e9);
-  box-shadow: 0 7px 16px rgba(37, 99, 235, 0.22);
+  background: linear-gradient(145deg, #10b981, #059669);
+  box-shadow: 0 7px 16px rgba(16, 185, 129, 0.22);
   color: #fff;
   font-size: 21px;
   transition:
@@ -540,7 +545,7 @@ a:focus-visible {
 
 .brand-link:hover .logo-mark {
   transform: rotate(-8deg) scale(1.06);
-  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 10px 22px rgba(16, 185, 129, 0.3);
 }
 
 .logo-name {
@@ -611,7 +616,7 @@ a:focus-visible {
   border-radius: 50%;
   background: linear-gradient(145deg, #dbeafe, #bfdbfe);
   box-shadow: 0 0 0 1px #bfdbfe;
-  color: #1d4ed8;
+  color: #059669;
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.02em;
@@ -817,7 +822,7 @@ a:focus-visible {
   height: 17px;
   flex: 0 0 17px;
   margin: 2px 0 0;
-  accent-color: var(--blue);
+  accent-color: #10b981;
 }
 
 .consent-label a,
@@ -829,10 +834,10 @@ a:focus-visible {
 .privacy-notice {
   margin: 16px 0;
   padding: 12px 14px;
-  border: 1px solid #e4e9f2;
+  border: 1px solid #bbf7d0;
   border-radius: 11px;
-  background: #f8faff;
-  color: #596579;
+  background: #f0fdf4;
+  color: #166534;
   font-size: 12px;
   line-height: 1.6;
 }
@@ -942,7 +947,7 @@ a:focus-visible {
   padding: 16px;
   border: 1px solid #e7edf7;
   border-radius: 13px;
-  background: #f8faff;
+  background: #f0fdf4;
 }
 
 .application-vacancy h2 {
@@ -984,7 +989,7 @@ a:focus-visible {
   padding: 14px;
   border: 1px dashed #a8bbd8;
   border-radius: 12px;
-  background: #f8faff;
+  background: #f0fdf4;
 }
 
 .resume-upload input {
@@ -1089,7 +1094,7 @@ a:focus-visible {
   padding: 5px 9px;
   border-radius: 20px;
   background: #eff6ff;
-  color: #1d4ed8;
+  color: #059669;
   font-size: 11px;
   font-weight: 750;
 }
@@ -1186,7 +1191,7 @@ a:focus-visible {
   border: 1px solid #dbe7ff;
   border-radius: 9px;
   background: #f5f8ff;
-  color: #1d4ed8;
+  color: #059669;
   font-size: 12px;
   font-weight: 700;
   text-decoration: none;
@@ -1659,7 +1664,7 @@ hr {
 
 .kanban-count.count-active {
   background: #EFF6FF;
-  color: #2563EB;
+  color: #10B981;
   font-weight: 700;
 }
 
@@ -1826,7 +1831,7 @@ hr {
 
 .kanban-ai-pill.score-med {
   background: #EFF6FF;
-  color: #2563EB;
+  color: #10B981;
 }
 
 .kanban-ai-pill.score-low {
@@ -2234,7 +2239,7 @@ hr {
   padding: 4px 12px;
   border-radius: 20px;
   background: #dbeafe;
-  color: #1d4ed8;
+  color: #059669;
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -3024,7 +3029,7 @@ dialog.split-preview-dialog::backdrop {
   width: 17px;
   height: 17px;
   border: 2px solid rgba(59, 130, 246, 0.2);
-  border-top-color: #3B82F6;
+  border-top-color: #10B981;
   border-radius: 50%;
   animation: authSpinnerSpin 0.75s linear infinite;
 }
@@ -3092,7 +3097,7 @@ dialog.split-preview-dialog::backdrop {
 .auth-bottom-progress-bar {
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, #3B82F6, #10B981);
+  background: linear-gradient(90deg, #10B981, #34D399);
   transition: width 0.35s ease;
 }
 
@@ -3131,14 +3136,14 @@ dialog.split-preview-dialog::backdrop {
   padding: 5px 12px;
   font-size: 12px;
   font-weight: 600;
-  background: #2563EB;
+  background: #10B981;
   color: #FFFFFF;
   border-radius: 8px;
   transition: background 0.2s ease;
 }
 
 .candidate-banner-card .banner-btn:hover {
-  background: #1D4ED8;
+  background: #059669;
 }
 
 
@@ -3270,4 +3275,40 @@ a.button:active {
   box-shadow: none !important;
   width: auto !important;
   height: auto !important;
+}
+
+
+/* RECRUITPRO CECAR AUTH BRAND GREEN THEME */
+.auth .panel {
+  background: #f8fafc;
+}
+.auth .card {
+  border-radius: 18px;
+  box-shadow: 0 12px 35px rgba(7, 20, 14, 0.08);
+  border: 1px solid #e2e8f0;
+}
+.auth .card h2 {
+  color: #07140e;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.auth .card input:focus {
+  border-color: #10b981 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2) !important;
+}
+.auth .card .center a {
+  color: #059669 !important;
+  font-weight: 700;
+}
+.auth .card .center a:hover {
+  color: #10b981 !important;
+  text-decoration: underline;
+}
+.auth .consent-label a {
+  color: #059669 !important;
+  font-weight: 700;
+}
+.auth .consent-label a:hover {
+  color: #10b981 !important;
 }
