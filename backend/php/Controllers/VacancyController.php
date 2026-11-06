@@ -139,4 +139,37 @@ class VacancyController {
             'createdAt' => $v['created_at']
         ];
     }
+
+    public function update(array $input, array $params): void {
+        Auth::requireRole(['administrador', 'reclutador', 'talento_humano']);
+        $id = $params['vacancy_id'] ?? '';
+        $db = Database::getConnection();
+
+        $stmt = $db->prepare("SELECT * FROM vacancies WHERE id = ?");
+        $stmt->execute([$id]);
+        $vac = $stmt->fetch();
+        if (!$vac) Response::error("Convocatoria no encontrada.", 404);
+
+        $fields = [];
+        $sqlParams = [];
+
+        foreach (['title', 'type', 'location', 'description', 'status', 'recruiter_id', 'faculty', 'campus', 'program', 'modality'] as $k) {
+            if (array_key_exists($k, $input)) {
+                $fields[] = "{$k} = ?";
+                $sqlParams[] = $input[$k];
+            }
+        }
+
+        if (!empty($fields)) {
+            $sqlParams[] = $id;
+            $sql = "UPDATE vacancies SET " . implode(', ', $fields) . " WHERE id = ?";
+            $upd = $db->prepare($sql);
+            $upd->execute($sqlParams);
+        }
+
+        $st = $db->prepare("SELECT v.*, u.name as recruiter_name, u.email as recruiter_email FROM vacancies v LEFT JOIN users u ON v.recruiter_id = u.id WHERE v.id = ?");
+        $st->execute([$id]);
+        Response::json($this->formatVacancy($st->fetch()));
+    }
+
 }

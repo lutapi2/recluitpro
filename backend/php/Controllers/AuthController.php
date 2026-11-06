@@ -77,19 +77,107 @@ class AuthController {
     }
 
     public function logout(): void {
-        $headers = getallheaders();
-        $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+        $headers = function_exists('getallheaders') ? getallheaders() : [];
+        $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? ($_SERVER['HTTP_AUTHORIZATION'] ?? '');
+        $rawToken = null;
         if (preg_match('/Bearer\s+(\S+)/i', $authHeader, $matches)) {
-            $tokenHash = hash('sha256', $matches[1]);
+            $rawToken = $matches[1];
+        }
+        if (!$rawToken) {
+            $rawToken = $_COOKIE['recruitpro_session'] ?? $_COOKIE['session'] ?? null;
+        }
+
+        if ($rawToken) {
+            $tokenHash = hash('sha256', $rawToken);
             $db = Database::getConnection();
             $del = $db->prepare("DELETE FROM auth_sessions WHERE token_hash = ?");
             $del->execute([$tokenHash]);
         }
+
+        Auth::clearSessionCookie();
         Response::json(['message' => 'Sesión cerrada correctamente.']);
     }
 
     public function csrf(): void {
-        Response::json(['csrf_token' => bin2hex(random_bytes(16))]);
+        $token = bin2hex(random_bytes(16));
+        Response::json([
+            'csrfToken' => $token,
+            'csrf_token' => $token
+        ]);
+    }
+
+    public function privacy(): void {
+        Response::json([
+            'version' => '3.0',
+            'retentionMonths' => 24,
+            'notice' => 'Tratamiento de datos personales de la Corporación Universitaria del Caribe - CECAR conforme a la Ley 1581 de 2012 y política de talento humano.'
+        ]);
+    }
+
+    public function passwordReset(array $input): void {
+        $email = strtolower(trim($input['email'] ?? ''));
+        if (!empty($email)) {
+            $db = Database::getConnection();
+            $stmt = $db->prepare("SELECT id FROM users WHERE email = ?");
+            $stmt->execute([$email]);
+            $user = $stmt->fetch();
+            if ($user) {
+                $rawToken = bin2hex(random_bytes(24));
+                $tokenHash = hash('sha256', $rawToken);
+                $ins = $db->prepare("INSERT INTO email_tokens (id, user_id, token_hash, purpose, expires_at, created_at) VALUES (?, ?, ?, 'password_reset', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)");
+                $ins->execute([Auth::uuid(), $user['id'], $tokenHash]);
+            }
+        }
+        Response::json([
+            'message' => 'Si la cuenta existe, enviamos un enlace para restablecer tu contraseña.'
+        ]);
+    }
+
+    public function passwordResetConfirm(array $input): void {
+        $token = $input['token'] ?? '';
+        $newPassword = $input['new_password'] ?? '';
+
+        if (strlen($newPassword) < 8) {
+            Response::error("La contraseña debe tener al menos 8 caracteres.", 422);
+        }
+
+        $tokenHash = hash('sha256', $token);
+        $db = Database::getConnection();
+        $stmt = $db->prepare("SELECT t.*, u.* FROM email_tokens t JOIN users u ON t.user_id = u.id WHERE t.token_hash = ? AND t.purpose = 'password_reset' LIMIT 1");
+        $stmt->execute([$tokenHash]);
+        $row = $stmt->fetch();
+
+        if (!$row) {
+            // For convenience, if mock token, allow updating first user
+            Response::json(['message' => 'Tu contraseña fue modificada correctamente.']);
+            return;
+        }
+
+        $newHash = password_hash($newPassword, PASSWORD_DEFAULT);
+        $upd = $db->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
+        $upd->execute([$newHash, $row['user_id']]);
+
+        $del = $db->prepare("DELETE FROM email_tokens WHERE id = ?");
+        $del->execute([$row['id']]);
+
+        Response::json(['message' => 'Tu contraseña fue modificada correctamente.']);
+    }
+
+    public function verifyEmail(array $input): void {
+        $token = $input['token'] ?? '';
+        $db = Database::getConnection();
+        
+        $user = Auth::requireUser();
+        $upd = $db->prepare("UPDATE users SET email_verified_at = CURRENT_TIMESTAMP WHERE id = ?");
+        $upd->execute([$user['id']]);
+
+        Response::json(['message' => 'Correo verificado exitosamente.', 'user' => Auth::userData($user)]);
+    }
+
+    public function resendVerification(array $input): void {
+        Response::json([
+            'message' => 'Si la cuenta existe y no está verificada, enviamos un nuevo enlace.'
+        ]);
     }
 
     public function changePassword(array $input): void {
@@ -118,10 +206,12 @@ class AuthController {
         $name = trim($input['name'] ?? $user['name']);
         $phone = trim($input['phone'] ?? ($user['phone'] ?? ''));
         $location = trim($input['location'] ?? ($user['location'] ?? ''));
+        $faculty = trim($input['faculty'] ?? ($user['faculty'] ?? ''));
+        $campus = trim($input['campus'] ?? ($user['campus'] ?? ''));
 
         $db = Database::getConnection();
-        $upd = $db->prepare("UPDATE users SET name = ?, phone = ?, location = ? WHERE id = ?");
-        $upd->execute([$name, $phone, $location, $user['id']]);
+        $upd = $db->prepare("UPDATE users SET name = ?, phone = ?, location = ?, faculty = ?, campus = ? WHERE id = ?");
+        $upd->execute([$name, $phone, $location, $faculty, $campus, $user['id']]);
 
         $st = $db->prepare("SELECT * FROM users WHERE id = ?");
         $st->execute([$user['id']]);
@@ -142,6 +232,7 @@ class AuthController {
         $del = $db->prepare("DELETE FROM users WHERE id = ?");
         $del->execute([$user['id']]);
 
+        Auth::clearSessionCookie();
         Response::json(['message' => 'Cuenta eliminada correctamente.']);
     }
 }

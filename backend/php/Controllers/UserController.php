@@ -49,4 +49,40 @@ class UserController {
 
         Response::json(['message' => 'Usuario eliminado correctamente.']);
     }
+
+    public function update(array $input, array $params): void {
+        Auth::requireRole(['administrador']);
+        $userId = $params['user_id'] ?? '';
+        $name = trim($input['name'] ?? '');
+        $email = strtolower(trim($input['email'] ?? ''));
+
+        $db = Database::getConnection();
+        $fields = [];
+        $sqlParams = [];
+        if (!empty($name)) {
+            $fields[] = "name = ?";
+            $sqlParams[] = $name;
+        }
+        if (!empty($email)) {
+            $fields[] = "email = ?";
+            $sqlParams[] = $email;
+        }
+        if (isset($input['role'])) {
+            $fields[] = "role = ?";
+            $sqlParams[] = $input['role'];
+        }
+
+        if (!empty($fields)) {
+            $sqlParams[] = $userId;
+            $upd = $db->prepare("UPDATE users SET " . implode(', ', $fields) . " WHERE id = ?");
+            $upd->execute($sqlParams);
+        }
+
+        $st = $db->prepare("SELECT * FROM users WHERE id = ?");
+        $st->execute([$userId]);
+        $row = $st->fetch();
+        if (!$row) Response::error("Usuario no encontrado.", 404);
+        Response::json(Auth::userData($row));
+    }
+
 }

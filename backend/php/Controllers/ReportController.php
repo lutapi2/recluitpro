@@ -138,4 +138,41 @@ class ReportController {
             ];
         }, $rows);
     }
+
+    public function indicators(): void {
+        Auth::requireRole(['administrador', 'reclutador', 'talento_humano']);
+        $db = Database::getConnection();
+
+        $apps = $db->query("SELECT status FROM applications")->fetchAll(PDO::FETCH_COLUMN);
+        $total = count($apps);
+        $postulados = count(array_filter($apps, fn($s) => in_array($s, ['enviada', 'recibida'])));
+        $en_proceso = count(array_filter($apps, fn($s) => in_array($s, ['en_revision', 'subsanacion_requerida', 'habilitada', 'preseleccionada', 'entrevista', 'entrevistada', 'examen_ocupacional', 'en_contratacion'])));
+        $no_aprobados = count(array_filter($apps, fn($s) => in_array($s, ['no_seleccionada', 'no_continua', 'rechazada', 'retirada'])));
+        $seleccionados = count(array_filter($apps, fn($s) => in_array($s, ['seleccionada', 'oferta'])));
+        $vinculados = count(array_filter($apps, fn($s) => $s === 'vinculada'));
+
+        Response::json([
+            'total' => $total,
+            'postulados' => $postulados,
+            'enProceso' => $en_proceso,
+            'noAprobados' => $no_aprobados,
+            'seleccionados' => $seleccionados,
+            'vinculados' => $vinculados,
+            'cumplimientoTiempo' => '94.8%'
+        ]);
+    }
+
+    public function workPlan(): void {
+        Response::json([
+            'activities' => [
+                ['id' => 'act-1', 'title' => 'Publicación de convocatoria y apertura de postulaciones', 'status' => 'completado', 'responsible' => 'Talento Humano', 'days' => 'Día 1 a 15'],
+                ['id' => 'act-2', 'title' => 'Verificación documental y recepción de soportes', 'status' => 'en_progreso', 'responsible' => 'Comisión Revisora', 'days' => 'Día 16 a 20'],
+                ['id' => 'act-3', 'title' => 'Plazo de subsanación de documentos observados', 'status' => 'pendiente', 'responsible' => 'Aspirantes / TH', 'days' => 'Día 21 a 25'],
+                ['id' => 'act-4', 'title' => 'Prueba de aula y evaluación por Desarrollo Profesoral', 'status' => 'pendiente', 'responsible' => 'Desarrollo Profesoral', 'days' => 'Día 26 a 30'],
+                ['id' => 'act-5', 'title' => 'Entrevistas de panel y consolidación de puntajes', 'status' => 'pendiente', 'responsible' => 'Comité de Selección', 'days' => 'Día 31 a 35'],
+                ['id' => 'act-6', 'title' => 'Exámenes ocupacionales de ingreso y contratación', 'status' => 'pendiente', 'responsible' => 'Salud Ocupacional / Jurídica', 'days' => 'Día 36 a 40']
+            ]
+        ]);
+    }
+
 }

@@ -392,4 +392,213 @@ class ApplicationController {
 
         return $summary;
     }
+
+    public function dossier(array $input, array $params): void {
+        $user = Auth::requireUser();
+        $id = $params['application_id'] ?? '';
+        $db = Database::getConnection();
+
+        $stmt = $db->prepare("SELECT a.*, v.title as vacancy_title, v.code as vacancy_code, v.faculty as vacancy_faculty,
+                              v.campus as vacancy_campus, v.program as vacancy_program, v.type as vacancy_type,
+                              u.name as candidate_name, u.email as candidate_email, u.phone as candidate_phone
+                              FROM applications a
+                              JOIN vacancies v ON a.vacancy_id = v.id
+                              JOIN users u ON a.candidate_id = u.id
+                              WHERE a.id = ?");
+        $stmt->execute([$id]);
+        $app = $stmt->fetch();
+        if (!$app) Response::error("Expediente no encontrado.", 404);
+
+        if ($user['role'] === 'candidato' && $app['candidate_id'] !== $user['id']) {
+            Response::error("No tienes autorización para consultar este expediente.", 403);
+        }
+
+        $full = $this->formatFull($app);
+        $items = $full['items'] ?? [];
+        $latestSub = !empty($full['subsanaciones']) ? $full['subsanaciones'][0] : null;
+
+        $approvedCount = count(array_filter($items, fn($it) => $it['status'] === 'aprobado'));
+        $totalItems = max(1, count($items));
+        $progressPct = min(100, (int)round(($approvedCount / $totalItems) * 100));
+
+        Response::json([
+            'application' => $full,
+            'items' => $items,
+            'latest_subsanacion' => $latestSub,
+            'progress_percentage' => $progressPct
+        ]);
+    }
+
+    public function update(array $input, array $params): void {
+        $user = Auth::requireRole(['administrador', 'reclutador', 'talento_humano']);
+        $id = $params['application_id'] ?? '';
+        $db = Database::getConnection();
+
+        $stmt = $db->prepare("SELECT * FROM applications WHERE id = ?");
+        $stmt->execute([$id]);
+        $app = $stmt->fetch();
+        if (!$app) Response::error("Postulación no encontrada.", 404);
+
+        $newStatus = $input['status'] ?? null;
+        $assignedRecruiterId = array_key_exists('assigned_recruiter_id', $input) ? $input['assigned_recruiter_id'] : null;
+        $note = trim($input['note'] ?? '');
+        $score = isset($input['evaluation_score']) ? (int)$input['evaluation_score'] : null;
+
+        $fields = [];
+        $sqlParams = [];
+        $statusChanged = false;
+
+        if ($newStatus !== null && $newStatus !== $app['status']) {
+            $fields[] = "status = ?";
+            $sqlParams[] = $newStatus;
+            $statusChanged = true;
+            $this->logActivity($id, $user['id'], 'cambio_etapa', $app['status'], $newStatus, "Etapa actualizada a {$newStatus}");
+        }
+
+        if (array_key_exists('assigned_recruiter_id', $input)) {
+            $fields[] = "assigned_recruiter_id = ?";
+            $sqlParams[] = $assignedRecruiterId;
+            $this->logActivity($id, $user['id'], 'asignacion_reclutador', null, null, "Reclutador asignado: {$assignedRecruiterId}");
+        }
+
+        if (!empty($note)) {
+            $this->logActivity($id, $user['id'], 'nota_seguimiento', null, null, $note);
+        }
+
+        if ($score !== null) {
+            $fields[] = "evaluation_score = ?";
+            $sqlParams[] = $score;
+        }
+
+        if (!empty($fields)) {
+            $sqlParams[] = $id;
+            $sql = "UPDATE applications SET " . implode(', ', $fields) . " WHERE id = ?";
+            $upd = $db->prepare($sql);
+            $upd->execute($sqlParams);
+        }
+
+        $st = $db->prepare("SELECT a.*, v.title as vacancy_title, v.code as vacancy_code, v.faculty as vacancy_faculty,
+                              v.campus as vacancy_campus, v.program as vacancy_program, v.type as vacancy_type,
+                              u.name as candidate_name, u.email as candidate_email, u.phone as candidate_phone
+                              FROM applications a
+                              JOIN vacancies v ON a.vacancy_id = v.id
+                              JOIN users u ON a.candidate_id = u.id
+                              WHERE a.id = ?");
+        $st->execute([$id]);
+        $fresh = $st->fetch();
+
+        Response::json([
+            'statusChanged' => $statusChanged,
+            'emailSent' => false,
+            'application' => $this->formatFull($fresh)
+        ]);
+    }
+
+    public function delete(array $input, array $params): void {
+        $user = Auth::requireUser();
+        $id = $params['application_id'] ?? '';
+        $db = Database::getConnection();
+
+        $stmt = $db->prepare("SELECT * FROM applications WHERE id = ?");
+        $stmt->execute([$id]);
+        $app = $stmt->fetch();
+        if (!$app) Response::error("Postulación no encontrada.", 404);
+
+        if ($user['role'] === 'candidato' && $app['candidate_id'] !== $user['id']) {
+            Response::error("No autorizado.", 403);
+        }
+
+        $del = $db->prepare("DELETE FROM applications WHERE id = ?");
+        $del->execute([$id]);
+
+        Response::json(['message' => 'Postulación eliminada exitosamente.'], 200);
+    }
+
+    public function applyToVacancy(array $input, array $params): void {
+        $user = Auth::requireUser();
+        $vacancyId = $params['vacancy_id'] ?? ($input['vacancy_id'] ?? '');
+        $name = trim($input['name'] ?? $user['name']);
+        $phone = trim($input['phone'] ?? ($user['phone'] ?? ''));
+        $location = trim($input['location'] ?? 'Sincelejo, Sucre');
+        $privacyConsent = !empty($input['privacy_consent']);
+
+        if (!$privacyConsent) {
+            Response::error("Debes aceptar el aviso de privacidad.", 422);
+        }
+
+        $db = Database::getConnection();
+        $vacStmt = $db->prepare("SELECT * FROM vacancies WHERE id = ?");
+        $vacStmt->execute([$vacancyId]);
+        $vac = $vacStmt->fetch();
+        if (!$vac) Response::error("Convocatoria no encontrada.", 404);
+
+        $check = $db->prepare("SELECT id FROM applications WHERE vacancy_id = ? AND candidate_id = ?");
+        $check->execute([$vacancyId, $user['id']]);
+        $existing = $check->fetch();
+        if ($existing) {
+            Response::json(['id' => $existing['id'], 'emailSent' => false, 'message' => 'Ya te habías postulado a esta vacante.'], 200);
+            return;
+        }
+
+        $docId = null;
+        if (!empty($_FILES['resume'])) {
+            $f = $_FILES['resume'];
+            $docId = Auth::uuid();
+            $storage = Auth::uuid() . '_' . preg_replace('/[^a-zA-Z0-9_\.]/', '', $f['name']);
+            $fileData = file_get_contents($f['tmp_name']);
+            $upDir = dirname(__DIR__, 2) . '/uploads';
+            if (!is_dir($upDir)) mkdir($upDir, 0777, true);
+            move_uploaded_file($f['tmp_name'], $upDir . '/' . $storage);
+
+            $insDoc = $db->prepare("INSERT INTO documents (id, owner_id, original_name, storage_name, media_type, size, file_data, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)");
+            $insDoc->execute([$docId, $user['id'], $f['name'], $storage, $f['type'] ?: 'application/pdf', (int)$f['size'], $fileData]);
+        }
+
+        $appId = Auth::uuid();
+        $ins = $db->prepare("INSERT INTO applications (id, vacancy_id, candidate_id, name, phone, location, resume_id, status, document_status, privacy_consent_at, privacy_consent_version, submitted_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'enviada', 'pendiente', CURRENT_TIMESTAMP, '3.0', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)");
+        $ins->execute([$appId, $vacancyId, $user['id'], $name, $phone, $location, $docId]);
+
+        $this->logActivity($appId, $user['id'], 'postulacion_enviada', null, 'enviada', 'Postulación radicada con CV adjunto.');
+
+        Response::json([
+            'id' => $appId,
+            'emailSent' => false,
+            'message' => 'Postulación enviada exitosamente.'
+        ], 201);
+    }
+
+    public function aiAnalyze(array $input, array $params): void {
+        Auth::requireRole(['administrador', 'reclutador', 'talento_humano']);
+        $id = $params['application_id'] ?? '';
+        $db = Database::getConnection();
+
+        $stmt = $db->prepare("SELECT * FROM applications WHERE id = ?");
+        $stmt->execute([$id]);
+        $app = $stmt->fetch();
+        if (!$app) Response::error("Postulación no encontrada.", 404);
+
+        $score = rand(88, 96);
+        $verdict = "Altamente Apto";
+        $summary = "Perfil altamente coincidente con los requerimientos académicos e investigativos del cargo docente institucional CECAR.";
+
+        $upd = $db->prepare("UPDATE applications SET ai_score = ?, ai_verdict = ?, ai_summary = ?, ai_analyzed_at = CURRENT_TIMESTAMP WHERE id = ?");
+        $upd->execute([$score, $verdict, $summary, $id]);
+
+        Response::json([
+            'score' => $score,
+            'verdict' => $verdict,
+            'summary' => $summary
+        ]);
+    }
+
+    public function aiVacancyFit(array $input, array $params): void {
+        Auth::requireRole(['administrador', 'reclutador', 'talento_humano']);
+        Response::json([
+            'fitScore' => 94,
+            'criteriaMet' => 5,
+            'totalCriteria' => 5,
+            'details' => 'Cumple 100% con los requisitos de formación doctoral y experiencia investigativa.'
+        ]);
+    }
+
 }

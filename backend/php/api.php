@@ -1,9 +1,11 @@
 <?php
 
-require_once __DIR__ . '/Database.php';
+header("Content-Type: application/json; charset=utf-8");
+
+require_once __DIR__ . '/Router.php';
 require_once __DIR__ . '/Response.php';
 require_once __DIR__ . '/Auth.php';
-require_once __DIR__ . '/Router.php';
+require_once __DIR__ . '/Database.php';
 
 // Controllers
 require_once __DIR__ . '/Controllers/AuthController.php';
@@ -23,7 +25,17 @@ require_once __DIR__ . '/Controllers/CatalogController.php';
 
 $router = new Router();
 
-// Auth Endpoints
+// Health check
+$router->get('/api/health', function() {
+    Response::json([
+        'status' => 'ok',
+        'runtime' => 'PHP ' . PHP_VERSION,
+        'driver' => Database::getDriver(),
+        'timestamp' => date('Y-m-d H:i:s')
+    ]);
+});
+
+// Authentication Endpoints
 $router->post('/api/auth/register', [AuthController::class, 'register']);
 $router->post('/api/auth/login', [AuthController::class, 'login']);
 $router->get('/api/auth/me', [AuthController::class, 'me']);
@@ -31,15 +43,23 @@ $router->post('/api/auth/logout', [AuthController::class, 'logout']);
 $router->get('/api/auth/csrf', [AuthController::class, 'csrf']);
 $router->post('/api/auth/password', [AuthController::class, 'changePassword']);
 $router->post('/api/auth/profile', [AuthController::class, 'updateProfile']);
+$router->patch('/api/auth/profile', [AuthController::class, 'updateProfile']);
 $router->delete('/api/auth/account', [AuthController::class, 'deleteAccount']);
+$router->get('/api/privacy', [AuthController::class, 'privacy']);
+$router->post('/api/auth/password-reset', [AuthController::class, 'passwordReset']);
+$router->post('/api/auth/password-reset/confirm', [AuthController::class, 'passwordResetConfirm']);
+$router->post('/api/auth/verify-email', [AuthController::class, 'verifyEmail']);
+$router->post('/api/auth/verification/resend', [AuthController::class, 'resendVerification']);
 
 // Vacancies Endpoints
 $router->get('/api/public/vacancies', [VacancyController::class, 'publicList']);
 $router->get('/api/vacancies/public', [VacancyController::class, 'publicList']);
 $router->get('/api/vacancies', [VacancyController::class, 'index']);
 $router->post('/api/vacancies', [VacancyController::class, 'create']);
+$router->post('/api/vacancies/{vacancy_id}/applications', [ApplicationController::class, 'applyToVacancy']);
 $router->get('/api/vacancies/{vacancy_id}/applications', [ApplicationController::class, 'index']);
 $router->get('/api/vacancies/{vacancy_id}', [VacancyController::class, 'show']);
+$router->patch('/api/vacancies/{vacancy_id}', [VacancyController::class, 'update']);
 $router->delete('/api/vacancies/{vacancy_id}', [VacancyController::class, 'delete']);
 
 // Applications Endpoints
@@ -48,7 +68,12 @@ $router->get('/api/applications/mine', [ApplicationController::class, 'mine']);
 $router->get('/api/applications/my', [ApplicationController::class, 'mine']);
 $router->get('/api/applications/review-board', [ApplicationController::class, 'index']);
 $router->post('/api/applications/draft', [ApplicationController::class, 'draft']);
+$router->get('/api/applications/{application_id}/dossier', [ApplicationController::class, 'dossier']);
+$router->get('/api/applications/{application_id}/hiring-dossier', [HiringController::class, 'getDossier']);
+$router->post('/api/applications/{application_id}/hiring-dossier', [HiringController::class, 'saveDossier']);
 $router->get('/api/applications/{application_id}', [ApplicationController::class, 'show']);
+$router->patch('/api/applications/{application_id}', [ApplicationController::class, 'update']);
+$router->delete('/api/applications/{application_id}', [ApplicationController::class, 'delete']);
 $router->post('/api/applications/{application_id}/submit', [ApplicationController::class, 'submit']);
 $router->post('/api/applications/{application_id}/preselect', [ApplicationController::class, 'preselect']);
 $router->post('/api/applications/{application_id}/discard', [ApplicationController::class, 'discard']);
@@ -56,6 +81,10 @@ $router->post('/api/applications/{application_id}/retirar', [ApplicationControll
 $router->post('/api/applications/{application_id}/internal-note', [ApplicationController::class, 'internalNote']);
 $router->get('/api/applications/{application_id}/constancia', [ApplicationController::class, 'constancia']);
 $router->post('/api/public/apply', [ApplicationController::class, 'publicApply']);
+
+// AI ATS Endpoints
+$router->get('/api/ai/analyze-application/{application_id}', [ApplicationController::class, 'aiAnalyze']);
+$router->get('/api/ai/analyze-vacancy-fit/{vacancy_id}', [ApplicationController::class, 'aiVacancyFit']);
 
 // Items & Supports (HV-001 al HV-026 y Regla RN-011)
 $router->post('/api/applications/{application_id}/items', [ItemController::class, 'create']);
@@ -65,6 +94,8 @@ $router->post('/api/applications/{application_id}/items/{item_id}/review', [Item
 $router->post('/api/applications/{application_id}/items/{item_id}/support', [ItemController::class, 'uploadSupport']);
 $router->get('/api/items/{item_id}/supports/{support_id}/view', [ItemController::class, 'viewSupport']);
 $router->get('/api/items/{item_id}/supports/{support_id}/download', [ItemController::class, 'viewSupport']);
+$router->get('/api/applications/{application_id}/items/{item_id}/support/view', [ItemController::class, 'viewSupport']);
+$router->get('/api/applications/{application_id}/items/{item_id}/support/download', [ItemController::class, 'viewSupport']);
 
 // Subsanación
 $router->post('/api/applications/{application_id}/subsanacion/request', [SubsanacionController::class, 'request']);
@@ -77,46 +108,43 @@ $router->post('/api/interviews/schedule', [InterviewController::class, 'schedule
 $router->post('/api/interviews/{interview_id}/evaluate', [InterviewController::class, 'evaluate']);
 $router->post('/api/interviews/{interview_id}/respond', [InterviewController::class, 'respond']);
 
-// Pruebas
+// Pruebas (Psicotécnicas y Prueba de Aula)
 $router->post('/api/applications/{application_id}/tests', [TestController::class, 'recordTest']);
 $router->post('/api/applications/{application_id}/classroom-test', [TestController::class, 'recordClassroomTest']);
 
-// Salud Ocupacional (RN-027)
+// Examen Ocupacional (Regla RN-027)
 $router->post('/api/applications/{application_id}/occupational-exam', [OccupationalExamController::class, 'recordExam']);
 
-// Expediente y Vinculación
-$router->get('/api/applications/{application_id}/hiring-dossier', [HiringController::class, 'getDossier']);
-$router->post('/api/applications/{application_id}/hiring-dossier', [HiringController::class, 'saveDossier']);
+// Contratación y Vinculación Formal
 $router->post('/api/applications/{application_id}/confirm-binding', [HiringController::class, 'confirmBinding']);
-$router->post('/api/applications/{application_id}/transfer-institutional-hv', [HiringController::class, 'transferInstitutional']);
+$router->post('/api/applications/{application_id}/transfer-institutional-hv', [HiringController::class, 'transferToInstitutionalHr']);
 
 // Mesa de Ayuda
 $router->get('/api/tickets', [HelpTicketController::class, 'index']);
 $router->post('/api/tickets', [HelpTicketController::class, 'create']);
 $router->post('/api/tickets/{ticket_id}/reply', [HelpTicketController::class, 'reply']);
 
-// Reportes y Dashboard
-$router->get('/api/reports/specialized', [ReportController::class, 'specialized']);
-$router->get('/api/reports/export', [ReportController::class, 'exportCsv']);
+// Reportes Especializados y Tableros
 $router->get('/api/dashboard/summary', [ReportController::class, 'summary']);
+$router->get('/api/reports/specialized', [ReportController::class, 'specialized']);
+$router->get('/api/reports/export', [ReportController::class, 'exportSpecializedCsv']);
+$router->get('/api/reports/indicators', [ReportController::class, 'indicators']);
+$router->get('/api/work-plan', [ReportController::class, 'workPlan']);
 
-// Usuarios
+// Usuarios y Roles
 $router->get('/api/users', [UserController::class, 'index']);
+$router->patch('/api/users/{user_id}', [UserController::class, 'update']);
 $router->post('/api/users/{user_id}/promote-recruiter', [UserController::class, 'promote']);
 $router->delete('/api/users/{user_id}', [UserController::class, 'delete']);
 
 // Documentos
 $router->post('/api/documents', [DocumentController::class, 'upload']);
 $router->get('/api/documents/{document_id}', [DocumentController::class, 'show']);
-$router->get('/api/documents/{document_id}/view', [DocumentController::class, 'view']);
 $router->get('/api/documents/{document_id}/download', [DocumentController::class, 'download']);
+$router->get('/api/documents/{document_id}/view', [DocumentController::class, 'view']);
 
 // Catálogos
 $router->get('/api/catalogos', [CatalogController::class, 'index']);
 
-// Health
-$router->get('/api/health', function() {
-    Response::json(['status' => 'ok', 'runtime' => 'PHP ' . PHP_VERSION, 'driver' => Database::getDriver()]);
-});
-
+// Dispatch router
 $router->dispatch();

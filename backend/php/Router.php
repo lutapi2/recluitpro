@@ -21,9 +21,11 @@ class Router {
 
     public function dispatch(): void {
         // Handle CORS
-        header("Access-Control-Allow-Origin: *");
+        $origin = $_SERVER['HTTP_ORIGIN'] ?? '*';
+        header("Access-Control-Allow-Origin: {$origin}");
+        header("Access-Control-Allow-Credentials: true");
         header("Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD");
-        header("Access-Control-Allow-Headers: Authorization, Content-Type, X-Requested-With, Accept");
+        header("Access-Control-Allow-Headers: Authorization, Content-Type, X-Requested-With, Accept, X-CSRF-Token");
 
         $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
         if ($method === 'OPTIONS') {
@@ -48,6 +50,16 @@ class Router {
             $input = json_decode($raw, true) ?: [];
         } else {
             $input = $_POST;
+        }
+
+        if (empty($input)) {
+            $raw = file_get_contents('php://input');
+            if (!empty($raw)) {
+                $decoded = json_decode($raw, true);
+                if (is_array($decoded)) {
+                    $input = $decoded;
+                }
+            }
         }
 
         foreach ($this->routes as $route) {
@@ -76,6 +88,6 @@ class Router {
             }
         }
 
-        Response::error("Ruta no encontrada: {$method} {$uri}", 404);
+        Response::error("Ruta no encontrada: [{$method}] {$uri}", 404);
     }
 }
