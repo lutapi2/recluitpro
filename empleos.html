@@ -398,13 +398,19 @@
             (job) => `
             <article class="public-vacancy-card">
               <div class="public-vacancy-info">
+                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 6px;">
+                  <span class="public-badge" style="background: #0f172a; color: #86efac; font-weight: 700; font-family: monospace;">${escapeHtml(job.code || 'CONV-CECAR')}</span>
+                  <span class="public-badge highlight">${escapeHtml(job.type || 'Convocatoria')}</span>
+                  ${job.academic_period ? `<span class="public-badge" style="background: #f1f5f9; color: #334155;">Periodo ${escapeHtml(job.academic_period)}</span>` : ""}
+                </div>
                 <h2>${escapeHtml(job.title)}</h2>
-                <div class="public-vacancy-meta">
-                  <span class="public-badge highlight">${escapeHtml(job.type)}</span>
-                  ${job.location ? `<span class="public-badge">${escapeHtml(job.location)}</span>` : ""}
+                <div class="public-vacancy-meta" style="margin-top: 6px;">
+                  ${job.faculty ? `<span class="public-badge" style="background: #dcfce7; color: #15803d; font-weight: 600;">${escapeHtml(job.faculty)}</span>` : ""}
+                  ${job.program ? `<span class="public-badge" style="background: #eff6ff; color: #1d4ed8;">${escapeHtml(job.program)}</span>` : ""}
+                  ${job.campus ? `<span class="public-badge">${escapeHtml(job.campus)}</span>` : ""}
                   <span class="public-badge">Publicada el ${new Date(job.createdAt).toLocaleDateString("es")}</span>
                 </div>
-                <p class="public-vacancy-desc">${escapeHtml(job.description)}</p>
+                <p class="public-vacancy-desc" style="margin-top: 10px;">${escapeHtml(job.description)}</p>
               </div>
               <button class="public-apply-btn" onclick="openApplyModal('${escapeHtml(job.id)}', '${escapeHtml(job.title)}')">
                 Postularme ahora →

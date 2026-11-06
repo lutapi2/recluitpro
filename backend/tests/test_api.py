@@ -1,3 +1,4 @@
+from sqlalchemy import select
 import os
 import shutil
 import tempfile
@@ -17,9 +18,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from fastapi.testclient import TestClient
 
-from app.database import Base, engine
+from app.database import Base, engine, SessionLocal
 from app.main import app
-from app.models import Document, Role, User
+from app.models import DiscardReason, Document, Role, User, Vacancy
 from app.retention import purge_inactive_candidates
 from app.security import password_hash
 
@@ -553,6 +554,390 @@ class RecruitProApiTests(unittest.TestCase):
         recruiter_client.close()
         other_client.close()
         admin.close()
+
+
+
+    def register_and_login_candidate(self, email="docente@cecar.edu.co", name="Aspirante Docente"):
+        headers = self.csrf_headers()
+        response = self.client.post(
+            "/api/auth/register",
+            headers=headers,
+            json={
+                "name": name,
+                "email": email,
+                "password": "a-very-safe-password",
+                "privacy_consent": True,
+            },
+        )
+        self.assertEqual(response.status_code, 201)
+        token = re.search(r"token=([^\s]+)", self.email_messages[-1][2]).group(1)
+        verified = self.client.post(
+            "/api/auth/verify-email",
+            headers=self.csrf_headers(),
+            json={"token": token},
+        )
+        self.assertEqual(verified.status_code, 200)
+        return verified.json()
+
+    def create_admin_client(self):
+        with SessionLocal() as db:
+            admin_user = User(
+                name="Administrador TH CECAR",
+                email="admin_th@cecar.edu.co",
+                password_hash=password_hash.hash("admin-password-1234"),
+                role=Role.ADMIN,
+                faculty="Gestión del Talento Humano",
+                email_verified_at=datetime.now(timezone.utc),
+            )
+            db.add(admin_user)
+            # Add sample discard reasons
+            if not db.scalar(select(DiscardReason.id).limit(1)):
+                db.add_all([
+                    DiscardReason(id="formacion_no_cumple", code="DES-FORM", name="No cumple formación académica mínima", active=True),
+                    DiscardReason(id="soportes_no_subsanados", code="DES-SUBS", name="Documentos no subsanados a tiempo", active=True),
+                ])
+            db.commit()
+
+        client = TestClient(app)
+        csrf = client.get("/api/auth/csrf").json()["csrfToken"]
+        login = client.post(
+            "/api/auth/login",
+            headers={"X-CSRF-Token": csrf},
+            json={"email": "admin_th@cecar.edu.co", "password": "admin-password-1234"},
+        )
+        self.assertEqual(login.status_code, 200)
+        return client
+
+    def create_sample_vacancy(self, admin_client):
+        res = admin_client.post(
+            "/api/vacancies",
+            headers={"X-CSRF-Token": admin_client.cookies.get("recruitpro_csrf")},
+            json={
+                "code": "CONV-2026-DOC-01",
+                "title": "Aspirante: Nuevo a docente cátedra",
+                "type": "Cátedra Universitaria",
+                "faculty": "Facultad de Educación y Ciencias Sociales",
+                "program": "Licenciatura en Educación Infantil",
+                "campus": "Sede Principal Sincelejo",
+                "academic_period": "2026-2",
+                "vacancies_count": 2,
+                "modality": "Presencial",
+                "description": "Convocatoria docente de méritos",
+                "status": "active",
+            },
+        )
+        self.assertEqual(res.status_code, 201)
+        return res.json()["id"]
+
+    def test_catalogos_cecar(self):
+        """RF-080, RF-097: Catálogos institucionales CECAR y 26 tipos de ítems de HV"""
+        res = self.client.get("/api/catalogos")
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertIn("Facultad de Educación y Ciencias Sociales", data["facultades"])
+        self.assertIn("Licenciatura en Educación Infantil", data["programas"])
+        self.assertIn("Sede Principal Sincelejo", data["sedes"])
+        self.assertGreaterEqual(len(data["tipos_items_hv"]), 26)
+        self.assertTrue(any(it["id"] == "HV-006" for it in data["tipos_items_hv"]))
+        self.assertTrue(any(it["id"] == "HV-025" for it in data["tipos_items_hv"]))
+
+    def test_hoja_de_vida_por_items_soportes_y_constancia(self):
+        """RF-014 a RF-042: Cada dato se registra como ítem independiente con su soporte"""
+        self.register_and_login_candidate()
+        admin = self.create_admin_client()
+        vac_id = self.create_sample_vacancy(admin)
+
+        # 1. Iniciar borrador de postulación (RF-014, RF-015, RN-001)
+        draft_res = self.client.post(
+            "/api/applications/draft",
+            headers=self.csrf_headers(),
+            json={"vacancy_id": vac_id, "privacy_consent": True},
+        )
+        self.assertEqual(draft_res.status_code, 201)
+        app_id = draft_res.json()["applicationId"]
+
+        # 2. Agregar ítem de formación académica (HV-006)
+        item_res = self.client.post(
+            f"/api/applications/{app_id}/items",
+            headers=self.csrf_headers(),
+            json={
+                "item_type": "HV-006",
+                "section": "formacion",
+                "title": "Licenciado en Educación - CECAR",
+                "data": {"institucion": "CECAR", "ano": 2020, "titulo": "Licenciado"},
+            },
+        )
+        self.assertEqual(item_res.status_code, 201)
+        item_id = item_res.json()["id"]
+
+        # 3. Adjuntar soporte PDF al ítem (RF-032)
+        pdf_bytes = b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF"
+        sup_res = self.client.post(
+            f"/api/applications/{app_id}/items/{item_id}/support",
+            headers=self.csrf_headers(),
+            files={"file": ("acta_grado.pdf", pdf_bytes, "application/pdf")},
+        )
+        self.assertEqual(sup_res.status_code, 201)
+        sup_id = sup_res.json()["id"]
+
+        # 4. Visualizar y descargar soporte con autorización (RF-035)
+        view_res = self.client.get(f"/api/items/{item_id}/supports/{sup_id}/view")
+        self.assertEqual(view_res.status_code, 200)
+        self.assertEqual(view_res.headers["content-type"], "application/pdf")
+
+        # 5. Agregar experiencia laboral (HV-009)
+        exp_res = self.client.post(
+            f"/api/applications/{app_id}/items",
+            headers=self.csrf_headers(),
+            json={
+                "item_type": "HV-009",
+                "section": "experiencia",
+                "title": "Docente Titular - Colegio Comfasucre",
+                "data": {"empresa": "Comfasucre", "cargo": "Docente", "anos": 3},
+            },
+        )
+        self.assertEqual(exp_res.status_code, 201)
+        exp_id = exp_res.json()["id"]
+        # Adjuntar certificado
+        self.client.post(
+            f"/api/applications/{app_id}/items/{exp_id}/support",
+            headers=self.csrf_headers(),
+            files={"file": ("cert_laboral.pdf", pdf_bytes, "application/pdf")},
+        )
+
+        # 6. Consultar expediente / dossier (RF-045)
+        dossier = self.client.get(f"/api/applications/{app_id}/dossier").json()
+        self.assertEqual(dossier["status"], "borrador")
+        self.assertIn("formacion", dossier["itemsBySection"])
+        self.assertIn("experiencia", dossier["itemsBySection"])
+
+        # 7. Envío definitivo de la postulación (RF-039)
+        submit_res = self.client.post(
+            f"/api/applications/{app_id}/submit",
+            headers=self.csrf_headers(),
+        )
+        self.assertEqual(submit_res.status_code, 200)
+        self.assertEqual(submit_res.json()["status"], "enviada")
+
+        # 8. Comprobar bloqueo después del envío (RF-041, RN-009)
+        blocked_edit = self.client.put(
+            f"/api/applications/{app_id}/items/{item_id}",
+            headers=self.csrf_headers(),
+            json={"title": "Intento de edición unilateral"},
+        )
+        self.assertEqual(blocked_edit.status_code, 403)
+
+        # 9. Generar y descargar Constancia Formal de Postulación (RF-040)
+        constancia_res = self.client.get(f"/api/applications/{app_id}/constancia")
+        self.assertEqual(constancia_res.status_code, 200)
+        self.assertIn("CONSTANCIA FORMAL DE POSTULACIÓN", constancia_res.text)
+        self.assertIn("Aspirante Docente", constancia_res.text)
+
+    def test_revision_documental_subsanacion_y_revisión_estricta(self):
+        """RF-043 a RF-053: Revisión por ítem, subsanación y regla RN-011"""
+        self.register_and_login_candidate()
+        admin = self.create_admin_client()
+        vac_id = self.create_sample_vacancy(admin)
+
+        # Crear y enviar postulación
+        draft = self.client.post(
+            "/api/applications/draft",
+            headers=self.csrf_headers(),
+            json={"vacancy_id": vac_id, "privacy_consent": True},
+        ).json()
+        app_id = draft["applicationId"]
+
+        item1 = self.client.post(
+            f"/api/applications/{app_id}/items",
+            headers=self.csrf_headers(),
+            json={"item_type": "HV-006", "section": "formacion", "title": "Pregrado"},
+        ).json()["id"]
+        pdf_bytes = b"%PDF-1.4\nsample pdf\n%%EOF"
+        self.client.post(
+            f"/api/applications/{app_id}/items/{item1}/support",
+            headers=self.csrf_headers(),
+            files={"file": ("pregrado.pdf", pdf_bytes, "application/pdf")},
+        )
+
+        item2 = self.client.post(
+            f"/api/applications/{app_id}/items",
+            headers=self.csrf_headers(),
+            json={"item_type": "HV-009", "section": "experiencia", "title": "Experiencia"},
+        ).json()["id"]
+        self.client.post(
+            f"/api/applications/{app_id}/items/{item2}/support",
+            headers=self.csrf_headers(),
+            files={"file": ("exp.pdf", pdf_bytes, "application/pdf")},
+        )
+
+        self.client.post(f"/api/applications/{app_id}/submit", headers=self.csrf_headers())
+
+        # Admin revisa bandeja (RF-043, RF-094)
+        board = admin.get("/api/applications/review-board").json()
+        self.assertGreaterEqual(board["metrics"]["totalUsers"], 1)
+
+        # Admin aprueba item1 y observa item2 (RF-046, RF-047)
+        admin_csrf = {"X-CSRF-Token": admin.cookies.get("recruitpro_csrf")}
+        appr = admin.post(
+            f"/api/applications/{app_id}/items/{item1}/review",
+            headers=admin_csrf,
+            json={"result": "aprobado"},
+        )
+        self.assertEqual(appr.status_code, 200)
+
+        obs = admin.post(
+            f"/api/applications/{app_id}/items/{item2}/review",
+            headers=admin_csrf,
+            json={"result": "observado", "reason": "Certificado laboral ilegible o sin funciones"},
+        )
+        self.assertEqual(obs.status_code, 200)
+        self.assertEqual(obs.json()["documentStatus"], "observado")
+
+        # Admin solicita subsanación con 5 días de plazo (RF-048)
+        req_subs = admin.post(
+            f"/api/applications/{app_id}/subsanacion/request",
+            headers=admin_csrf,
+            json={"days": 5, "general_note": "Por favor adjunta certificación con funciones"},
+        )
+        self.assertEqual(req_subs.status_code, 200)
+        self.assertEqual(req_subs.json()["status"], "subsanacion_requerida")
+
+        # Regla RN-011 / RF-049: Candidato intenta editar item1 (aprobado) -> DEBE SER RECHAZADO (403)
+        edit_approved = self.client.put(
+            f"/api/applications/{app_id}/items/{item1}",
+            headers=self.csrf_headers(),
+            json={"title": "Intento de cambiar ítem aprobado"},
+        )
+        self.assertEqual(edit_approved.status_code, 403)
+
+        # Candidato edita item2 (observado) -> PERMITIDO
+        edit_obs = self.client.put(
+            f"/api/applications/{app_id}/items/{item2}",
+            headers=self.csrf_headers(),
+            json={"title": "Experiencia Corregida y Certificada"},
+        )
+        self.assertEqual(edit_obs.status_code, 200)
+
+        # Candidato radica subsanación (RF-050)
+        submit_subs = self.client.post(
+            f"/api/applications/{app_id}/subsanacion/submit",
+            headers=self.csrf_headers(),
+        )
+        self.assertEqual(submit_subs.status_code, 200)
+        self.assertEqual(submit_subs.json()["status"], "en_revision")
+        self.assertEqual(submit_subs.json()["version"], 2)
+
+    def test_fase2_salud_contratacion_vinculacion_e_integracion(self):
+        """RF-101 a RF-106: Salud ocupacional, formalización de contrato, vinculación e integración institucional"""
+        self.register_and_login_candidate()
+        admin = self.create_admin_client()
+        vac_id = self.create_sample_vacancy(admin)
+
+        draft = self.client.post(
+            "/api/applications/draft",
+            headers=self.csrf_headers(),
+            json={"vacancy_id": vac_id, "privacy_consent": True},
+        ).json()
+        app_id = draft["applicationId"]
+
+        admin_csrf = {"X-CSRF-Token": admin.cookies.get("recruitpro_csrf")}
+
+        # 1. Registrar examen ocupacional (RF-101, RN-027, RNF-028)
+        exam_res = admin.post(
+            f"/api/applications/{app_id}/occupational-exam",
+            headers=admin_csrf,
+            json={"fitness_concept": "apto", "provider": "IPS Ocupacional CECAR"},
+        )
+        self.assertEqual(exam_res.status_code, 200)
+        self.assertEqual(exam_res.json()["concept"], "apto")
+
+        # 2. Gestionar expediente de contratación y checklist (RF-102, RF-103)
+        hiring_res = admin.post(
+            f"/api/applications/{app_id}/hiring-dossier",
+            headers=admin_csrf,
+            json={
+                "checklist": {"minuta_contrato": True, "cuenta_davivienda": True, "seguridad_social": True},
+                "contract_status": "firmado",
+            },
+        )
+        self.assertEqual(hiring_res.status_code, 200)
+        self.assertEqual(hiring_res.json()["status"], "firmado")
+
+        # 3. Confirmar vinculación laboral (RF-104, RN-025)
+        bind_res = admin.post(
+            f"/api/applications/{app_id}/confirm-binding",
+            headers=admin_csrf,
+            json={"employee_code": "CECAR-DOC-2026-089", "start_date": datetime.now(timezone.utc).isoformat()},
+        )
+        self.assertEqual(bind_res.status_code, 200)
+        self.assertEqual(bind_res.json()["status"], "vinculada")
+        self.assertEqual(bind_res.json()["employeeCode"], "CECAR-DOC-2026-089")
+
+        # 4. Transferir a hoja de vida institucional (RF-105, RF-106, RN-026)
+        transfer_res = admin.post(
+            f"/api/applications/{app_id}/transfer-institutional-hv",
+            headers=admin_csrf,
+        )
+        self.assertEqual(transfer_res.status_code, 200)
+        self.assertEqual(transfer_res.json()["status"], "transferido")
+
+    def test_reportes_especializados_y_export_csv(self):
+        """RF-096, RF-097, RF-079: 3 reportes especializados y exportación a Excel/CSV"""
+        admin = self.create_admin_client()
+        admin_csrf = {"X-CSRF-Token": admin.cookies.get("recruitpro_csrf")}
+
+        # Reporte 1: No aprobados
+        r1 = admin.get("/api/reports/specialized?report_type=no_aprobados")
+        self.assertEqual(r1.status_code, 200)
+        self.assertIn("records", r1.json())
+
+        # Reporte 2: En proceso
+        r2 = admin.get("/api/reports/specialized?report_type=en_proceso")
+        self.assertEqual(r2.status_code, 200)
+
+        # Reporte 3: Seleccionados
+        r3 = admin.get("/api/reports/specialized?report_type=seleccionados")
+        self.assertEqual(r3.status_code, 200)
+
+        # Exportación CSV con encoding UTF-8 BOM para Excel
+        exp = admin.get("/api/reports/export?report_type=seleccionados")
+        self.assertEqual(exp.status_code, 200)
+        self.assertEqual(exp.headers["content-type"], "text/csv; charset=utf-8")
+        self.assertTrue(exp.content.startswith(b"\xef\xbb\xbf"))  # UTF-8 BOM
+
+    def test_mesa_de_ayuda_tickets(self):
+        """RF-099: Mesa de ayuda, casos y respuestas de soporte"""
+        self.register_and_login_candidate()
+        admin = self.create_admin_client()
+
+        # Candidato crea ticket
+        ticket_res = self.client.post(
+            "/api/tickets",
+            headers=self.csrf_headers(),
+            json={
+                "category": "Postulación y Documentos",
+                "subject": "Duda sobre tarjeta profesional",
+                "message": "¿Puedo adjuntar certificado de trámite provisional mientras expiden la tarjeta?",
+            },
+        )
+        self.assertEqual(ticket_res.status_code, 201)
+        ticket_id = ticket_res.json()["id"]
+
+        # Admin responde ticket
+        admin_csrf = {"X-CSRF-Token": admin.cookies.get("recruitpro_csrf")}
+        reply_res = admin.post(
+            f"/api/tickets/{ticket_id}/reply",
+            headers=admin_csrf,
+            json={"response": "Sí, es permitido adjuntar constancia de trámite en trámite oficial."},
+        )
+        self.assertEqual(reply_res.status_code, 200)
+
+        # Candidato consulta sus tickets y ve respuesta
+        my_tickets = self.client.get("/api/tickets").json()["tickets"]
+        self.assertEqual(len(my_tickets), 1)
+        self.assertEqual(my_tickets[0]["status"], "resuelto")
+        self.assertIn("constancia de trámite", my_tickets[0]["response"])
+
 
 
 if __name__ == "__main__":

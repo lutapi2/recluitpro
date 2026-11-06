@@ -144,6 +144,37 @@
       class="pdf-approval-dialog"
       aria-labelledby="pdf-doc-view-title"
     >
+      <!-- Barra superior institucional de workflow y fases -->
+      <div class="pdf-approval-workflow-strip" style="background: #0b1f16; padding: 10px 18px; border-bottom: 1px solid rgba(34,197,94,0.3); display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span id="pdf-doc-stage-badge" class="cecar-badge-status pendiente" style="font-size: 12px; font-weight: 800;">Estado: En Revisión</span>
+          <span id="pdf-doc-progress-badge" style="color: #86efac; font-size: 12px; font-weight: 600;">Progreso: 0%</span>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button type="button" class="rp-btn rp-btn--sm" style="background: #2563eb; color: #fff; border: 0;" onclick="preselectCurrentCandidate()" title="Preseleccionar aspirante">
+            <i data-lucide="check" style="width: 14px; height: 14px;"></i> Preseleccionar
+          </button>
+          <button type="button" class="rp-btn rp-btn--sm" style="background: #d97706; color: #fff; border: 0;" onclick="openRequestSubsanacionModal()" title="Solicitar subsanación de ítems observados">
+            <i data-lucide="alert-triangle" style="width: 14px; height: 14px;"></i> Subsanación
+          </button>
+          <button type="button" class="rp-btn rp-btn--sm" style="background: #7c3aed; color: #fff; border: 0;" onclick="openScheduleInterviewModal()" title="Agendar entrevista con comité">
+            <i data-lucide="calendar" style="width: 14px; height: 14px;"></i> Entrevista
+          </button>
+          <button type="button" class="rp-btn rp-btn--sm" style="background: #0284c7; color: #fff; border: 0;" onclick="openAcademicTestsModal()" title="Registrar pruebas técnicas y clase modelo">
+            <i data-lucide="award" style="width: 14px; height: 14px;"></i> Pruebas
+          </button>
+          <button type="button" class="rp-btn rp-btn--sm" style="background: #059669; color: #fff; border: 0;" onclick="openOccupationalExamModal()" title="Concepto de aptitud de salud ocupacional">
+            <i data-lucide="activity" style="width: 14px; height: 14px;"></i> Salud Ocupacional
+          </button>
+          <button type="button" class="rp-btn rp-btn--sm" style="background: #15803d; color: #fff; border: 0;" onclick="openHiringBindingModal()" title="Formalización de contrato y vinculación institucional">
+            <i data-lucide="file-check-2" style="width: 14px; height: 14px;"></i> Contratación / Vinculación
+          </button>
+          <button type="button" class="rp-btn rp-btn--sm" style="background: #dc2626; color: #fff; border: 0;" onclick="openDiscardCandidateModal()" title="Descartar candidatura con motivo de catálogo">
+            <i data-lucide="user-x" style="width: 14px; height: 14px;"></i> Descartar
+          </button>
+        </div>
+      </div>
+
       <div class="pdf-approval-layout">
         <!-- Panel Izquierdo: Acordeón de Lista de Documentos Requeridos (Screen 4) -->
         <aside class="pdf-approval-sidebar">
@@ -162,13 +193,14 @@
             >
               <option value="">Todos los estados</option>
               <option value="aprobado">Aprobados</option>
+              <option value="observado">Observados</option>
               <option value="pendiente">Pendientes</option>
               <option value="rechazado">Rechazados</option>
             </select>
           </div>
 
           <div class="pdf-doc-accordion-list" id="pdf-doc-accordion-list">
-            <!-- Generado dinámicamente: Contrato (1/1), Información Personal (3/3), Formación Académica (5/5), Experiencia Laboral (1/1), Seguridad Social (2/2), Información Bancaria (1/1) con Davivienda *, Salud Ocupacional (1/1), Antecedentes Legales (8/8) -->
+            <!-- Generado dinámicamente según expediente real -->
           </div>
         </aside>
 
@@ -201,11 +233,11 @@
             </button>
             <button type="button" class="pdf-btn-subsanar" onclick="subsanarCurrentCandidateDoc()">
               <i data-lucide="alert-circle" style="width: 15px; height: 15px; display: inline-block; vertical-align: middle;"></i>
-              Solicitar subsanación
+              Observar ítem
             </button>
             <button type="button" class="pdf-btn-reject" onclick="rejectCurrentCandidateDoc()">
               <i data-lucide="x-circle" style="width: 15px; height: 15px; display: inline-block; vertical-align: middle;"></i>
-              Rechazar documento
+              Rechazar ítem
             </button>
             <div style="flex: 1;"></div>
             <a id="pdf-approval-doc-download" class="kanban-action-btn" download style="text-decoration: none; font-size: 12px;">
@@ -504,37 +536,78 @@
       </div>
     </dialog>
 
-    <!-- Dialog Mesa de Ayudas (PDF Screen 2) -->
-    <dialog id="mesa-ayudas-dialog" class="pdf-approval-dialog" style="max-width: 620px; height: auto;">
+    <!-- Dialog Mesa de Ayudas (RF-099) -->
+    <dialog id="mesa-ayudas-dialog" class="pdf-approval-dialog" style="max-width: 680px; height: auto;">
       <div class="preview-header" style="background: #0f172a; color: #fff; padding: 16px 20px;">
         <div style="display: flex; align-items: center; gap: 10px;">
           <i data-lucide="headphones" style="color: #22c55e;"></i>
-          <h2 style="margin: 0; font-size: 16px; color: #fff;">Mesa de Ayudas y Soporte Institucional</h2>
+          <h2 style="margin: 0; font-size: 16px; color: #fff;">Mesa de Ayudas y Soporte Institucional CECAR</h2>
         </div>
         <button class="preview-close" type="button" onclick="closeMesaDeAyudas()" style="color: #fff; background: rgba(255,255,255,0.15);">×</button>
       </div>
-      <div class="edit-modal-body" style="padding: 24px;">
-        <p style="color: var(--rp-text-muted); font-size: 13px; margin: 0 0 16px;">
-          Genera un nuevo ticket o consulta las preguntas frecuentes sobre los procesos de selección y contratación.
-        </p>
-        <form onsubmit="handleCreateTicket(event)">
-          <label class="field-label" for="ticket-category">Categoría del requerimiento</label>
-          <select id="ticket-category" class="pdf-filter-select" style="width: 100%; min-height: 38px; margin-bottom: 12px; background: var(--rp-surface-2); color: var(--rp-text); border: 1px solid var(--rp-border);">
-            <option>Gestión de Documentos / Carga Incompleta</option>
-            <option>Validación de Certificado Davivienda</option>
-            <option>Problemas de Acceso / Roles</option>
-            <option>Duda con el Dictamen Curricular</option>
-            <option>Otro requerimiento</option>
-          </select>
-          <label class="field-label" for="ticket-subject">Asunto</label>
-          <input id="ticket-subject" class="pdf-filter-input" style="width: 100%; min-height: 38px; margin-bottom: 12px; border: 1px solid var(--rp-border);" placeholder="Breve resumen de la solicitud..." required />
-          <label class="field-label" for="ticket-desc">Descripción detallada</label>
-          <textarea id="ticket-desc" rows="4" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--rp-border); background: var(--rp-surface-2); color: var(--rp-text); font-family: var(--rp-font); font-size: 13px; outline: none; margin-bottom: 16px;" placeholder="Describe la situación con claridad..." required></textarea>
-          <div style="display: flex; justify-content: flex-end; gap: 10px;">
-            <button type="button" class="secondary" onclick="closeMesaDeAyudas()">Cancelar</button>
-            <button type="submit" class="primary small" style="background: #15803d;">Crear Ticket</button>
+      <div class="edit-modal-body" style="padding: 20px;">
+        <div class="cecar-modal-tabs">
+          <button type="button" class="cecar-tab-btn active" id="tab-ticket-new" onclick="switchTicketTab('new')">Nuevo Requerimiento</button>
+          <button type="button" class="cecar-tab-btn" id="tab-ticket-list" onclick="switchTicketTab('list')">Mis Tickets y Solicitudes</button>
+        </div>
+
+        <div id="ticket-tab-new-pane">
+          <p style="color: var(--rp-text-muted); font-size: 13px; margin: 0 0 14px;">
+            Genera un ticket de soporte ante cualquier incidencia técnica o duda con tu postulación.
+          </p>
+          <form onsubmit="handleCreateTicket(event)">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+              <div>
+                <label class="field-label" for="ticket-category">Categoría</label>
+                <select id="ticket-category" class="pdf-filter-select" style="width: 100%; min-height: 38px; background: var(--rp-surface-2); color: var(--rp-text); border: 1px solid var(--rp-border);">
+                  <option value="Carga de documentos">Carga de documentos y soportes</option>
+                  <option value="Validación Davivienda">Validación de certificación bancaria</option>
+                  <option value="Subsanación">Dudas sobre subsanación</option>
+                  <option value="Pruebas y entrevista">Agendamiento de pruebas o entrevista</option>
+                  <option value="Acceso al sistema">Problemas de usuario o acceso</option>
+                  <option value="Otro">Otro requerimiento</option>
+                </select>
+              </div>
+              <div>
+                <label class="field-label" for="ticket-priority">Prioridad</label>
+                <select id="ticket-priority" class="pdf-filter-select" style="width: 100%; min-height: 38px; background: var(--rp-surface-2); color: var(--rp-text); border: 1px solid var(--rp-border);">
+                  <option value="media">Media</option>
+                  <option value="alta">Alta</option>
+                  <option value="urgente">Urgente</option>
+                  <option value="baja">Baja</option>
+                </select>
+              </div>
+            </div>
+
+            <label class="field-label" for="ticket-subject">Asunto</label>
+            <input id="ticket-subject" class="pdf-filter-input" style="width: 100%; min-height: 38px; margin-bottom: 12px; border: 1px solid var(--rp-border);" placeholder="Breve resumen de la solicitud..." required />
+
+            <label class="field-label" for="ticket-desc">Descripción detallada</label>
+            <textarea id="ticket-desc" rows="4" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--rp-border); background: var(--rp-surface-2); color: var(--rp-text); font-family: var(--rp-font); font-size: 13px; outline: none; margin-bottom: 16px;" placeholder="Describe la situación con claridad..." required></textarea>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+              <button type="button" class="secondary" onclick="closeMesaDeAyudas()">Cancelar</button>
+              <button type="submit" class="primary small" style="background: #15803d;">Crear Ticket</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="ticket-tab-list-pane" style="display: none;">
+          <div id="cecar-ticket-list-container" style="max-height: 360px; overflow-y: auto; margin-bottom: 14px;">
+            <p style="text-align: center; color: var(--rp-text-muted); padding: 20px;">Cargando tus solicitudes...</p>
           </div>
-        </form>
+          <div id="cecar-ticket-thread" style="display: none; border-top: 1px solid var(--rp-border); padding-top: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <h4 id="ticket-thread-title" style="margin: 0; font-size: 14px;">Conversación</h4>
+              <button type="button" class="rp-btn rp-btn--ghost rp-btn--sm" onclick="backToTicketList()">← Volver a lista</button>
+            </div>
+            <div id="ticket-messages-box" style="max-height: 180px; overflow-y: auto; margin-bottom: 10px; padding: 10px; background: var(--rp-surface-2); border-radius: 8px;"></div>
+            <form id="ticket-reply-form" onsubmit="handleSendTicketReply(event)" style="display: flex; gap: 8px;">
+              <input id="ticket-reply-input" class="pdf-filter-input" style="flex: 1;" placeholder="Escribe tu respuesta..." required />
+              <button type="submit" class="primary small" style="background: #15803d;">Responder</button>
+            </form>
+          </div>
+        </div>
       </div>
     </dialog>
 
@@ -593,32 +666,336 @@
       </div>
     </dialog>
 
-    <!-- Dialog Reportes y Exportación -->
-    <dialog id="report-dialog" class="pdf-approval-dialog" style="max-width: 620px; height: auto;">
+    <!-- Dialog Reportes y Exportación Especializada CECAR (RF-079, RF-096, RF-097) -->
+    <dialog id="report-dialog" class="pdf-approval-dialog" style="max-width: 960px; height: auto;">
       <div class="preview-header" style="background: #0f172a; color: #fff; padding: 16px 20px;">
         <div style="display: flex; align-items: center; gap: 10px;">
           <i data-lucide="bar-chart-2" style="color: #22c55e;"></i>
-          <h2 style="margin: 0; font-size: 16px; color: #fff;">Generación y Análisis de Reportes</h2>
+          <h2 style="margin: 0; font-size: 16px; color: #fff;">Reportes Especializados Institucionales CECAR</h2>
         </div>
         <button class="preview-close" type="button" onclick="closeReportModal()" style="color: #fff; background: rgba(255,255,255,0.15);">×</button>
       </div>
-      <div class="edit-modal-body" style="padding: 24px;">
-        <p style="color: var(--rp-text-muted); font-size: 13px; margin: 0 0 16px;">
-          Descarga reportes consolidados de trazabilidad, cumplimiento documental y estado de contrataciones.
-        </p>
-        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
-          <button type="button" class="pdf-quick-btn" style="justify-content: flex-start; padding: 12px;" onclick="downloadCsvReport()">
-            <i data-lucide="file-spreadsheet" style="color: #15803d;"></i>
-            <span>Exportar Postulaciones y Contrataciones (.CSV)</span>
-          </button>
-          <button type="button" class="pdf-quick-btn" style="justify-content: flex-start; padding: 12px;" onclick="window.print()">
-            <i data-lucide="printer" style="color: #2563eb;"></i>
-            <span>Imprimir Vista Ejecutiva de Cumplimiento (PDF)</span>
-          </button>
+      <div class="edit-modal-body" style="padding: 20px;">
+        <!-- Pestañas de Reportes Especializados -->
+        <div class="cecar-modal-tabs">
+          <button type="button" class="cecar-tab-btn active" id="tab-rep-no-aprobados" onclick="switchReportTab('no_aprobados')">1. Candidatos No Aprobados</button>
+          <button type="button" class="cecar-tab-btn" id="tab-rep-en-proceso" onclick="switchReportTab('en_proceso')">2. Candidatos En Proceso</button>
+          <button type="button" class="cecar-tab-btn" id="tab-rep-seleccionados" onclick="switchReportTab('seleccionados')">3. Candidatos Seleccionados</button>
         </div>
-        <div style="display: flex; justify-content: flex-end;">
+
+        <!-- Filtros Institucionales CECAR -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 14px; background: var(--rp-surface-2); padding: 12px; border-radius: 10px; border: 1px solid var(--rp-border);">
+          <div>
+            <label class="field-label" style="font-size: 11px;">Facultad</label>
+            <select id="report-filter-faculty" class="pdf-filter-select" style="width: 100%; min-height: 34px; font-size: 12px;" onchange="refreshCurrentSpecializedReport()">
+              <option value="">Todas las facultades</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label" style="font-size: 11px;">Programa Académico</label>
+            <select id="report-filter-program" class="pdf-filter-select" style="width: 100%; min-height: 34px; font-size: 12px;" onchange="refreshCurrentSpecializedReport()">
+              <option value="">Todos los programas</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label" style="font-size: 11px;">Sede Institucional</label>
+            <select id="report-filter-campus" class="pdf-filter-select" style="width: 100%; min-height: 34px; font-size: 12px;" onchange="refreshCurrentSpecializedReport()">
+              <option value="">Todas las sedes</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label" style="font-size: 11px;">Periodo Académico</label>
+            <select id="report-filter-period" class="pdf-filter-select" style="width: 100%; min-height: 34px; font-size: 12px;" onchange="refreshCurrentSpecializedReport()">
+              <option value="">Todos los periodos</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Tabla con resultados dinámicos -->
+        <div style="max-height: 320px; overflow-y: auto; border: 1px solid var(--rp-border); border-radius: 8px; margin-bottom: 16px;">
+          <table class="cecar-report-table" id="cecar-specialized-table">
+            <thead id="cecar-report-thead">
+              <tr><th>Aspirante</th><th>Convocatoria</th><th>Facultad</th><th>Estado</th><th>Detalle / Motivo</th></tr>
+            </thead>
+            <tbody id="cecar-report-tbody">
+              <tr><td colspan="5" style="text-align: center; color: var(--rp-text-muted); padding: 24px;">Cargando datos institucionales...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Acciones de Exportación -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; gap: 10px;">
+            <button type="button" class="pdf-btn-approve" onclick="downloadCsvReport()">
+              <i data-lucide="file-spreadsheet" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle;"></i>
+              Descargar Reporte en Excel (.CSV con BOM)
+            </button>
+            <button type="button" class="rp-btn rp-btn--secondary rp-btn--sm" onclick="window.print()">
+              <i data-lucide="printer" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle;"></i>
+              Imprimir Vista
+            </button>
+          </div>
           <button type="button" class="secondary" onclick="closeReportModal()">Cerrar</button>
         </div>
+      </div>
+    </dialog>
+
+    <!-- Dialog: Agregar / Editar Ítem de Hoja de Vida (Candidato RF-014 - RF-042) -->
+    <dialog id="candidate-item-dialog" class="pdf-approval-dialog" style="max-width: 580px; height: auto;">
+      <div class="preview-header" style="background: #0f172a; color: #fff; padding: 14px 18px;">
+        <h3 id="candidate-item-modal-title" style="margin: 0; font-size: 15px; color: #fff;">Registrar Ítem de Hoja de Vida</h3>
+        <button class="preview-close" type="button" onclick="closeCandidateItemModal()" style="color: #fff; background: rgba(255,255,255,0.15);">×</button>
+      </div>
+      <div class="edit-modal-body" style="padding: 20px;">
+        <form onsubmit="handleSaveCandidateItem(event)">
+          <input type="hidden" id="hv-item-id" />
+          <input type="hidden" id="hv-item-section" />
+
+          <label class="field-label" for="hv-item-type">Tipo de Requisito / Documento (Catálogo CECAR)</label>
+          <select id="hv-item-type" class="pdf-filter-select" style="width: 100%; min-height: 38px; margin-bottom: 12px; background: var(--rp-surface-2); color: var(--rp-text); border: 1px solid var(--rp-border);" required>
+            <!-- Llenado dinámico con los 26 tipos de HV -->
+          </select>
+
+          <label class="field-label" for="hv-item-title">Título o Denominación</label>
+          <input id="hv-item-title" class="pdf-filter-input" style="width: 100%; min-height: 38px; margin-bottom: 12px; border: 1px solid var(--rp-border);" placeholder="Ej. Licenciatura en Educación Infantil, Docente Catedrático..." required />
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <div>
+              <label class="field-label" for="hv-item-inst">Institución / Empresa</label>
+              <input id="hv-item-inst" class="pdf-filter-input" style="width: 100%; min-height: 38px; border: 1px solid var(--rp-border);" placeholder="Ej. CECAR, Universidad..." />
+            </div>
+            <div>
+              <label class="field-label" for="hv-item-year">Año / Fecha</label>
+              <input id="hv-item-year" class="pdf-filter-input" style="width: 100%; min-height: 38px; border: 1px solid var(--rp-border);" placeholder="Ej. 2023 o 2020-2024" />
+            </div>
+          </div>
+
+          <label class="field-label" for="hv-item-file">Archivo de Soporte Digital (PDF, PNG, JPG - Máx 10 MB)</label>
+          <input type="file" id="hv-item-file" accept=".pdf,.png,.jpg,.jpeg" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px dashed var(--rp-border); background: var(--rp-surface-2); margin-bottom: 16px;" />
+
+          <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="secondary" onclick="closeCandidateItemModal()">Cancelar</button>
+            <button type="submit" class="primary small" style="background: #15803d;">Guardar Ítem</button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+
+    <!-- Dialog: Solicitar Subsanación (Revisor RF-047, RN-011) -->
+    <dialog id="subsanacion-request-dialog" class="pdf-approval-dialog" style="max-width: 520px; height: auto;">
+      <div class="preview-header" style="background: #0f172a; color: #fff; padding: 14px 18px;">
+        <h3 style="margin: 0; font-size: 15px; color: #fff;">Solicitar Subsanación Documental</h3>
+        <button class="preview-close" type="button" onclick="closeRequestSubsanacionModal()" style="color: #fff; background: rgba(255,255,255,0.15);">×</button>
+      </div>
+      <div class="edit-modal-body" style="padding: 20px;">
+        <p style="color: var(--rp-text-muted); font-size: 13px; margin: 0 0 14px;">
+          Se notificará formalmente al aspirante. Solo podrá modificar los ítems con observaciones (los aprobados quedarán bloqueados según regla RN-011).
+        </p>
+        <form onsubmit="handleSendSubsanacionRequest(event)">
+          <label class="field-label" for="subsanacion-deadline-hours">Plazo límite de subsanación (horas)</label>
+          <input id="subsanacion-deadline-hours" type="number" min="12" max="168" value="48" class="pdf-filter-input" style="width: 100%; min-height: 38px; margin-bottom: 12px; border: 1px solid var(--rp-border);" required />
+
+          <label class="field-label" for="subsanacion-instructions">Instrucciones u observaciones para el aspirante</label>
+          <textarea id="subsanacion-instructions" rows="3" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--rp-border); background: var(--rp-surface-2); color: var(--rp-text); font-family: var(--rp-font); font-size: 13px; margin-bottom: 16px;" placeholder="Detalla los soportes que deben corregirse..." required>Favor corregir o actualizar los soportes marcados con observaciones dentro del plazo estipulado.</textarea>
+
+          <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="secondary" onclick="closeRequestSubsanacionModal()">Cancelar</button>
+            <button type="submit" class="primary small" style="background: #d97706;">Emitir Solicitud</button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+
+    <!-- Dialog: Descartar Candidato con Catálogo (RF-058, RF-093, RN-024) -->
+    <dialog id="discard-candidate-dialog" class="pdf-approval-dialog" style="max-width: 520px; height: auto;">
+      <div class="preview-header" style="background: #0f172a; color: #fff; padding: 14px 18px;">
+        <h3 style="margin: 0; font-size: 15px; color: #fff;">Descartar Candidatura</h3>
+        <button class="preview-close" type="button" onclick="closeDiscardCandidateModal()" style="color: #fff; background: rgba(255,255,255,0.15);">×</button>
+      </div>
+      <div class="edit-modal-body" style="padding: 20px;">
+        <p style="color: var(--rp-text-muted); font-size: 13px; margin: 0 0 14px;">
+          Selecciona obligatoriamente un motivo oficial del catálogo para registrar la trazabilidad (RN-024).
+        </p>
+        <form onsubmit="handleDiscardCandidate(event)">
+          <label class="field-label" for="discard-reason-select">Motivo de Descarte (Catálogo Oficial)</label>
+          <select id="discard-reason-select" class="pdf-filter-select" style="width: 100%; min-height: 38px; margin-bottom: 12px; background: var(--rp-surface-2); color: var(--rp-text); border: 1px solid var(--rp-border);" required>
+            <!-- Llenado dinámico desde catálogo -->
+          </select>
+
+          <label class="field-label" for="discard-details">Detalles adicionales</label>
+          <textarea id="discard-details" rows="3" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--rp-border); background: var(--rp-surface-2); color: var(--rp-text); font-family: var(--rp-font); font-size: 13px; margin-bottom: 16px;" placeholder="Explicación detallada para auditoría..."></textarea>
+
+          <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="secondary" onclick="closeDiscardCandidateModal()">Cancelar</button>
+            <button type="submit" class="primary small" style="background: #dc2626;">Confirmar Descarte</button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+
+    <!-- Dialog: Agendar Entrevista (RF-060 - RF-072) -->
+    <dialog id="schedule-interview-dialog" class="pdf-approval-dialog" style="max-width: 540px; height: auto;">
+      <div class="preview-header" style="background: #0f172a; color: #fff; padding: 14px 18px;">
+        <h3 style="margin: 0; font-size: 15px; color: #fff;">Agendar Entrevista con Comité</h3>
+        <button class="preview-close" type="button" onclick="closeScheduleInterviewModal()" style="color: #fff; background: rgba(255,255,255,0.15);">×</button>
+      </div>
+      <div class="edit-modal-body" style="padding: 20px;">
+        <form onsubmit="handleScheduleInterview(event)">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <div>
+              <label class="field-label" for="interview-datetime">Fecha y Hora</label>
+              <input id="interview-datetime" type="datetime-local" class="pdf-filter-input" style="width: 100%; min-height: 38px; border: 1px solid var(--rp-border);" required />
+            </div>
+            <div>
+              <label class="field-label" for="interview-modality">Modalidad</label>
+              <select id="interview-modality" class="pdf-filter-select" style="width: 100%; min-height: 38px; background: var(--rp-surface-2); color: var(--rp-text); border: 1px solid var(--rp-border);">
+                <option value="Virtual">Virtual (Google Meet / Teams)</option>
+                <option value="Presencial">Presencial (Sede Sincelejo)</option>
+              </select>
+            </div>
+          </div>
+
+          <label class="field-label" for="interview-location">Enlace de Conexión o Sala</label>
+          <input id="interview-location" class="pdf-filter-input" style="width: 100%; min-height: 38px; margin-bottom: 12px; border: 1px solid var(--rp-border);" placeholder="Ej. https://meet.google.com/xyz o Sala de Juntas Decanatura" required />
+
+          <label class="field-label" for="interview-committee">Miembros del Comité (separados por coma)</label>
+          <input id="interview-committee" class="pdf-filter-input" style="width: 100%; min-height: 38px; margin-bottom: 16px; border: 1px solid var(--rp-border);" placeholder="Ej. Decano, Director de Programa, Coordinador" />
+
+          <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="secondary" onclick="closeScheduleInterviewModal()">Cancelar</button>
+            <button type="submit" class="primary small" style="background: #7c3aed;">Agendar Entrevista</button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+
+    <!-- Dialog: Pruebas Académicas y Clase Modelo (RF-087 - RF-089) -->
+    <dialog id="academic-tests-dialog" class="pdf-approval-dialog" style="max-width: 540px; height: auto;">
+      <div class="preview-header" style="background: #0f172a; color: #fff; padding: 14px 18px;">
+        <h3 style="margin: 0; font-size: 15px; color: #fff;">Evaluación Técnica y Clase Modelo</h3>
+        <button class="preview-close" type="button" onclick="closeAcademicTestsModal()" style="color: #fff; background: rgba(255,255,255,0.15);">×</button>
+      </div>
+      <div class="edit-modal-body" style="padding: 20px;">
+        <form onsubmit="handleSaveAcademicTests(event)">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <div>
+              <label class="field-label" for="test-type">Tipo de Prueba</label>
+              <select id="test-type" class="pdf-filter-select" style="width: 100%; min-height: 38px; background: var(--rp-surface-2); color: var(--rp-text); border: 1px solid var(--rp-border);">
+                <option value="psicotecnica">Prueba Psicotécnica</option>
+                <option value="conocimientos">Prueba de Conocimientos Específicos</option>
+                <option value="clase_modelo">Clase Modelo / Didáctica</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label" for="test-score">Calificación (0 - 100)</label>
+              <input id="test-score" type="number" min="0" max="100" step="0.1" class="pdf-filter-input" style="width: 100%; min-height: 38px; border: 1px solid var(--rp-border);" required />
+            </div>
+          </div>
+
+          <label class="field-label" for="test-observations">Observaciones del Comité Evaluador</label>
+          <textarea id="test-observations" rows="3" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--rp-border); background: var(--rp-surface-2); color: var(--rp-text); font-family: var(--rp-font); font-size: 13px; margin-bottom: 16px;" placeholder="Dominio temático, competencias pedagógicas..."></textarea>
+
+          <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="secondary" onclick="closeAcademicTestsModal()">Cancelar</button>
+            <button type="submit" class="primary small" style="background: #0284c7;">Guardar Calificación</button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+
+    <!-- Dialog: Concepto de Salud Ocupacional (RF-101, RN-027, RNF-028) -->
+    <dialog id="occupational-exam-dialog" class="pdf-approval-dialog" style="max-width: 520px; height: auto;">
+      <div class="preview-header" style="background: #0f172a; color: #fff; padding: 14px 18px;">
+        <h3 style="margin: 0; font-size: 15px; color: #fff;">Concepto de Salud Ocupacional (Fase 2)</h3>
+        <button class="preview-close" type="button" onclick="closeOccupationalExamModal()" style="color: #fff; background: rgba(255,255,255,0.15);">×</button>
+      </div>
+      <div class="edit-modal-body" style="padding: 20px;">
+        <p style="color: var(--rp-text-muted); font-size: 12.5px; margin: 0 0 14px;">
+          Nota de Privacidad y Cumplimiento RN-027 / RNF-028: Solo se registra el concepto administrativo de aptitud laboral. No se almacenan diagnósticos clínicos.
+        </p>
+        <form onsubmit="handleSaveOccupationalExam(event)">
+          <label class="field-label" for="occupational-concept">Concepto Administrativo de Aptitud</label>
+          <select id="occupational-concept" class="pdf-filter-select" style="width: 100%; min-height: 38px; margin-bottom: 12px; background: var(--rp-surface-2); color: var(--rp-text); border: 1px solid var(--rp-border);" required>
+            <option value="apto">Apto para el cargo docente</option>
+            <option value="apto_con_restricciones">Apto con recomendaciones / restricciones ergonómicas</option>
+            <option value="no_apto">No apto</option>
+          </select>
+
+          <label class="field-label" for="occupational-notes">Recomendaciones laborales preventivas</label>
+          <textarea id="occupational-notes" rows="3" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--rp-border); background: var(--rp-surface-2); color: var(--rp-text); font-family: var(--rp-font); font-size: 13px; margin-bottom: 16px;" placeholder="Pautas de pausas activas, ergonomía..."></textarea>
+
+          <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="secondary" onclick="closeOccupationalExamModal()">Cancelar</button>
+            <button type="submit" class="primary small" style="background: #059669;">Registrar Concepto</button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+
+    <!-- Dialog: Expediente de Contratación, Vinculación e Integración (RF-102 - RF-106) -->
+    <dialog id="hiring-binding-dialog" class="pdf-approval-dialog" style="max-width: 620px; height: auto;">
+      <div class="preview-header" style="background: #0f172a; color: #fff; padding: 14px 18px;">
+        <h3 style="margin: 0; font-size: 15px; color: #fff;">Contratación, Vinculación e Integración Institucional</h3>
+        <button class="preview-close" type="button" onclick="closeHiringBindingModal()" style="color: #fff; background: rgba(255,255,255,0.15);">×</button>
+      </div>
+      <div class="edit-modal-body" style="padding: 20px;">
+        <h4 style="margin: 0 0 10px; font-size: 14px;">1. Lista de Chequeo de Contratación</h4>
+        <div style="display: flex; flex-direction: column; gap: 10px; background: var(--rp-surface-2); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+            <input type="checkbox" id="check-bank-account" checked />
+            <span>Cuenta de nómina Davivienda verificada</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+            <input type="checkbox" id="check-eps" checked />
+            <span>Afiliación activa EPS certificada</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+            <input type="checkbox" id="check-pension" checked />
+            <span>Certificado Fondo de Pensiones validado</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+            <input type="checkbox" id="check-contract-signed" checked />
+            <span>Minuta de Contrato de Cátedra firmada</span>
+          </label>
+        </div>
+
+        <h4 style="margin: 0 0 10px; font-size: 14px;">2. Acciones Institucionales</h4>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+          <button type="button" class="pdf-btn-approve" onclick="handleConfirmBinding()" style="text-align: left; padding: 12px;">
+            <i data-lucide="check-circle-2" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle;"></i>
+            Confirmar Vinculación Institucional CECAR (Estado: Vinculada)
+          </button>
+          <button type="button" class="rp-btn rp-btn--primary" onclick="handleTransferInstitutionalHv()" style="background: #0f172a; color: #86efac; text-align: left; padding: 12px; border: 1px solid #16a34a;">
+            <i data-lucide="send" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle;"></i>
+            Transferir Expediente a Gestión del Talento Humano Institucional
+          </button>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end;">
+          <button type="button" class="secondary" onclick="closeHiringBindingModal()">Cerrar</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Dialog: Retirar Candidatura (Candidato RN-004) -->
+    <dialog id="withdraw-candidate-dialog" class="pdf-approval-dialog" style="max-width: 480px; height: auto;">
+      <div class="preview-header" style="background: #0f172a; color: #fff; padding: 14px 18px;">
+        <h3 style="margin: 0; font-size: 15px; color: #fff;">Confirmar Retiro de Candidatura</h3>
+        <button class="preview-close" type="button" onclick="closeWithdrawCandidateModal()" style="color: #fff; background: rgba(255,255,255,0.15);">×</button>
+      </div>
+      <div class="edit-modal-body" style="padding: 20px;">
+        <p style="color: var(--rp-text-muted); font-size: 13px; margin: 0 0 14px;">
+          ¿Estás seguro de que deseas retirar tu postulación a esta convocatoria? Esta acción marcará tu candidatura como retirada (RN-004).
+        </p>
+        <form onsubmit="handleConfirmWithdraw(event)">
+          <label class="field-label" for="withdraw-reason">Motivo de retiro</label>
+          <textarea id="withdraw-reason" rows="3" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--rp-border); background: var(--rp-surface-2); color: var(--rp-text); font-family: var(--rp-font); font-size: 13px; margin-bottom: 16px;" placeholder="Motivos personales, otra oferta laboral..." required></textarea>
+
+          <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="secondary" onclick="closeWithdrawCandidateModal()">Cancelar</button>
+            <button type="submit" class="primary small" style="background: #dc2626;">Confirmar Retiro</button>
+          </div>
+        </form>
       </div>
     </dialog>
 

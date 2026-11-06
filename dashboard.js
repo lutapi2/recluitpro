@@ -1328,8 +1328,11 @@ async function view(page, vacancyId = "") {
                     <span style="font-size: 12px; color: var(--rp-text-muted);">
                       Postulación enviada el ${new Date(item.createdAt).toLocaleDateString("es")}
                     </span>
-                    <div>
-                      ${item.resumeId ? `<button type="button" class="rp-btn rp-btn--secondary rp-btn--sm" onclick="viewDocument('${encodeURIComponent(item.resumeId)}')">Ver CV enviado</button>` : ""}
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                      ${item.status === 'borrador' ? `<button type="button" class="rp-btn rp-btn--primary rp-btn--sm" onclick="view('apply', '${escapeHtml(item.vacancyId)}')">Continuar Diligenciando HV</button>` : ''}
+                      ${item.status === 'subsanacion_requerida' ? `<button type="button" class="rp-btn rp-btn--sm" style="background: #d97706; color: #fff;" onclick="view('apply', '${escapeHtml(item.vacancyId)}')">⚠️ Subsanar Documentos</button>` : ''}
+                      ${item.status !== 'borrador' && item.status !== 'subsanacion_requerida' ? `<button type="button" class="rp-btn rp-btn--secondary rp-btn--sm" onclick="view('apply', '${escapeHtml(item.vacancyId)}')">Ver Expediente y Soportes</button>` : ''}
+                      ${item.status !== 'borrador' ? `<a class="rp-btn rp-btn--sm" style="background: #15803d; color: #fff; text-decoration: none;" href="/api/applications/${encodeURIComponent(item.id)}/constancia" target="_blank">Constancia Postulación</a>` : ''}
                     </div>
                   </div>
                 </article>
@@ -1446,19 +1449,33 @@ async function view(page, vacancyId = "") {
         : user.role === "reclutador" ? [user] : [];
       app.innerHTML = `${renderVacancies(result.items)}${renderPager(result, "jobs")}`;
     } else if (page === "apply" && user.role === "candidato") {
-      vacanciesCache = (await (await apiRequest("/api/vacancies")).json()).items;
-      const vacancy = vacanciesCache.find((entry) => entry.id === vacancyId);
-      if (!vacancy || vacancy.status === "closed") {
-        showMessage("Esta vacante ya no está disponible. Actualiza la página.", true);
-        await view("jobs");
-        return;
+      vacanciesCache = (await (await apiRequest("/api/vacancies")).json()).items || [];
+      const vacancy = vacanciesCache.find((entry) => entry.id === vacancyId) || {
+        id: vacancyId,
+        title: "Convocatoria Docente CECAR",
+        type: "Cátedra Universitaria",
+        faculty: "Facultad de Educación y Ciencias Sociales",
+        program: "Licenciatura en Educación Infantil",
+        campus: "Sede Principal Sincelejo",
+        academic_period: "2026-2",
+        code: "CONV-2026-DOC-01",
+      };
+      await ensureCatalogos();
+      try {
+        const draftRes = await apiRequest("/api/applications/draft", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ vacancy_id: vacancy.id, privacy_consent: true }),
+        });
+        const draftData = await draftRes.json();
+        currentCandidateAppId = draftData.applicationId;
+        const dossierRes = await apiRequest(`/api/applications/${encodeURIComponent(currentCandidateAppId)}/dossier`);
+        currentCandidateDossier = await dossierRes.json();
+        app.innerHTML = renderCecarHvBuilder(currentCandidateDossier, vacancy);
+      } catch (err) {
+        console.error("Error al cargar expediente de postulación:", err);
+        app.innerHTML = `<div class="box notice-box is-error" role="alert">${escapeHtml(err.message)}</div>`;
       }
-      if (vacancy.applications.some((application) => application.email === user.email)) {
-        await view("jobs");
-        return;
-      }
-      sessionStorage.setItem("recruitpro_pending_application", vacancy.id);
-      app.innerHTML = renderApplicationForm(vacancy);
     }
     setTimeout(() => {
       if (typeof window.ui !== "undefined" && window.ui.refreshIcons) {
@@ -4762,332 +4779,1221 @@ function resetProcesosFilters() {
 }
 
 /* ==========================================================================
-   VISOR Y APROBACIÓN DE DOCUMENTOS (SCREEN 4: DAVIVIENDA & CHECKLIST)
+   INTEGRACIÓN CECAR: CATÁLOGOS, HOJA DE VIDA, REVISIÓN, SUBSANACIÓN,
+   REPORTES ESPECIALIZADOS Y MESA DE AYUDAS (RF-001 A RF-106)
    ========================================================================== */
 
-function openPdfApprovalDialog(appId) {
+let catalogosCache = null;
+let currentApprovalAppId = null;
+let currentApprovalDossier = null;
+let currentApprovalItemId = null;
+let currentCandidateAppId = null;
+let currentCandidateDossier = null;
+let currentReportType = "no_aprobados";
+let currentTicketList = [];
+let currentOpenTicket = null;
+
+async function ensureCatalogos() {
+  if (catalogosCache) return catalogosCache;
+  try {
+    const res = await apiRequest("/api/catalogos");
+    catalogosCache = await res.json();
+
+    // Llenar selectores institucionales en reportes
+    populateSelectOptions("report-filter-faculty", catalogosCache.facultades || [], "Todas las facultades");
+    populateSelectOptions("report-filter-program", catalogosCache.programas || [], "Todos los programas");
+    populateSelectOptions("report-filter-campus", catalogosCache.sedes || [], "Todas las sedes");
+    populateSelectOptions("report-filter-period", catalogosCache.periodos_academicos || [], "Todos los periodos");
+
+    // Llenar selector de motivos de descarte
+    const discardSelect = document.getElementById("discard-reason-select");
+    if (discardSelect && catalogosCache.motivos_descarte) {
+      discardSelect.innerHTML = catalogosCache.motivos_descarte
+        .map((m) => `<option value="${escapeHtml(m.id)}">[${escapeHtml(m.code)}] ${escapeHtml(m.name)}</option>`)
+        .join("");
+    }
+  } catch (err) {
+    console.error("Error cargando catálogos CECAR:", err);
+  }
+  return catalogosCache;
+}
+
+function populateSelectOptions(elemId, list, defaultLabel) {
+  const el = document.getElementById(elemId);
+  if (!el) return;
+  el.innerHTML = `<option value="">${escapeHtml(defaultLabel)}</option>` +
+    list.map((item) => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`).join("");
+}
+
+/* ==========================================================================
+   GESTOR DE HOJA DE VIDA POR ÍTEMS Y SOPORTES INDEPENDIENTES (CANDIDATO)
+   ========================================================================== */
+
+function renderCecarHvBuilder(dossier, vacancy) {
+  const appData = dossier.application || {};
+  const items = dossier.items || [];
+  const status = appData.status || "borrador";
+  const progress = appData.progress_percentage || 0;
+  const isSubsanacion = status === "subsanacion_requerida";
+  const isReadOnly = !["borrador", "subsanacion_requerida"].includes(status);
+  const latestSubsanacion = dossier.latest_subsanacion || {};
+
+  const sections = [
+    { key: "datos_personales", title: "1. Datos Personales e Identificación", icon: "user", types: ["HV-001", "HV-002", "HV-003", "HV-004", "HV-005"] },
+    { key: "formacion", title: "2. Formación Académica y Títulos", icon: "graduation-cap", types: ["HV-006", "HV-007", "HV-008", "HV-009", "HV-010", "HV-011"] },
+    { key: "experiencia", title: "3. Experiencia Laboral y Docencia", icon: "briefcase", types: ["HV-012", "HV-013", "HV-014", "HV-015"] },
+    { key: "produccion", title: "4. Producción Intelectual e Idiomas", icon: "book-open", types: ["HV-016", "HV-017", "HV-018", "HV-019"] },
+    { key: "certificaciones", title: "5. Certificaciones y Distinciones", icon: "award", types: ["HV-020", "HV-021"] },
+    { key: "institucionales", title: "6. Requisitos Institucionales y Contratación", icon: "file-check-2", types: ["HV-022", "HV-023", "HV-024", "HV-025", "HV-026"] },
+  ];
+
+  let subsanacionBannerHtml = "";
+  if (isSubsanacion) {
+    let deadlineStr = "Plazo en curso";
+    if (appData.subsanacion_deadline) {
+      try {
+        deadlineStr = new Date(appData.subsanacion_deadline).toLocaleString("es");
+      } catch (e) {}
+    }
+    subsanacionBannerHtml = `
+      <div class="cecar-subsanacion-banner">
+        <div class="cecar-subsanacion-header">
+          <i data-lucide="alert-triangle" style="width: 24px; height: 24px; color: #b45309;"></i>
+          <div>
+            <h3 class="cecar-subsanacion-title">Subsanación Documental Requerida</h3>
+            <span class="cecar-countdown-badge"><i data-lucide="clock" style="width: 14px; height: 14px;"></i> Plazo límite: ${escapeHtml(deadlineStr)}</span>
+          </div>
+        </div>
+        <p style="margin: 8px 0; font-size: 13.5px; line-height: 1.5;">
+          ${escapeHtml(latestSubsanacion.instructions || "El comité evaluador ha solicitado subsanar soportes documentales específicos.")}
+        </p>
+        <p style="margin: 4px 0 12px; font-size: 12.5px; color: #92400e; font-weight: 600;">
+          📌 Regla Institucional RN-011: Los ítems ya aprobados están bloqueados contra modificación. Solo puedes actualizar los ítems marcados como OBSERVADO.
+        </p>
+        <button type="button" class="rp-btn" style="background: #b45309; color: #fff; font-weight: 700;" onclick="submitSubsanacionCandidate('${appData.id}')">
+          <i data-lucide="send" style="width: 15px; height: 15px;"></i>
+          Enviar Subsanación al Comité
+        </button>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="dash-header-wrap" style="margin-bottom: 20px;">
+      <div class="dash-header-main">
+        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 6px;">
+          <span class="dash-tag">${escapeHtml(appData.code || vacancy.code || "CONV-CECAR")}</span>
+          <span class="cecar-badge-status ${status}">${escapeHtml(statusLabel(status))}</span>
+        </div>
+        <h1 class="dash-greeting-title" style="font-size: 24px;">${escapeHtml(vacancy.title || "Convocatoria Docente CECAR")}</h1>
+        <p class="dash-greeting-sub">
+          ${escapeHtml(vacancy.faculty || "Facultad de Educación y Ciencias Sociales")} · ${escapeHtml(vacancy.campus || "Sede Principal Sincelejo")} · Periodo: ${escapeHtml(vacancy.academic_period || "2026-2")}
+        </p>
+      </div>
+      <div class="dash-header-actions">
+        <button type="button" class="rp-btn rp-btn--secondary rp-btn--sm" onclick="view('jobs')">
+          ← Volver a Convocatorias
+        </button>
+      </div>
+    </div>
+
+    ${subsanacionBannerHtml}
+
+    <!-- Barra de Progreso de Carga Documental (RF-016) -->
+    <div class="cecar-progress-card">
+      <div class="cecar-progress-top">
+        <span style="font-size: 13.5px; font-weight: 700; color: var(--rp-text);">
+          Completitud del Expediente Documental (HV-001 a HV-026)
+        </span>
+        <span style="font-size: 14px; font-weight: 800; color: #15803d;">${progress}%</span>
+      </div>
+      <div class="cecar-progress-bar-bg">
+        <div class="cecar-progress-bar-fill" style="width: ${progress}%;"></div>
+      </div>
+      <small style="color: var(--rp-text-muted); margin-top: 8px; display: block; font-size: 12px;">
+        Cada dato registrado debe estar asociado a su archivo de soporte probatorio independiente (RF-014 a RF-042).
+      </small>
+    </div>
+
+    <!-- Secciones del Expediente -->
+    ${sections.map((sec) => {
+      const sectionItems = items.filter((it) => it.section === sec.key || sec.types.includes(it.item_type));
+      return `
+        <div class="cecar-hv-section">
+          <div class="cecar-hv-section-header">
+            <h2 class="cecar-hv-section-title">
+              <i data-lucide="${sec.icon}" style="width: 18px; height: 18px; color: #16a34a;"></i>
+              <span>${sec.title}</span>
+            </h2>
+            ${!isReadOnly ? `
+              <button type="button" class="rp-btn rp-btn--secondary rp-btn--sm" onclick="openAddHvItemModal('${sec.key}')" ${isSubsanacion ? 'disabled title="En subsanación no se permite agregar nuevos ítems (solo corregir observados)"' : ''}>
+                <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+                Agregar Ítem
+              </button>
+            ` : ''}
+          </div>
+
+          ${sectionItems.length ? sectionItems.map((item) => renderCandidateItemRow(item, isSubsanacion, isReadOnly)).join("") : `
+            <div style="padding: 16px; text-align: center; color: var(--rp-text-muted); font-size: 13px; background: var(--rp-surface-2); border-radius: 8px; border: 1px dashed var(--rp-border);">
+              No has registrado información en esta sección.
+            </div>
+          `}
+        </div>
+      `;
+    }).join("")}
+
+    <!-- Panel de Radicación y Consentimientos (RF-017, RF-040, RN-028) -->
+    <div class="cecar-hv-section" style="border: 1px solid #16a34a; background: rgba(22, 163, 74, 0.02);">
+      <h3 style="margin: 0 0 12px; font-size: 15px; color: #15803d; font-weight: 800;">
+        Declaración, Consentimientos Institucionales y Radicación
+      </h3>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+        <label style="display: flex; gap: 10px; align-items: flex-start; font-size: 13px; cursor: pointer;">
+          <input type="checkbox" id="cecar-is-internal" ${appData.is_internal ? 'checked' : ''} ${isReadOnly ? 'disabled' : ''} style="margin-top: 3px;" />
+          <span><b>Soy docente o empleado actual de CECAR</b> (Candidatura interna / Escalafón).</span>
+        </label>
+
+        <label style="display: flex; gap: 10px; align-items: flex-start; font-size: 13px; cursor: pointer;">
+          <input type="checkbox" id="cecar-talent-bank" ${appData.talent_bank_consent ? 'checked' : ''} ${isReadOnly ? 'disabled' : ''} style="margin-top: 3px;" />
+          <span><b>Autorizo conservar mi hoja de vida y soportes en el Banco de Talentos Institucional CECAR</b> para futuras convocatorias según política de protección de datos (RN-028).</span>
+        </label>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-top: 1px solid var(--rp-border); padding-top: 16px;">
+        <div>
+          ${appData.application_code ? `
+            <div style="font-size: 13px; color: var(--rp-text-muted);">
+              Código de Radicación: <b style="color: var(--rp-text); font-family: monospace;">${escapeHtml(appData.application_code)}</b>
+            </div>
+          ` : ''}
+        </div>
+
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          ${status === 'borrador' ? `
+            <button type="button" class="rp-btn rp-btn--secondary" onclick="window.ui.toast('Borrador guardado automáticamente', { type: 'info' })">
+              Guardar Borrador
+            </button>
+            <button type="button" class="rp-btn rp-btn--primary" style="background: #15803d;" onclick="submitApplicationFormal('${appData.id}')">
+              <i data-lucide="check-circle" style="width: 16px; height: 16px;"></i>
+              Radicar Postulación Formal
+            </button>
+          ` : ''}
+
+          ${isSubsanacion ? `
+            <button type="button" class="rp-btn" style="background: #b45309; color: #fff; font-weight: 700;" onclick="submitSubsanacionCandidate('${appData.id}')">
+              <i data-lucide="send" style="width: 16px; height: 16px;"></i>
+              Enviar Subsanación al Comité
+            </button>
+          ` : ''}
+
+          ${status !== 'borrador' ? `
+            <a class="rp-btn rp-btn--secondary" href="/api/applications/${encodeURIComponent(appData.id)}/constancia" target="_blank" style="text-decoration: none;">
+              <i data-lucide="download" style="width: 15px; height: 15px;"></i>
+              Descargar Constancia de Postulación (PDF)
+            </a>
+          ` : ''}
+
+          ${!['borrador', 'rechazada', 'retirada', 'vinculada'].includes(status) ? `
+            <button type="button" class="rp-btn rp-btn--danger rp-btn--sm" onclick="openWithdrawCandidateModal('${appData.id}')">
+              Retirar Candidatura
+            </button>
+          ` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderCandidateItemRow(item, isSubsanacion, isReadOnly) {
+  const reviews = currentCandidateDossier?.reviews || [];
+  const latestReview = reviews.filter((r) => r.item_id === item.id).pop();
+  const itemReviewStatus = latestReview?.decision || "pendiente";
+  const isObservado = itemReviewStatus === "observado";
+  const isAprobado = itemReviewStatus === "aprobado";
+  const isRechazado = itemReviewStatus === "rechazado";
+
+  // Regla RN-011: en subsanación solo los observados se pueden editar/cargar soporte
+  const isLockedBySubsanacion = isSubsanacion && !isObservado;
+
+  const support = (currentCandidateDossier?.supports || []).find((s) => s.item_id === item.id);
+
+  return `
+    <div class="cecar-item-card ${isObservado ? 'is-observado' : isAprobado ? 'is-aprobado' : isRechazado ? 'is-rechazado' : ''} ${isLockedBySubsanacion ? 'is-locked' : ''}">
+      <div style="flex: 1; min-width: 0;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;">
+          <span class="cecar-badge-type">${escapeHtml(item.item_type)}</span>
+          <span class="cecar-badge-status ${itemReviewStatus}">
+            ${itemReviewStatus === 'aprobado' ? '✓ Aprobado' : isObservado ? '⚠️ Observado' : isRechazado ? '✕ Rechazado' : 'Pendiente de Revisión'}
+          </span>
+          ${isLockedBySubsanacion ? `<span style="font-size: 11px; color: var(--rp-text-muted); font-weight: 600;">🔒 Bloqueado por RN-011</span>` : ''}
+        </div>
+        <h4 style="margin: 0 0 4px; font-size: 14px; color: var(--rp-text); font-weight: 700;">
+          ${escapeHtml(item.title)}
+        </h4>
+        <div style="font-size: 12.5px; color: var(--rp-text-muted);">
+          ${item.data?.institucion ? `<span>${escapeHtml(item.data.institucion)}</span> · ` : ''}
+          ${item.data?.ano ? `<span>Año: ${escapeHtml(String(item.data.ano))}</span>` : ''}
+        </div>
+
+        ${isObservado && latestReview?.reason ? `
+          <div style="margin-top: 8px; padding: 8px 12px; background: #fef3c7; border: 1px solid #fde68a; border-radius: 6px; color: #92400e; font-size: 12px;">
+            <b>Observación del Revisor:</b> ${escapeHtml(latestReview.reason)}
+          </div>
+        ` : ''}
+
+        ${isRechazado && latestReview?.reason ? `
+          <div style="margin-top: 8px; padding: 8px 12px; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 6px; color: #991b1b; font-size: 12px;">
+            <b>Motivo de Rechazo:</b> ${escapeHtml(latestReview.reason)}
+          </div>
+        ` : ''}
+      </div>
+
+      <!-- Soportes y Acciones del Ítem -->
+      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0;">
+        ${support ? `
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <a class="kanban-action-btn" href="/api/applications/${encodeURIComponent(currentCandidateAppId)}/items/${encodeURIComponent(item.id)}/support/view" target="_blank" style="text-decoration: none; font-size: 11.5px; padding: 4px 10px;" title="Ver soporte digital">
+              <i data-lucide="eye" style="width: 13px; height: 13px;"></i> Ver Soporte
+            </a>
+            <a class="kanban-action-btn" href="/api/applications/${encodeURIComponent(currentCandidateAppId)}/items/${encodeURIComponent(item.id)}/support/download" download style="text-decoration: none; font-size: 11.5px; padding: 4px 10px;" title="Descargar">
+              <i data-lucide="download" style="width: 13px; height: 13px;"></i>
+            </a>
+          </div>
+        ` : `
+          <span style="font-size: 11.5px; color: #dc2626; font-weight: 600;">Sin soporte adjunto</span>
+        `}
+
+        ${(!isReadOnly || (isSubsanacion && isObservado)) ? `
+          <div style="display: flex; gap: 6px;">
+            <label class="rp-btn rp-btn--sm" style="cursor: ${isLockedBySubsanacion ? 'not-allowed' : 'pointer'}; background: var(--rp-surface); border: 1px solid var(--rp-border); font-size: 11.5px; padding: 4px 10px;" title="${isLockedBySubsanacion ? 'Bloqueado por regla RN-011' : 'Subir o reemplazar soporte'}">
+              <i data-lucide="upload" style="width: 12px; height: 12px;"></i> ${support ? 'Reemplazar' : 'Subir Soporte'}
+              <input type="file" accept=".pdf,.png,.jpg,.jpeg" style="display: none;" ${isLockedBySubsanacion ? 'disabled' : ''} onchange="handleUploadItemSupport('${item.id}', this)" />
+            </label>
+            ${!isSubsanacion ? `
+              <button type="button" class="rp-btn rp-btn--ghost rp-btn--sm" style="color: #dc2626; padding: 4px 6px;" onclick="deleteCandidateItem('${item.id}')" title="Eliminar ítem">
+                <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i>
+              </button>
+            ` : ''}
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function openAddHvItemModal(sectionKey) {
+  const dialog = document.getElementById("candidate-item-dialog");
+  if (!dialog) return;
+  document.getElementById("hv-item-id").value = "";
+  document.getElementById("hv-item-section").value = sectionKey;
+  document.getElementById("hv-item-title").value = "";
+  document.getElementById("hv-item-inst").value = "";
+  document.getElementById("hv-item-year").value = "";
+  document.getElementById("hv-item-file").value = "";
+
+  const typeSelect = document.getElementById("hv-item-type");
+  const catalog = catalogosCache?.tipos_items_hv || [];
+  const filtered = catalog.filter((t) => t.seccion === sectionKey || !t.seccion);
+
+  typeSelect.innerHTML = (filtered.length ? filtered : catalog)
+    .map((t) => `<option value="${escapeHtml(t.id)}">[${escapeHtml(t.id)}] ${escapeHtml(t.nombre)}</option>`)
+    .join("");
+
+  dialog.showModal();
+}
+
+function closeCandidateItemModal() {
+  const dialog = document.getElementById("candidate-item-dialog");
+  if (dialog) dialog.close();
+}
+
+async function handleSaveCandidateItem(event) {
+  event.preventDefault();
+  const section = document.getElementById("hv-item-section").value;
+  const itemType = document.getElementById("hv-item-type").value;
+  const title = document.getElementById("hv-item-title").value.trim();
+  const inst = document.getElementById("hv-item-inst").value.trim();
+  const year = document.getElementById("hv-item-year").value.trim();
+  const fileInput = document.getElementById("hv-item-file");
+
+  try {
+    const res = await apiRequest(`/api/applications/${encodeURIComponent(currentCandidateAppId)}/items`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        item_type: itemType,
+        section: section,
+        title: title,
+        data: { institucion: inst, ano: year },
+      }),
+    });
+    const newItem = await res.json();
+
+    if (fileInput.files.length) {
+      const fd = new FormData();
+      fd.append("file", fileInput.files[0]);
+      await apiRequest(`/api/applications/${encodeURIComponent(currentCandidateAppId)}/items/${encodeURIComponent(newItem.id)}/support`, {
+        method: "POST",
+        body: fd,
+      });
+    }
+
+    closeCandidateItemModal();
+    window.ui.toast("Ítem guardado con éxito", { type: "success" });
+
+    // Recargar expediente
+    const dossierRes = await apiRequest(`/api/applications/${encodeURIComponent(currentCandidateAppId)}/dossier`);
+    currentCandidateDossier = await dossierRes.json();
+    const vacancy = vacanciesCache.find((v) => v.id === currentCandidateDossier.application?.vacancy_id) || {};
+    document.getElementById("app").innerHTML = renderCecarHvBuilder(currentCandidateDossier, vacancy);
+    if (window.ui && window.ui.refreshIcons) window.ui.refreshIcons();
+  } catch (err) {
+    console.error("Error guardando ítem:", err);
+    window.ui.toast(err.message, { type: "error" });
+  }
+}
+
+async function deleteCandidateItem(itemId) {
+  if (!confirm("¿Deseas eliminar este ítem y su soporte adjunto?")) return;
+  try {
+    await apiRequest(`/api/applications/${encodeURIComponent(currentCandidateAppId)}/items/${encodeURIComponent(itemId)}`, {
+      method: "DELETE",
+    });
+    window.ui.toast("Ítem eliminado", { type: "info" });
+    const dossierRes = await apiRequest(`/api/applications/${encodeURIComponent(currentCandidateAppId)}/dossier`);
+    currentCandidateDossier = await dossierRes.json();
+    const vacancy = vacanciesCache.find((v) => v.id === currentCandidateDossier.application?.vacancy_id) || {};
+    document.getElementById("app").innerHTML = renderCecarHvBuilder(currentCandidateDossier, vacancy);
+    if (window.ui && window.ui.refreshIcons) window.ui.refreshIcons();
+  } catch (err) {
+    window.ui.toast(err.message, { type: "error" });
+  }
+}
+
+async function handleUploadItemSupport(itemId, input) {
+  if (!input.files || !input.files.length) return;
+  const file = input.files[0];
+  const fd = new FormData();
+  fd.append("file", file);
+
+  try {
+    await apiRequest(`/api/applications/${encodeURIComponent(currentCandidateAppId)}/items/${encodeURIComponent(itemId)}/support`, {
+      method: "POST",
+      body: fd,
+    });
+    window.ui.toast(`Soporte "${file.name}" cargado con éxito`, { type: "success" });
+    const dossierRes = await apiRequest(`/api/applications/${encodeURIComponent(currentCandidateAppId)}/dossier`);
+    currentCandidateDossier = await dossierRes.json();
+    const vacancy = vacanciesCache.find((v) => v.id === currentCandidateDossier.application?.vacancy_id) || {};
+    document.getElementById("app").innerHTML = renderCecarHvBuilder(currentCandidateDossier, vacancy);
+    if (window.ui && window.ui.refreshIcons) window.ui.refreshIcons();
+  } catch (err) {
+    window.ui.toast(err.message, { type: "error" });
+  }
+}
+
+async function submitApplicationFormal(appId) {
+  const isInternal = document.getElementById("cecar-is-internal")?.checked || false;
+  const talentConsent = document.getElementById("cecar-talent-bank")?.checked || false;
+
+  try {
+    const res = await apiRequest(`/api/applications/${encodeURIComponent(appId)}/submit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        talent_bank_consent: talentConsent,
+        is_internal: isInternal,
+      }),
+    });
+    const data = await res.json();
+
+    if (typeof confetti === "function") {
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+    }
+    window.ui.toast(`¡Postulación radicada con éxito! Radicado: ${data.applicationCode || 'CONV-CECAR'}`, { type: "success" });
+
+    // Recargar vista
+    const dossierRes = await apiRequest(`/api/applications/${encodeURIComponent(appId)}/dossier`);
+    currentCandidateDossier = await dossierRes.json();
+    const vacancy = vacanciesCache.find((v) => v.id === currentCandidateDossier.application?.vacancy_id) || {};
+    document.getElementById("app").innerHTML = renderCecarHvBuilder(currentCandidateDossier, vacancy);
+    if (window.ui && window.ui.refreshIcons) window.ui.refreshIcons();
+  } catch (err) {
+    window.ui.toast(err.message, { type: "error" });
+  }
+}
+
+async function submitSubsanacionCandidate(appId) {
+  if (!confirm("¿Deseas enviar los soportes subsanados para una nueva revisión del comité?")) return;
+  try {
+    const res = await apiRequest(`/api/applications/${encodeURIComponent(appId)}/subsanacion/submit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notes: "Soportes observados corregidos por el aspirante." }),
+    });
+    window.ui.toast("Subsanación entregada correctamente. Tu expediente está en revisión.", { type: "success" });
+
+    const dossierRes = await apiRequest(`/api/applications/${encodeURIComponent(appId)}/dossier`);
+    currentCandidateDossier = await dossierRes.json();
+    const vacancy = vacanciesCache.find((v) => v.id === currentCandidateDossier.application?.vacancy_id) || {};
+    document.getElementById("app").innerHTML = renderCecarHvBuilder(currentCandidateDossier, vacancy);
+    if (window.ui && window.ui.refreshIcons) window.ui.refreshIcons();
+  } catch (err) {
+    window.ui.toast(err.message, { type: "error" });
+  }
+}
+
+function openWithdrawCandidateModal(appId) {
+  currentCandidateAppId = appId;
+  const dialog = document.getElementById("withdraw-candidate-dialog");
+  if (dialog) dialog.showModal();
+}
+
+function closeWithdrawCandidateModal() {
+  const dialog = document.getElementById("withdraw-candidate-dialog");
+  if (dialog) dialog.close();
+}
+
+async function handleConfirmWithdraw(event) {
+  event.preventDefault();
+  const reason = document.getElementById("withdraw-reason").value.trim();
+  try {
+    await apiRequest(`/api/applications/${encodeURIComponent(currentCandidateAppId)}/retirar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason }),
+    });
+    closeWithdrawCandidateModal();
+    window.ui.toast("Candidatura retirada formalmente (RN-004)", { type: "info" });
+    await view("applications");
+  } catch (err) {
+    window.ui.toast(err.message, { type: "error" });
+  }
+}
+
+/* ==========================================================================
+   VISOR Y APROBACIÓN DE DOCUMENTOS (REVISOR / TALENTO HUMANO RF-043 - RF-053)
+   ========================================================================== */
+
+async function openPdfApprovalDialog(appId) {
   const dialog = document.getElementById("pdf-document-approval-dialog");
   if (!dialog) return;
 
-  const app = (pipelineApplicationsCache || []).find((a) => a.id === appId) || {
-    id: appId,
-    name: "Aspirante: Nuevo a docente cátedra",
-    email: "docente@institucion.edu.co",
-    vacancyTitle: "Aspirante: Nuevo a docente cátedra",
-    resumeId: null,
-  };
-  currentApprovalApp = app;
+  currentApprovalAppId = appId;
+  await ensureCatalogos();
 
-  const titleEl = document.getElementById("pdf-doc-view-title");
-  const candEl = document.getElementById("pdf-doc-view-candidate");
-  if (titleEl) titleEl.textContent = "Contratación de Seleccionados";
-  if (candEl) candEl.textContent = `${app.name || "Aspirante"} · ${app.vacancyTitle || "Convocatoria Docente"}`;
+  try {
+    const res = await apiRequest(`/api/applications/${encodeURIComponent(appId)}/dossier`);
+    currentApprovalDossier = await res.json();
+  } catch (err) {
+    console.error("Error cargando expediente:", err);
+    window.ui.toast("No se pudo cargar el expediente", { type: "error" });
+    return;
+  }
 
-  renderApprovalAccordion(app);
-  loadApprovalDocPreview(app);
+  const appData = currentApprovalDossier.application || {};
+  const candName = appData.candidateName || appData.name || "Aspirante";
+  const candEmail = appData.candidateEmail || appData.email || "";
 
-  if (typeof dialog.showModal === "function") {
-    dialog.showModal();
+  document.getElementById("pdf-doc-view-title").textContent = appData.vacancyTitle || "Expediente de Selección";
+  document.getElementById("pdf-doc-view-candidate").textContent = `${candName} · ${candEmail}`;
+
+  const stageBadge = document.getElementById("pdf-doc-stage-badge");
+  if (stageBadge) {
+    stageBadge.className = `cecar-badge-status ${appData.status || 'pendiente'}`;
+    stageBadge.textContent = `Estado: ${statusLabel(appData.status || 'recibida')}`;
+  }
+
+  const progressBadge = document.getElementById("pdf-doc-progress-badge");
+  if (progressBadge) {
+    progressBadge.textContent = `Carga: ${appData.progress_percentage || 0}%`;
+  }
+
+  renderApprovalAccordionDossier(currentApprovalDossier);
+
+  // Seleccionar primer ítem por defecto
+  const items = currentApprovalDossier.items || [];
+  if (items.length) {
+    selectApprovalDocItem(items[0].id);
   } else {
-    dialog.setAttribute("open", "");
+    document.getElementById("pdf-approval-doc-frame").srcdoc = "<p style='padding:40px; font-family:sans-serif;'>Este aspirante aún no tiene ítems registrados.</p>";
   }
 
-  if (window.ui && typeof window.ui.refreshIcons === "function") {
-    window.ui.refreshIcons();
-  }
+  dialog.showModal();
+  if (window.ui && window.ui.refreshIcons) window.ui.refreshIcons();
 }
 
 function closePdfApprovalDialog() {
   const dialog = document.getElementById("pdf-document-approval-dialog");
-  if (!dialog) return;
-  if (typeof dialog.close === "function") {
-    dialog.close();
-  } else {
-    dialog.removeAttribute("open");
-  }
+  if (dialog) dialog.close();
   const frame = document.getElementById("pdf-approval-doc-frame");
   if (frame) frame.removeAttribute("src");
 }
 
-function renderApprovalAccordion(app) {
+function renderApprovalAccordionDossier(dossier) {
   const listEl = document.getElementById("pdf-doc-accordion-list");
   if (!listEl) return;
 
-  // Lista idéntica a Screen 4 del PDF de referencia
+  const items = dossier.items || [];
+  const reviews = dossier.reviews || [];
+
   const categories = [
-    { id: "contrato", title: "Contrato", count: "1/1", docs: ["Minuta de Contrato de Cátedra Firmada"] },
-    { id: "personal", title: "Información Personal", count: "3/3", docs: ["Cédula de Ciudadanía 150%", "Hoja de Vida Función Pública", "Foto 3x4 Fondo Blanco"] },
-    { id: "academica", title: "Formación Académica", count: "5/5", docs: ["Título Pregrado", "Acta de Grado Pregrado", "Título Maestría / Doctorado", "Acta de Grado Posgrado", "Tarjeta Profesional"] },
-    { id: "laboral", title: "Experiencia Laboral", count: "1/1", docs: ["Certificaciones de Docencia Universitaria"] },
-    { id: "seguridad", title: "Seguridad Social", count: "2/2", docs: ["Certificado EPS Activa", "Certificado Fondo de Pensiones"] },
-    { id: "bancaria", title: "Información Bancaria", count: "1/1", expanded: true, docs: ["Certificado Apertura Cuenta Davivienda *"] },
-    { id: "salud", title: "Salud Ocupacional", count: "1/1", docs: ["Examen Médico Ocupacional de Ingreso"] },
-    { id: "antecedentes", title: "Antecedentes Legales", count: "8/8", docs: ["Procuraduría General", "Contraloría General", "Policía Nacional", "Medidas Correctivas RNMC"] },
+    { id: "formacion", title: "Formación Académica", icon: "graduation-cap", types: ["HV-006", "HV-007", "HV-008", "HV-009", "HV-010", "HV-011"] },
+    { id: "experiencia", title: "Experiencia Laboral", icon: "briefcase", types: ["HV-012", "HV-013", "HV-014", "HV-015"] },
+    { id: "personal", title: "Identificación y Personal", icon: "user", types: ["HV-001", "HV-002", "HV-003", "HV-004", "HV-005"] },
+    { id: "produccion", title: "Producción e Idiomas", icon: "book-open", types: ["HV-016", "HV-017", "HV-018", "HV-019"] },
+    { id: "certificaciones", title: "Certificaciones", icon: "award", types: ["HV-020", "HV-021"] },
+    { id: "institucionales", title: "Requisitos y Contratación", icon: "file-check-2", types: ["HV-022", "HV-023", "HV-024", "HV-025", "HV-026"], expanded: true },
   ];
 
   listEl.innerHTML = categories.map((cat) => {
-    const isExpanded = cat.expanded || false;
-    const isBancaria = cat.id === "bancaria";
+    const catItems = items.filter((it) => it.section === cat.id || cat.types.includes(it.item_type));
+    const isExpanded = cat.expanded || catItems.length > 0;
 
     return `
       <div class="pdf-accordion-item" data-category="${cat.id}">
         <button type="button" class="pdf-accordion-btn ${isExpanded ? 'expanded' : ''}" onclick="toggleApprovalCategory(this)">
           <div style="display: flex; align-items: center; gap: 7px;">
-            <i data-lucide="check" style="width: 14px; height: 14px; color: #15803d; stroke-width: 2.5;"></i>
+            <i data-lucide="${cat.icon}" style="width: 14px; height: 14px; color: #15803d;"></i>
             <span>${cat.title}</span>
           </div>
-          <span class="pdf-accordion-badge">${cat.count}</span>
+          <span class="pdf-accordion-badge">${catItems.length}</span>
         </button>
         <div class="pdf-accordion-subitems" style="display: ${isExpanded ? 'block' : 'none'};">
-          ${cat.docs.map((doc) => {
-            const isDavivienda = doc.includes("Davivienda");
+          ${catItems.length ? catItems.map((it) => {
+            const rev = reviews.filter((r) => r.item_id === it.id).pop();
+            const dec = rev?.decision || "pendiente";
+            const isSelected = currentApprovalItemId === it.id;
             return `
               <div
-                class="pdf-doc-subitem ${isDavivienda ? 'active' : ''}"
-                onclick="selectApprovalDoc('${escapeHtml(doc)}', '${cat.id}')"
+                class="pdf-doc-subitem ${isSelected ? 'active' : ''}"
+                onclick="selectApprovalDocItem('${escapeHtml(it.id)}')"
+                data-item-id="${escapeHtml(it.id)}"
+                data-status="${dec}"
               >
-                <span>${doc}</span>
-                <i data-lucide="${isDavivienda ? 'check-circle' : 'file-text'}" style="width: 14px; height: 14px;"></i>
+                <div style="min-width: 0;">
+                  <div style="font-weight: 600; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    ${escapeHtml(it.title)}
+                  </div>
+                  <small style="font-size: 10.5px; color: #64748b;">${escapeHtml(it.item_type)}</small>
+                </div>
+                <span class="cecar-badge-status ${dec}" style="font-size: 10px; padding: 2px 6px;">
+                  ${dec === 'aprobado' ? '✓' : dec === 'observado' ? '⚠️' : dec === 'rechazado' ? '✕' : '•'}
+                </span>
               </div>
             `;
-          }).join("")}
+          }).join("") : `
+            <div style="padding: 6px 12px; font-size: 11px; color: #94a3b8;">Sin ítems registrados</div>
+          `}
         </div>
       </div>
     `;
   }).join("");
 
-  if (window.ui && typeof window.ui.refreshIcons === "function") {
-    window.ui.refreshIcons(listEl);
-  }
+  if (window.ui && window.ui.refreshIcons) window.ui.refreshIcons(listEl);
 }
 
-function toggleApprovalCategory(btn) {
-  const item = btn.closest(".pdf-accordion-item");
-  const subitems = item.querySelector(".pdf-accordion-subitems");
-  if (!subitems) return;
-
-  const isHidden = subitems.style.display === "none";
-  subitems.style.display = isHidden ? "block" : "none";
-  btn.classList.toggle("expanded", isHidden);
-}
-
-function selectApprovalDoc(docName, categoryId) {
-  currentApprovalDocName = docName;
-  currentApprovalDocCategory = categoryId;
+function selectApprovalDocItem(itemId) {
+  currentApprovalItemId = itemId;
+  const items = currentApprovalDossier?.items || [];
+  const item = items.find((it) => it.id === itemId);
+  if (!item) return;
 
   document.querySelectorAll(".pdf-doc-subitem").forEach((el) => {
-    el.classList.toggle("active", el.textContent.trim().includes(docName.replace("*", "").trim()));
+    el.classList.toggle("active", el.dataset.itemId === itemId);
   });
 
-  const titleEl = document.getElementById("pdf-doc-view-title");
-  if (titleEl) {
-    titleEl.textContent = `${docName} · ${currentApprovalApp?.name || "Aspirante"}`;
-  }
-
-  loadApprovalDocPreview(currentApprovalApp);
-}
-
-function loadApprovalDocPreview(app) {
   const frame = document.getElementById("pdf-approval-doc-frame");
   const downloadLink = document.getElementById("pdf-approval-doc-download");
-  if (!frame) return;
 
-  if (app && app.resumeId) {
-    frame.src = `/api/documents/${encodeURIComponent(app.resumeId)}/view`;
+  const support = (currentApprovalDossier?.supports || []).find((s) => s.item_id === itemId);
+
+  if (support) {
+    frame.src = `/api/applications/${encodeURIComponent(currentApprovalAppId)}/items/${encodeURIComponent(itemId)}/support/view`;
     if (downloadLink) {
-      downloadLink.href = `/api/documents/${encodeURIComponent(app.resumeId)}/download`;
+      downloadLink.href = `/api/applications/${encodeURIComponent(currentApprovalAppId)}/items/${encodeURIComponent(itemId)}/support/download`;
     }
   } else {
-    // Generar vista HTML rica institucional como documento previo
-    const docHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-        <style>
-          body { font-family: 'Plus Jakarta Sans', sans-serif; padding: 40px; color: #0f172a; background: #ffffff; }
-          .inst-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #15803d; padding-bottom: 20px; margin-bottom: 30px; }
-          .inst-title { font-size: 18px; font-weight: 800; color: #15803d; }
-          .inst-badge { background: #dcfce7; color: #15803d; padding: 4px 12px; border-radius: 9999px; font-weight: 700; font-size: 12px; }
-          .card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin-bottom: 20px; background: #f8fafc; }
-          .row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13.5px; }
-          .row b { color: #334155; }
-          .seal { display: inline-block; border: 2px dashed #15803d; color: #15803d; padding: 12px 24px; border-radius: 8px; font-weight: 800; text-transform: uppercase; margin-top: 20px; }
-        </style>
-      </head>
-      <body>
-        <div class="inst-header">
-          <div>
-            <div class="inst-title">SISTEMA INSTITUCIONAL DE GESTIÓN Y CONTRATACIÓN</div>
-            <small style="color: #64748b;">EXPEDIENTE DIGITAL DE CONTRATACIÓN DOCENTE</small>
-          </div>
-          <span class="inst-badge">DOCUMENTO VERIFICADO</span>
+    frame.srcdoc = `
+      <div style="padding: 40px; font-family: 'Plus Jakarta Sans', sans-serif; color: #1e293b;">
+        <h3 style="color: #15803d; margin-top:0;">[${escapeHtml(item.item_type)}] ${escapeHtml(item.title)}</h3>
+        <p><b>Institución:</b> ${escapeHtml(item.data?.institucion || 'No especificada')}</p>
+        <p><b>Año:</b> ${escapeHtml(String(item.data?.ano || ''))}</p>
+        <div style="margin-top: 24px; padding: 14px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #991b1b; font-size: 13px;">
+          ⚠️ El aspirante registró este ítem sin adjuntar archivo de soporte digital probatorio.
         </div>
-
-        <div class="card">
-          <h3 style="margin-top:0; color:#15803d;">${escapeHtml(currentApprovalDocName)}</h3>
-          <div class="row"><span>Titular / Aspirante:</span><b>${escapeHtml(app ? app.name : "Aspirante Docente")}</b></div>
-          <div class="row"><span>Correo Electrónico:</span><b>${escapeHtml(app ? app.email : "docente@institucion.edu.co")}</b></div>
-          <div class="row"><span>Proceso de Selección:</span><b>Facultad de Educación y Ciencias Sociales</b></div>
-          <div class="row"><span>Entidad Emisora:</span><b>Banco Davivienda S.A. - Certificación de Cuenta de Nómina</b></div>
-          <div class="row"><span>Estado del Documento:</span><b style="color: #15803d;">Cargado y Validado Digitalmente</b></div>
-        </div>
-
-        <div style="font-size: 13px; color: #64748b; line-height: 1.6;">
-          Por medio de la presente se certifica que el aspirante ha completado la apertura de cuenta de ahorros empresarial para nómina institucional de conformidad con los lineamientos de contratación y dispersión de fondos.
-        </div>
-
-        <div class="seal">
-          ✓ CERTIFICACIÓN AUTORIZADA DAVIVIENDA
-        </div>
-      </body>
-      </html>
+      </div>
     `;
-    frame.srcdoc = docHtml;
-    if (downloadLink) {
-      downloadLink.href = "data:text/html;charset=utf-8," + encodeURIComponent(docHtml);
+    if (downloadLink) downloadLink.removeAttribute("href");
+  }
+}
+
+async function approveCurrentCandidateDoc() {
+  if (!currentApprovalAppId || !currentApprovalItemId) return;
+  try {
+    await apiRequest(`/api/applications/${encodeURIComponent(currentApprovalAppId)}/items/${encodeURIComponent(currentApprovalItemId)}/review`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ decision: "aprobado", comments: "Documento verificado y cumple especificación CECAR" }),
+    });
+    window.ui.toast("Ítem aprobado con éxito", { type: "success" });
+    const res = await apiRequest(`/api/applications/${encodeURIComponent(currentApprovalAppId)}/dossier`);
+    currentApprovalDossier = await res.json();
+    renderApprovalAccordionDossier(currentApprovalDossier);
+  } catch (err) {
+    window.ui.toast(err.message, { type: "error" });
+  }
+}
+
+async function subsanarCurrentCandidateDoc() {
+  if (!currentApprovalAppId || !currentApprovalItemId) return;
+  const reason = prompt("Indica el motivo de la observación para subsanación (obligatorio):", "Soporte ilegible o no corresponde al título");
+  if (!reason || !reason.trim()) return;
+
+  try {
+    await apiRequest(`/api/applications/${encodeURIComponent(currentApprovalAppId)}/items/${encodeURIComponent(currentApprovalItemId)}/review`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ decision: "observado", reason: reason.trim() }),
+    });
+    window.ui.toast("Ítem marcado como OBSERVADO", { type: "info" });
+    const res = await apiRequest(`/api/applications/${encodeURIComponent(currentApprovalAppId)}/dossier`);
+    currentApprovalDossier = await res.json();
+    renderApprovalAccordionDossier(currentApprovalDossier);
+  } catch (err) {
+    window.ui.toast(err.message, { type: "error" });
+  }
+}
+
+async function rejectCurrentCandidateDoc() {
+  if (!currentApprovalAppId || !currentApprovalItemId) return;
+  const reason = prompt("Indica el motivo de rechazo definitivo del ítem (obligatorio):", "No cumple con el perfil mínimo de la convocatoria");
+  if (!reason || !reason.trim()) return;
+
+  try {
+    await apiRequest(`/api/applications/${encodeURIComponent(currentApprovalAppId)}/items/${encodeURIComponent(currentApprovalItemId)}/review`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ decision: "rechazado", reason: reason.trim() }),
+    });
+    window.ui.toast("Ítem rechazado", { type: "error" });
+    const res = await apiRequest(`/api/applications/${encodeURIComponent(currentApprovalAppId)}/dossier`);
+    currentApprovalDossier = await res.json();
+    renderApprovalAccordionDossier(currentApprovalDossier);
+  } catch (err) {
+    window.ui.toast(err.message, { type: "error" });
+  }
+}
+
+async function preselectCurrentCandidate() {
+  if (!currentApprovalAppId) return;
+  try {
+    await apiRequest(`/api/applications/${encodeURIComponent(currentApprovalAppId)}/preselect`, {
+      method: "POST",
+    });
+    window.ui.toast("Aspirante preseleccionado satisfactoriamente", { type: "success" });
+    const badge = document.getElementById("pdf-doc-stage-badge");
+    if (badge) {
+      badge.className = "cecar-badge-status preseleccionada";
+      badge.textContent = "Estado: Preseleccionada";
     }
+  } catch (err) {
+    window.ui.toast(err.message, { type: "error" });
   }
 }
 
-function filterApprovalDocs(query) {
-  const q = (query || "").trim().toLowerCase();
-  document.querySelectorAll(".pdf-doc-subitem").forEach((el) => {
-    const text = el.textContent.toLowerCase();
-    el.style.display = (!q || text.includes(q)) ? "flex" : "none";
-  });
+function openRequestSubsanacionModal() {
+  const reviews = currentApprovalDossier?.reviews || [];
+  const hasObservados = reviews.some((r) => r.decision === "observado");
+  if (!hasObservados) {
+    alert("Para emitir una solicitud de subsanación, primero debes marcar al menos un ítem como OBSERVADO.");
+    return;
+  }
+  const dialog = document.getElementById("subsanacion-request-dialog");
+  if (dialog) dialog.showModal();
 }
 
-function filterApprovalDocsByStatus(status) {
-  // Simular filtrado por estado
-  if (typeof window.ui !== "undefined" && window.ui.toast) {
-    window.ui.toast(`Filtro por estado: ${status || 'Todos'}`, { type: "info" });
+function closeRequestSubsanacionModal() {
+  const dialog = document.getElementById("subsanacion-request-dialog");
+  if (dialog) dialog.close();
+}
+
+async function handleSendSubsanacionRequest(event) {
+  event.preventDefault();
+  const hours = parseInt(document.getElementById("subsanacion-deadline-hours").value, 10) || 48;
+  const instructions = document.getElementById("subsanacion-instructions").value.trim();
+
+  try {
+    await apiRequest(`/api/applications/${encodeURIComponent(currentApprovalAppId)}/subsanacion/request`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deadline_hours: hours, instructions }),
+    });
+    closeRequestSubsanacionModal();
+    window.ui.toast(`Solicitud de subsanación enviada. Plazo: ${hours} horas (RN-011 activada).`, { type: "success" });
+    const badge = document.getElementById("pdf-doc-stage-badge");
+    if (badge) {
+      badge.className = "cecar-badge-status subsanacion_requerida";
+      badge.textContent = "Estado: Subsanación Requerida";
+    }
+  } catch (err) {
+    window.ui.toast(err.message, { type: "error" });
   }
 }
 
-function approveCurrentCandidateDoc() {
-  if (typeof window.ui !== "undefined" && window.ui.toast) {
-    window.ui.toast(`Documento "${currentApprovalDocName}" aprobado con éxito en el expediente.`, { type: "success" });
-  } else {
-    showKanbanToast(`Documento "${currentApprovalDocName}" aprobado con éxito.`);
-  }
-  closePdfApprovalDialog();
+function openDiscardCandidateModal() {
+  const dialog = document.getElementById("discard-candidate-dialog");
+  if (dialog) dialog.showModal();
 }
 
-function subsanarCurrentCandidateDoc() {
-  if (typeof window.ui !== "undefined" && window.ui.toast) {
-    window.ui.toast(`Solicitud de subsanación enviada al aspirante para "${currentApprovalDocName}".`, { type: "info" });
-  } else {
-    showKanbanToast(`Solicitud de subsanación enviada.`);
-  }
-  closePdfApprovalDialog();
+function closeDiscardCandidateModal() {
+  const dialog = document.getElementById("discard-candidate-dialog");
+  if (dialog) dialog.close();
 }
 
-function rejectCurrentCandidateDoc() {
-  if (typeof window.ui !== "undefined" && window.ui.toast) {
-    window.ui.toast(`Documento "${currentApprovalDocName}" marcado como rechazado.`, { type: "error" });
-  } else {
-    showKanbanToast(`Documento rechazado.`);
+async function handleDiscardCandidate(event) {
+  event.preventDefault();
+  const reasonId = document.getElementById("discard-reason-select").value;
+  const details = document.getElementById("discard-details").value.trim();
+
+  try {
+    await apiRequest(`/api/applications/${encodeURIComponent(currentApprovalAppId)}/discard`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason_id: reasonId, details }),
+    });
+    closeDiscardCandidateModal();
+    window.ui.toast("Candidato descartado con registro en auditoría (RN-024)", { type: "info" });
+    closePdfApprovalDialog();
+    await view("procesos");
+  } catch (err) {
+    window.ui.toast(err.message, { type: "error" });
   }
-  closePdfApprovalDialog();
+}
+
+function openScheduleInterviewModal() {
+  const dialog = document.getElementById("schedule-interview-dialog");
+  if (dialog) dialog.showModal();
+}
+
+function closeScheduleInterviewModal() {
+  const dialog = document.getElementById("schedule-interview-dialog");
+  if (dialog) dialog.close();
+}
+
+async function handleScheduleInterview(event) {
+  event.preventDefault();
+  const dt = document.getElementById("interview-datetime").value;
+  const modality = document.getElementById("interview-modality").value;
+  const location = document.getElementById("interview-location").value.trim();
+  const committee = document.getElementById("interview-committee").value.trim().split(",").map((s) => s.trim()).filter(Boolean);
+
+  try {
+    await apiRequest("/api/interviews/schedule", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        application_id: currentApprovalAppId,
+        scheduled_for: new Date(dt).toISOString(),
+        modality,
+        location,
+        committee_members: committee,
+      }),
+    });
+    closeScheduleInterviewModal();
+    window.ui.toast("Entrevista agendada exitosamente", { type: "success" });
+  } catch (err) {
+    window.ui.toast(err.message, { type: "error" });
+  }
+}
+
+function openAcademicTestsModal() {
+  const dialog = document.getElementById("academic-tests-dialog");
+  if (dialog) dialog.showModal();
+}
+
+function closeAcademicTestsModal() {
+  const dialog = document.getElementById("academic-tests-dialog");
+  if (dialog) dialog.close();
+}
+
+async function handleSaveAcademicTests(event) {
+  event.preventDefault();
+  const type = document.getElementById("test-type").value;
+  const score = parseFloat(document.getElementById("test-score").value);
+  const obs = document.getElementById("test-observations").value.trim();
+
+  try {
+    if (type === "clase_modelo") {
+      await apiRequest(`/api/applications/${encodeURIComponent(currentApprovalAppId)}/classroom-test`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          didactics_score: score,
+          subject_mastery_score: score,
+          observations: obs,
+        }),
+      });
+    } else {
+      await apiRequest(`/api/applications/${encodeURIComponent(currentApprovalAppId)}/tests`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          test_type: type,
+          score: score,
+          passed: score >= 70,
+          observations: obs,
+        }),
+      });
+    }
+    closeAcademicTestsModal();
+    window.ui.toast("Calificación registrada con éxito", { type: "success" });
+  } catch (err) {
+    window.ui.toast(err.message, { type: "error" });
+  }
+}
+
+function openOccupationalExamModal() {
+  const dialog = document.getElementById("occupational-exam-dialog");
+  if (dialog) dialog.showModal();
+}
+
+function closeOccupationalExamModal() {
+  const dialog = document.getElementById("occupational-exam-dialog");
+  if (dialog) dialog.close();
+}
+
+async function handleSaveOccupationalExam(event) {
+  event.preventDefault();
+  const concept = document.getElementById("occupational-concept").value;
+  const notes = document.getElementById("occupational-notes").value.trim();
+
+  try {
+    await apiRequest(`/api/applications/${encodeURIComponent(currentApprovalAppId)}/occupational-exam`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        aptitude_concept: concept,
+        recommendations: notes,
+      }),
+    });
+    closeOccupationalExamModal();
+    window.ui.toast("Concepto administrativo de aptitud laboral guardado (RN-027)", { type: "success" });
+  } catch (err) {
+    window.ui.toast(err.message, { type: "error" });
+  }
+}
+
+function openHiringBindingModal() {
+  const dialog = document.getElementById("hiring-binding-dialog");
+  if (dialog) dialog.showModal();
+}
+
+function closeHiringBindingModal() {
+  const dialog = document.getElementById("hiring-binding-dialog");
+  if (dialog) dialog.close();
+}
+
+async function handleConfirmBinding() {
+  if (!confirm("¿Deseas confirmar la vinculación institucional del docente seleccionado en CECAR?")) return;
+  try {
+    await apiRequest(`/api/applications/${encodeURIComponent(currentApprovalAppId)}/confirm-binding`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ start_date: new Date().toISOString() }),
+    });
+    window.ui.toast("¡Candidato formalmente VINCULADO a CECAR! (RF-104)", { type: "success" });
+    const badge = document.getElementById("pdf-doc-stage-badge");
+    if (badge) {
+      badge.className = "cecar-badge-status vinculada";
+      badge.textContent = "Estado: Vinculada";
+    }
+  } catch (err) {
+    window.ui.toast(err.message, { type: "error" });
+  }
+}
+
+async function handleTransferInstitutionalHv() {
+  try {
+    await apiRequest(`/api/applications/${encodeURIComponent(currentApprovalAppId)}/transfer-institutional-hv`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ target_system: "GTH-CECAR-ERP" }),
+    });
+    window.ui.toast("Expediente transferido exitosamente a Gestión de Talento Humano CECAR (RF-105/106)", { type: "success" });
+  } catch (err) {
+    window.ui.toast(err.message, { type: "error" });
+  }
 }
 
 /* ==========================================================================
-   MESA DE AYUDAS, TUTORIAL Y REPORTES (SCREEN 1, 2 Y 3)
+   REPORTES ESPECIALIZADOS CECAR Y EXPORTACIÓN EXCEL/CSV (RF-079, RF-096, RF-097)
+   ========================================================================== */
+
+async function openReportModal() {
+  const dialog = document.getElementById("report-dialog");
+  if (!dialog) return;
+  await ensureCatalogos();
+  switchReportTab("no_aprobados");
+  dialog.showModal();
+  if (window.ui && window.ui.refreshIcons) window.ui.refreshIcons();
+}
+
+function closeReportModal() {
+  const dialog = document.getElementById("report-dialog");
+  if (dialog) dialog.close();
+}
+
+function switchReportTab(tab) {
+  currentReportType = tab;
+  ["no-aprobados", "en-proceso", "seleccionados"].forEach((t) => {
+    const btn = document.getElementById(`tab-rep-${t}`);
+    if (btn) btn.classList.toggle("active", t === tab.replace("_", "-"));
+  });
+  refreshCurrentSpecializedReport();
+}
+
+async function refreshCurrentSpecializedReport() {
+  const fac = document.getElementById("report-filter-faculty")?.value || "";
+  const prog = document.getElementById("report-filter-program")?.value || "";
+  const sede = document.getElementById("report-filter-campus")?.value || "";
+  const per = document.getElementById("report-filter-period")?.value || "";
+
+  const tbody = document.getElementById("cecar-report-tbody");
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 20px;">Consultando registros...</td></tr>`;
+
+  try {
+    const params = new URLSearchParams({
+      report_type: currentReportType,
+      faculty: fac,
+      program: prog,
+      campus: sede,
+      academic_period: per,
+    });
+    const res = await apiRequest(`/api/reports/specialized?${params}`);
+    const data = await res.json();
+    const rows = data.records || [];
+
+    if (!rows.length) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--rp-text-muted); padding: 30px;">No se encontraron registros para los filtros seleccionados.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = rows.map((r) => `
+      <tr>
+        <td>
+          <b>${escapeHtml(r.candidate_name || '')}</b>
+          <div style="font-size: 11px; color: var(--rp-text-muted);">${escapeHtml(r.candidate_email || '')}</div>
+        </td>
+        <td>${escapeHtml(r.vacancy_title || '')}</td>
+        <td>${escapeHtml(r.faculty || 'CECAR')}</td>
+        <td><span class="cecar-badge-status ${r.status || 'pendiente'}">${escapeHtml(r.status || '')}</span></td>
+        <td style="font-size: 12px; color: var(--rp-text-muted);">${escapeHtml(r.details || r.discard_reason || r.binding_status || '-')}</td>
+      </tr>
+    `).join("");
+  } catch (err) {
+    console.error("Error cargando reporte especializado:", err);
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #dc2626; padding: 20px;">Error al cargar datos: ${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+function downloadCsvReport() {
+  const fac = document.getElementById("report-filter-faculty")?.value || "";
+  const prog = document.getElementById("report-filter-program")?.value || "";
+  const sede = document.getElementById("report-filter-campus")?.value || "";
+  const per = document.getElementById("report-filter-period")?.value || "";
+
+  const params = new URLSearchParams({
+    report_type: currentReportType,
+    faculty: fac,
+    program: prog,
+    campus: sede,
+    academic_period: per,
+  });
+
+  const downloadUrl = `/api/reports/export?${params}`;
+  const a = document.createElement("a");
+  a.href = downloadUrl;
+  a.download = `Reporte_${currentReportType}_CECAR.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  window.ui.toast("Descargando reporte oficial en Excel/CSV con UTF-8 BOM", { type: "success" });
+}
+
+/* ==========================================================================
+   MESA DE AYUDAS Y TICKETS DE SOPORTE (RF-099)
    ========================================================================== */
 
 function openMesaDeAyudas() {
   const dialog = document.getElementById("mesa-ayudas-dialog");
   if (!dialog) return;
-  if (typeof dialog.showModal === "function") {
-    dialog.showModal();
-  } else {
-    dialog.setAttribute("open", "");
-  }
+  switchTicketTab("new");
+  dialog.showModal();
+  if (window.ui && window.ui.refreshIcons) window.ui.refreshIcons();
 }
 
 function closeMesaDeAyudas() {
   const dialog = document.getElementById("mesa-ayudas-dialog");
-  if (!dialog) return;
-  if (typeof dialog.close === "function") {
-    dialog.close();
+  if (dialog) dialog.close();
+}
+
+function switchTicketTab(tab) {
+  const newPane = document.getElementById("ticket-tab-new-pane");
+  const listPane = document.getElementById("ticket-tab-list-pane");
+  const tabNew = document.getElementById("tab-ticket-new");
+  const tabList = document.getElementById("tab-ticket-list");
+
+  if (tab === "new") {
+    if (newPane) newPane.style.display = "block";
+    if (listPane) listPane.style.display = "none";
+    if (tabNew) tabNew.classList.add("active");
+    if (tabList) tabList.classList.remove("active");
   } else {
-    dialog.removeAttribute("open");
+    if (newPane) newPane.style.display = "none";
+    if (listPane) listPane.style.display = "block";
+    if (tabNew) tabNew.classList.remove("active");
+    if (tabList) tabList.classList.add("active");
+    loadTicketsList();
   }
 }
 
-function handleCreateTicket(event) {
+async function handleCreateTicket(event) {
   event.preventDefault();
-  const subject = document.getElementById("ticket-subject")?.value || "";
-  if (typeof window.ui !== "undefined" && window.ui.toast) {
-    window.ui.toast(`Ticket "${subject}" creado con éxito. Soporte responderá en breve.`, { type: "success" });
-  } else {
-    showKanbanToast(`Ticket creado con éxito.`);
+  const category = document.getElementById("ticket-category").value;
+  const priority = document.getElementById("ticket-priority").value;
+  const subject = document.getElementById("ticket-subject").value.trim();
+  const desc = document.getElementById("ticket-desc").value.trim();
+
+  try {
+    const res = await apiRequest("/api/tickets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category, priority, subject, description: desc }),
+    });
+    const ticket = await res.json();
+    window.ui.toast(`Ticket creado exitosamente: ${ticket.ticket_number}`, { type: "success" });
+    document.getElementById("ticket-subject").value = "";
+    document.getElementById("ticket-desc").value = "";
+    switchTicketTab("list");
+  } catch (err) {
+    window.ui.toast(err.message, { type: "error" });
   }
-  closeMesaDeAyudas();
+}
+
+async function loadTicketsList() {
+  const container = document.getElementById("cecar-ticket-list-container");
+  const thread = document.getElementById("cecar-ticket-thread");
+  if (!container) return;
+  if (thread) thread.style.display = "none";
+  container.style.display = "block";
+
+  container.innerHTML = `<p style="text-align:center; color: var(--rp-text-muted); padding: 20px;">Cargando tus solicitudes...</p>`;
+
+  try {
+    const res = await apiRequest("/api/tickets");
+    const data = await res.json();
+    currentTicketList = data.tickets || [];
+
+    if (!currentTicketList.length) {
+      container.innerHTML = `<p style="text-align:center; color: var(--rp-text-muted); padding: 30px;">Aún no tienes tickets de soporte registrados.</p>`;
+      return;
+    }
+
+    container.innerHTML = currentTicketList.map((tk) => `
+      <div class="cecar-ticket-item" onclick="openTicketThread('${escapeHtml(tk.id)}')">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <b style="font-size: 13px; color: var(--rp-text);">${escapeHtml(tk.subject)}</b>
+          <span class="cecar-badge-status ${tk.status === 'resuelto' ? 'aprobado' : tk.status === 'en_tramite' ? 'observado' : 'pendiente'}" style="font-size: 10.5px;">
+            ${escapeHtml(tk.status)}
+          </span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 11.5px; color: var(--rp-text-muted);">
+          <span>Radicado: <b>${escapeHtml(tk.ticket_number)}</b> · ${escapeHtml(tk.category)}</span>
+          <span>${new Date(tk.created_at).toLocaleDateString("es")}</span>
+        </div>
+      </div>
+    `).join("");
+  } catch (err) {
+    container.innerHTML = `<p style="color: #dc2626; text-align: center; padding: 20px;">Error al cargar tickets: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function openTicketThread(ticketId) {
+  const ticket = currentTicketList.find((t) => t.id === ticketId);
+  if (!ticket) return;
+  currentOpenTicket = ticket;
+
+  const container = document.getElementById("cecar-ticket-list-container");
+  const thread = document.getElementById("cecar-ticket-thread");
+  const title = document.getElementById("ticket-thread-title");
+  const box = document.getElementById("ticket-messages-box");
+
+  if (container) container.style.display = "none";
+  if (thread) thread.style.display = "block";
+  if (title) title.textContent = `[${ticket.ticket_number}] ${ticket.subject}`;
+
+  const msgs = ticket.messages || [
+    { sender: "Usuario", message: ticket.description, time: ticket.created_at }
+  ];
+
+  if (box) {
+    box.innerHTML = msgs.map((m) => `
+      <div class="cecar-chat-bubble ${m.sender === 'Usuario' ? 'mine' : 'support'}">
+        <div style="font-size: 10.5px; opacity: 0.8; margin-bottom: 2px;">${escapeHtml(m.sender || 'Soporte')}</div>
+        <div>${escapeHtml(m.message || '')}</div>
+      </div>
+    `).join("");
+    box.scrollTop = box.scrollHeight;
+  }
+}
+
+function backToTicketList() {
+  const container = document.getElementById("cecar-ticket-list-container");
+  const thread = document.getElementById("cecar-ticket-thread");
+  if (container) container.style.display = "block";
+  if (thread) thread.style.display = "none";
+}
+
+async function handleSendTicketReply(event) {
+  event.preventDefault();
+  if (!currentOpenTicket) return;
+  const input = document.getElementById("ticket-reply-input");
+  const message = input.value.trim();
+  if (!message) return;
+
+  try {
+    await apiRequest(`/api/tickets/${encodeURIComponent(currentOpenTicket.id)}/reply`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message }),
+    });
+    input.value = "";
+    // Agregar burbuja localmente
+    const box = document.getElementById("ticket-messages-box");
+    if (box) {
+      box.innerHTML += `
+        <div class="cecar-chat-bubble mine">
+          <div style="font-size: 10.5px; opacity: 0.8; margin-bottom: 2px;">Tú</div>
+          <div>${escapeHtml(message)}</div>
+        </div>
+      `;
+      box.scrollTop = box.scrollHeight;
+    }
+  } catch (err) {
+    window.ui.toast(err.message, { type: "error" });
+  }
 }
 
 function openTutorialModal() {
   const dialog = document.getElementById("tutorial-dialog");
-  if (!dialog) return;
-  if (typeof dialog.showModal === "function") {
-    dialog.showModal();
-  } else {
-    dialog.setAttribute("open", "");
-  }
+  if (dialog) dialog.showModal();
 }
 
 function closeTutorialModal() {
   const dialog = document.getElementById("tutorial-dialog");
-  if (!dialog) return;
-  if (typeof dialog.close === "function") {
-    dialog.close();
-  } else {
-    dialog.removeAttribute("open");
-  }
-}
-
-function openReportModal() {
-  const dialog = document.getElementById("report-dialog");
-  if (!dialog) return;
-  if (typeof dialog.showModal === "function") {
-    dialog.showModal();
-  } else {
-    dialog.setAttribute("open", "");
-  }
-}
-
-function closeReportModal() {
-  const dialog = document.getElementById("report-dialog");
-  if (!dialog) return;
-  if (typeof dialog.close === "function") {
-    dialog.close();
-  } else {
-    dialog.removeAttribute("open");
-  }
-}
-
-function downloadCsvReport() {
-  const apps = pipelineApplicationsCache || [];
-  let csv = "ID,Nombre,Email,Vacante,Estado,Documentos,Fecha\n";
-  if (!apps.length) {
-    csv += "1,Aspirante Nuevo a Docente,docente@institucion.edu.co,Facultad de Educacion,Activo,22/22 Contratado,2026-11-04\n";
-  } else {
-    apps.forEach((a) => {
-      csv += `"${a.id}","${a.name || ''}","${a.email || ''}","${a.vacancyTitle || ''}","${a.status || 'Activo'}","22/22","${a.createdAt || ''}"\n`;
-    });
-  }
-
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "Reporte_Contratacion_RecruitPro.csv";
-  a.click();
-  URL.revokeObjectURL(url);
-
-  if (typeof window.ui !== "undefined" && window.ui.toast) {
-    window.ui.toast("Reporte CSV descargado con éxito.", { type: "success" });
-  }
+  if (dialog) dialog.close();
 }

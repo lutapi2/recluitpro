@@ -1355,3 +1355,240 @@
 .pdf-btn-subsanar:hover {
   background: #b45309;
 }
+
+/* ==========================================================================
+   CECAR INSTITUCIONAL: HOJA DE VIDA, SUBSANACIÓN, REPORTES Y MESA DE AYUDAS
+   ========================================================================== */
+
+/* Barra de progreso de carga de Hoja de Vida */
+.cecar-progress-card {
+  background: var(--rp-surface);
+  border: 1px solid var(--rp-border);
+  border-radius: 14px;
+  padding: 18px 22px;
+  margin-bottom: 22px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+}
+.cecar-progress-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.cecar-progress-bar-bg {
+  width: 100%;
+  height: 12px;
+  border-radius: 9999px;
+  background: var(--rp-surface-2);
+  overflow: hidden;
+  border: 1px solid var(--rp-border);
+}
+.cecar-progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #15803d, #22c55e);
+  border-radius: 9999px;
+  transition: width 0.4s ease;
+}
+
+/* Banner de Subsanación Requerida (RN-011) */
+.cecar-subsanacion-banner {
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.12), rgba(245, 158, 11, 0.08));
+  border: 2px solid #d97706;
+  border-radius: 14px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  color: var(--rp-text);
+  box-shadow: 0 4px 18px rgba(217, 119, 6, 0.15);
+}
+.cecar-subsanacion-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.cecar-subsanacion-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #b45309;
+  margin: 0;
+}
+.cecar-countdown-badge {
+  background: #fef3c7;
+  color: #92400e;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 12px;
+  border: 1px solid #fde68a;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Secciones de Hoja de Vida y Tarjetas de Ítems */
+.cecar-hv-section {
+  background: var(--rp-surface);
+  border: 1px solid var(--rp-border);
+  border-radius: 14px;
+  padding: 22px;
+  margin-bottom: 22px;
+}
+.cecar-hv-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--rp-border);
+}
+.cecar-hv-section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--rp-text);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cecar-item-card {
+  background: var(--rp-surface-2);
+  border: 1px solid var(--rp-border);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  transition: border-color 0.15s ease;
+}
+.cecar-item-card:hover {
+  border-color: #cbd5e1;
+}
+.cecar-item-card.is-observado {
+  border: 2px solid #f59e0b;
+  background: rgba(245, 158, 11, 0.04);
+}
+.cecar-item-card.is-rechazado {
+  border: 2px solid #ef4444;
+  background: rgba(239, 68, 68, 0.04);
+}
+.cecar-item-card.is-aprobado {
+  border: 1px solid #22c55e;
+}
+.cecar-item-card.is-locked {
+  opacity: 0.75;
+}
+
+.cecar-badge-type {
+  font-size: 11px;
+  font-weight: 700;
+  background: #0f172a;
+  color: #86efac;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-family: monospace;
+}
+.cecar-badge-status {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.cecar-badge-status.aprobado {
+  background: #dcfce7;
+  color: #15803d;
+}
+.cecar-badge-status.observado {
+  background: #fef3c7;
+  color: #b45309;
+}
+.cecar-badge-status.rechazado {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.cecar-badge-status.pendiente {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* Modal pestañas y tablas de reportes especializados */
+.cecar-modal-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--rp-border);
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+.cecar-tab-btn {
+  background: none;
+  border: 0;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--rp-text-muted);
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+.cecar-tab-btn.active {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.cecar-report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.cecar-report-table th {
+  background: #f8fafc;
+  color: #475569;
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 2px solid var(--rp-border);
+  font-weight: 700;
+}
+.cecar-report-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--rp-border);
+  color: var(--rp-text);
+}
+
+/* Mesa de Ayuda: Lista de tickets y chat */
+.cecar-ticket-item {
+  border: 1px solid var(--rp-border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  background: var(--rp-surface);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.cecar-ticket-item:hover {
+  background: var(--rp-surface-2);
+  border-color: #22c55e;
+}
+.cecar-chat-bubble {
+  padding: 10px 14px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  max-width: 80%;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.cecar-chat-bubble.mine {
+  background: #dcfce7;
+  color: #14532d;
+  margin-left: auto;
+  border-bottom-right-radius: 2px;
+}
+.cecar-chat-bubble.support {
+  background: #f1f5f9;
+  color: #1e293b;
+  margin-right: auto;
+  border-bottom-left-radius: 2px;
+}
