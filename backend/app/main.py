@@ -158,11 +158,15 @@ async def lifespan(_: FastAPI):
         from sqlalchemy import inspect, text
         with engine.connect() as conn:
             inspector = inspect(conn)
+            is_pg = engine.dialect.name.startswith("postgres")
+            dt_t = "TIMESTAMP" if is_pg else "DATETIME"
+            b0 = "BOOLEAN DEFAULT FALSE" if is_pg else "BOOLEAN DEFAULT 0"
+            b1 = "BOOLEAN DEFAULT TRUE" if is_pg else "BOOLEAN DEFAULT 1"
             col_migrations = {
                 'users': [
                     ('faculty', 'VARCHAR(150)'),
                     ('campus', 'VARCHAR(100)'),
-                    ('is_active', 'BOOLEAN DEFAULT 1'),
+                    ('is_active', b1),
                 ],
                 'vacancies': [
                     ('code', 'VARCHAR(50)'),
@@ -172,8 +176,8 @@ async def lifespan(_: FastAPI):
                     ('academic_period', 'VARCHAR(30)'),
                     ('vacancies_count', 'INTEGER DEFAULT 1'),
                     ('modality', 'VARCHAR(50)'),
-                    ('opening_date', 'DATETIME'),
-                    ('closing_date', 'DATETIME'),
+                    ('opening_date', dt_t),
+                    ('closing_date', dt_t),
                     ('profile_json', 'TEXT'),
                     ('requirements_config_json', 'TEXT'),
                     ('criteria_config_json', 'TEXT'),
@@ -182,20 +186,20 @@ async def lifespan(_: FastAPI):
                 'applications': [
                     ('document_status', 'VARCHAR(30) DEFAULT \'pendiente\''),
                     ('version', 'INTEGER DEFAULT 1'),
-                    ('submitted_at', 'DATETIME'),
-                    ('subsanacion_deadline', 'DATETIME'),
+                    ('submitted_at', dt_t),
+                    ('subsanacion_deadline', dt_t),
                     ('discard_reason_id', 'VARCHAR(50)'),
                     ('discard_note', 'TEXT'),
                     ('final_decision', 'VARCHAR(50)'),
                     ('final_decision_note', 'TEXT'),
-                    ('final_decision_date', 'DATETIME'),
-                    ('talent_bank_consent', 'BOOLEAN DEFAULT 0'),
-                    ('talent_bank_consent_at', 'DATETIME'),
+                    ('final_decision_date', dt_t),
+                    ('talent_bank_consent', b0),
+                    ('talent_bank_consent_at', dt_t),
                     ('internal_notes', 'TEXT'),
                     ('evaluation_score', 'INTEGER'),
                 ],
                 'application_activities': [
-                    ('is_internal', 'BOOLEAN DEFAULT 0'),
+                    ('is_internal', b0),
                 ]
             }
             existing_tables = inspector.get_table_names()
@@ -204,15 +208,22 @@ async def lifespan(_: FastAPI):
                     existing_cols = [c["name"] for c in inspector.get_columns(table_name)]
                     for col_name, col_type in cols:
                         if col_name not in existing_cols:
-                            conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_type}"))
+                            try:
+                                conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_type}"))
+                                conn.commit()
+                            except Exception:
+                                conn.rollback()
             
             # Check documents.file_data
             if "documents" in existing_tables:
                 cols = [c["name"] for c in inspector.get_columns("documents")]
                 if "file_data" not in cols:
-                    sql_type = "BLOB" if engine.dialect.name == "sqlite" else "BYTEA"
-                    conn.execute(text(f"ALTER TABLE documents ADD COLUMN file_data {sql_type}"))
-            conn.commit()
+                    sql_type = "BYTEA" if is_pg else "BLOB"
+                    try:
+                        conn.execute(text(f"ALTER TABLE documents ADD COLUMN file_data {sql_type}"))
+                        conn.commit()
+                    except Exception:
+                        conn.rollback()
     except Exception as exc:
         logging.getLogger("recruitpro").warning("Startup migration notice: %s", exc)
 
@@ -3815,8 +3826,8 @@ def public_careers_page():
     return FileResponse(ROOT / "empleos.html")
 
 
-@app.get("/")
-@app.get("/index.html")
+@app.api_route("/", methods=["GET", "HEAD"])
+@app.api_route("/index.html", methods=["GET", "HEAD"])
 def index():
     return FileResponse(ROOT / "index.html")
 
