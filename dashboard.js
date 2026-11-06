@@ -1,3 +1,24 @@
+
+function changePage(pageName, newPage) {
+  if (newPage < 1) return;
+  if (pageName === "jobs") {
+    vacancyPageState.page = newPage;
+    view("jobs");
+  } else if (pageName === "candidates") {
+    candidatePageState.page = newPage;
+    view("candidates");
+  }
+}
+
+function toggleApprovalCategory(btn) {
+  if (!btn) return;
+  btn.classList.toggle("expanded");
+  const subitems = btn.nextElementSibling;
+  if (subitems) {
+    subitems.style.display = btn.classList.contains("expanded") ? "block" : "none";
+  }
+}
+
 const app = document.getElementById("app");
 const nav = document.getElementById("nav");
 let user;

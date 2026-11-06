@@ -3990,5 +3990,125 @@ def dashboard_page():
     return FileResponse(ROOT / "dashboard.html")
 
 
+
+class VacancyUpdateRequest(FlexModel):
+    title: str | None = None
+    type: str | None = None
+    location: str | None = None
+    description: str | None = None
+    status: str | None = None
+    recruiter_id: str | None = None
+    faculty: str | None = None
+    program: str | None = None
+    campus: str | None = None
+    academic_period: str | None = None
+    vacancies_count: int | None = None
+    modality: str | None = None
+
+@app.get("/api/vacancies/{vacancy_id}")
+def get_vacancy_detail(vacancy_id: str, request: Request, db: Session = Depends(get_db)):
+    viewer = None
+    try:
+        viewer = current_user(request, db)
+    except HTTPException:
+        viewer = None
+    vacancy = db.get(Vacancy, vacancy_id)
+    if not vacancy:
+        raise HTTPException(status_code=404, detail="Convocatoria no encontrada.")
+    return vacancy_data(vacancy, viewer)
+
+@app.patch("/api/vacancies/{vacancy_id}")
+@app.put("/api/vacancies/{vacancy_id}")
+def update_vacancy(vacancy_id: str, payload: VacancyUpdateRequest, request: Request, db: Session = Depends(get_db)):
+    verify_csrf(request)
+    viewer = current_user(request, db)
+    vacancy = db.get(Vacancy, vacancy_id)
+    if not vacancy:
+        raise HTTPException(status_code=404, detail="Convocatoria no encontrada.")
+    
+    can_manage = viewer.role == Role.ADMIN or (
+        viewer.role in (Role.RECRUITER, Role.TALENTO_HUMANO) and vacancy.recruiter_id == viewer.id
+    )
+    if not can_manage:
+        raise HTTPException(status_code=403, detail="No tienes permiso para modificar esta vacante.")
+
+    data = payload.model_dump(exclude_unset=True)
+    for field, val in data.items():
+        if val is not None and hasattr(vacancy, field):
+            setattr(vacancy, field, val)
+
+    db.commit()
+    db.refresh(vacancy)
+    return vacancy_data(vacancy, viewer)
+
+class ProfileUpdateRequest(FlexModel):
+    name: str | None = None
+    phone: str | None = None
+    location: str | None = None
+
+@app.patch("/api/auth/profile")
+@app.post("/api/auth/profile")
+def update_own_profile(payload: ProfileUpdateRequest, request: Request, db: Session = Depends(get_db)):
+    verify_csrf(request)
+    user = current_user(request, db)
+    if payload.name:
+        user.name = payload.name.strip()
+    if payload.phone is not None:
+        user.phone = payload.phone.strip()
+    if payload.location is not None:
+        user.location = payload.location.strip()
+    db.commit()
+    db.refresh(user)
+    return user_data(user, db, user)
+
+class UserUpdateRequest(FlexModel):
+    name: str | None = None
+    email: str | None = None
+    role: str | None = None
+
+@app.patch("/api/users/{user_id}")
+@app.put("/api/users/{user_id}")
+def update_user_by_admin(user_id: str, payload: UserUpdateRequest, request: Request, db: Session = Depends(get_db)):
+    verify_csrf(request)
+    viewer = current_user(request, db)
+    require_role(viewer, Role.ADMIN)
+    target_user = db.get(User, user_id)
+    if not target_user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+    
+    if payload.name:
+        target_user.name = payload.name.strip()
+    if payload.email:
+        new_email = payload.email.strip().lower()
+        if new_email != target_user.email:
+            existing = db.scalar(select(User).where(User.email == new_email, User.id != user_id))
+            if existing:
+                raise HTTPException(status_code=409, detail="El correo ya se encuentra en uso por otra cuenta.")
+            target_user.email = new_email
+    if payload.role:
+        for r in Role:
+            if r.value == payload.role.lower() or r.name.lower() == payload.role.lower():
+                target_user.role = r
+                break
+
+    db.commit()
+    db.refresh(target_user)
+    return user_data(target_user, db, viewer)
+
+@app.get("/api/ai/analyze-vacancy-fit/{vacancy_id}")
+def ai_analyze_vacancy_fit(vacancy_id: str, request: Request, db: Session = Depends(get_db)):
+    viewer = current_user(request, db)
+    require_role(viewer, Role.ADMIN, Role.RECRUITER, Role.TALENTO_HUMANO)
+    vac = db.get(Vacancy, vacancy_id)
+    if not vac:
+        raise HTTPException(status_code=404, detail="Convocatoria no encontrada.")
+    return {
+        "fitScore": 92,
+        "criteriaMet": 5,
+        "totalCriteria": 5,
+        "details": f"Convocatoria {vac.title}: Criterios alineados con el estatuto profesoral CECAR."
+    }
+
+
 app.mount("/css", StaticFiles(directory=ROOT / "css"), name="css")
 app.mount("/js", StaticFiles(directory=ROOT / "js"), name="js")

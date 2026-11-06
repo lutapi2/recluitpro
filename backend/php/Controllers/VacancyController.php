@@ -217,4 +217,38 @@ class VacancyController {
             Response::error("Error al eliminar la vacante: " . $e->getMessage(), 500);
         }
     }
+    public function update(array $input, array $params): void {
+        Auth::requireRole(['administrador', 'reclutador', 'talento_humano']);
+        $user = Auth::requireUser();
+        $id = $params['vacancy_id'] ?? '';
+        $db = Database::getConnection();
+
+        $stmt = $db->prepare("SELECT * FROM vacancies WHERE id = ?");
+        $stmt->execute([$id]);
+        $vac = $stmt->fetch();
+        if (!$vac) {
+            Response::error("Convocatoria no encontrada.", 404);
+        }
+
+        $canManage = ($user['role'] === 'administrador') || 
+                     (!empty($vac['recruiter_id']) && $vac['recruiter_id'] === $user['id']);
+        if (!$canManage) {
+            Response::error("No tienes permiso para modificar esta vacante.", 403);
+        }
+
+        $title = trim($input['title'] ?? $vac['title']);
+        $description = trim($input['description'] ?? $vac['description']);
+        $type = trim($input['type'] ?? $vac['type']);
+        $location = trim($input['location'] ?? $vac['location']);
+        $status = trim($input['status'] ?? $vac['status']);
+        $recruiterId = array_key_exists('recruiter_id', $input) ? ($input['recruiter_id'] ?: null) : $vac['recruiter_id'];
+
+        $upd = $db->prepare("UPDATE vacancies SET title = ?, description = ?, type = ?, location = ?, status = ?, recruiter_id = ? WHERE id = ?");
+        $upd->execute([$title, $description, $type, $location, $status, $recruiterId, $id]);
+
+        $stmt->execute([$id]);
+        $updated = $stmt->fetch();
+        Response::json($this->formatVacancy($updated, $user));
+    }
+
 }
