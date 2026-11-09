@@ -235,6 +235,28 @@ class Database {
             ]);
         }
 
+        // Seed CECAR institutional admin
+        $stmtCecar = $pdo->query("SELECT id FROM users WHERE email = 'admin@cecar.edu.co' LIMIT 1");
+        if (!$stmtCecar->fetch()) {
+            $now = Config::utcNow();
+            $adminStmt2 = $pdo->prepare("
+                INSERT INTO users (id, name, email, password_hash, role, created_at, last_activity_at, email_verified_at, privacy_consent_at, privacy_consent_version)
+                VALUES (:id, :name, :email, :password_hash, :role, :created_at, :last_activity_at, :email_verified_at, :privacy_consent_at, :privacy_consent_version)
+            ");
+            $adminStmt2->execute([
+                ':id' => 'cecar-admin-001',
+                ':name' => 'Administrador CECAR',
+                ':email' => 'admin@cecar.edu.co',
+                ':password_hash' => '$argon2id$v=19$m=65536,t=3,p=4$dvtLAEUGZ96eW00Sc5pHMA$XMZ5CBcyF0c0DanwRCg6DConjnhetEAo56HEd9jgv/c',
+                ':role' => 'ADMIN',
+                ':created_at' => $now,
+                ':last_activity_at' => $now,
+                ':email_verified_at' => $now,
+                ':privacy_consent_at' => $now,
+                ':privacy_consent_version' => Config::PRIVACY_CONSENT_VERSION,
+            ]);
+        }
+
         // Seed initial vacancies if none exist
         $countVacancies = (int)$pdo->query("SELECT COUNT(*) FROM vacancies")->fetchColumn();
         if ($countVacancies === 0) {

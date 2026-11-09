@@ -141,22 +141,24 @@
 
         <div id="error" class="error" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 0.88rem;"></div>
 
-        <div style="margin-bottom: 16px;">
-          <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">Correo electrónico</label>
-          <input id="email" type="email" placeholder="usuario@cecar.edu.co" autocomplete="email" class="cecar-search-input" style="width: 100%; box-sizing: border-box; padding: 12px;" required />
-        </div>
-
-        <div style="margin-bottom: 24px;">
-          <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">Contraseña</label>
-          <div style="position: relative;">
-            <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" class="cecar-search-input" style="width: 100%; box-sizing: border-box; padding: 12px; padding-right: 40px;" required />
-            <button type="button" onclick="togglePassword()" style="position: absolute; right: 12px; top: 12px; background: none; border: none; color: #94a3b8; cursor: pointer;">◉</button>
+        <form id="login-form" onsubmit="event.preventDefault(); login();">
+          <div style="margin-bottom: 16px;">
+            <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">Correo electrónico</label>
+            <input id="email" type="email" placeholder="usuario@cecar.edu.co" autocomplete="email" class="cecar-search-input" style="width: 100%; box-sizing: border-box; padding: 12px;" required />
           </div>
-        </div>
 
-        <button id="login-btn" class="cecar-btn-primary" style="width: 100%; justify-content: center;" onclick="login()">
-          Ingresar al Sistema
-        </button>
+          <div style="margin-bottom: 24px;">
+            <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">Contraseña</label>
+            <div style="position: relative;">
+              <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" class="cecar-search-input" style="width: 100%; box-sizing: border-box; padding: 12px; padding-right: 40px;" required />
+              <button type="button" onclick="togglePassword()" style="position: absolute; right: 12px; top: 12px; background: none; border: none; color: #94a3b8; cursor: pointer;">◉</button>
+            </div>
+          </div>
+
+          <button id="login-btn" type="submit" class="cecar-btn-primary" style="width: 100%; justify-content: center;">
+            Ingresar al Sistema
+          </button>
+        </form>
 
         <!-- Tarjeta de progreso de autenticación -->
         <div id="auth-status-card" class="auth-status-card" style="display: none; margin-top: 16px;">

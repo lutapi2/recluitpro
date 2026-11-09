@@ -775,3 +775,7 @@
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
   position: relative;
 }
+
+.error.show {
+  display: block !important;
+}
