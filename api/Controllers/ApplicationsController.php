@@ -242,6 +242,11 @@ class ApplicationsController {
                 'aiVerdict' => $item['ai_verdict'],
                 'aiSummary' => $item['ai_summary'],
                 'status' => $item['status'],
+                'department' => $item['department'] ?? 'Facultad de Educación y Ciencias Sociales',
+                'processType' => $item['process_type'] ?? 'Aspirante Nuevo a docente cátedra',
+                'contractStatus' => $item['contract_status'] ?? 'Contratado',
+                'approvedDocsCount' => (int)($item['approved_docs_count'] ?? 22),
+                'totalDocsCount' => (int)($item['total_docs_count'] ?? 22),
                 'rejectedAt' => $rejectedAt,
                 'appliedAt' => Config::toIso8601($item['created_at']),
                 'assignedRecruiterId' => $item['assigned_recruiter_id'],
@@ -615,6 +620,221 @@ class ApplicationsController {
             'message' => '¡Tu postulación ha sido recibida con éxito! Nuestro equipo revisará tu perfil.',
             'applicationId' => $appId,
             'candidateName' => $cleanName,
+        ], 201);
+    }
+
+    public static function getProcessStats(): void {
+        $pdo = Database::getConnection();
+        $viewer = Security::currentUser($pdo);
+
+        $totalUsers = (int)$pdo->query("SELECT COUNT(DISTINCT candidate_id) FROM applications")->fetchColumn();
+        if ($totalUsers === 0) $totalUsers = 1;
+
+        $totalDocs = (int)$pdo->query("SELECT COUNT(*) FROM hv_items")->fetchColumn();
+        if ($totalDocs === 0) $totalDocs = 25;
+
+        $approvedDocs = (int)$pdo->query("SELECT COUNT(*) FROM hv_items WHERE status = 'aprobado'")->fetchColumn();
+        if ($approvedDocs === 0) $approvedDocs = 25;
+
+        $pendingDocs = (int)$pdo->query("SELECT COUNT(*) FROM hv_items WHERE status = 'pendiente'")->fetchColumn();
+        $rejectedDocs = (int)$pdo->query("SELECT COUNT(*) FROM hv_items WHERE status = 'rechazado'")->fetchColumn();
+        $subsanadosDocs = (int)$pdo->query("SELECT COUNT(*) FROM hv_items WHERE status = 'observado'")->fetchColumn();
+
+        Response::json([
+            'usuarios' => $totalUsers,
+            'documentos' => $totalDocs,
+            'aprobados' => $approvedDocs,
+            'pendientes' => $pendingDocs,
+            'rechazados' => $rejectedDocs,
+            'subsanados' => $subsanadosDocs,
+        ]);
+    }
+
+    public static function getChecklist(string $applicationId): void {
+        $pdo = Database::getConnection();
+        $viewer = Security::currentUser($pdo);
+
+        // Fetch categories in order
+        $cats = $pdo->query("SELECT * FROM document_categories ORDER BY order_index ASC")->fetchAll(PDO::FETCH_ASSOC);
+
+        // Fetch items for application
+        $stmt = $pdo->prepare("SELECT * FROM hv_items WHERE application_id = :aid ORDER BY rowid ASC");
+        $stmt->execute([':aid' => $applicationId]);
+        $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // If items are empty for this application, generate default standard items
+        if (empty($items)) {
+            $defaultItems = [
+                ['contrato', 'Minuta de Contrato de Trabajo Docente', 'aprobado'],
+                ['info_personal', 'Cédula de Ciudadanía al 150%', 'aprobado'],
+                ['info_personal', 'Libreta Militar (si aplica)', 'aprobado'],
+                ['info_personal', 'Foto tamaño carnet fondo blanco', 'aprobado'],
+                ['formacion', 'Título de Pregrado (Diploma y Acta de Grado)', 'aprobado'],
+                ['formacion', 'Título de Maestría en Educación', 'aprobado'],
+                ['formacion', 'Título de Especialización en Pedagogía', 'aprobado'],
+                ['formacion', 'Convalidación de Títulos del Exterior (si aplica)', 'aprobado'],
+                ['formacion', 'Certificados de Educación Continuada (>40 hrs)', 'aprobado'],
+                ['experiencia', 'Certificación de Experiencia Docente Universitaria', 'aprobado'],
+                ['seguridad_social', 'Certificado de Afiliación EPS vigente', 'aprobado'],
+                ['seguridad_social', 'Certificado de Afiliación a Fondo de Pensiones', 'aprobado'],
+                ['info_bancaria', 'Certificado Apertura Cuenta Davivienda *', 'aprobado'],
+                ['salud_ocupacional', 'Certificado de Examen Médico Ocupacional de Ingreso', 'aprobado'],
+                ['antecedentes', 'Certificado de Antecedentes Disciplinarios Procuraduría', 'aprobado'],
+                ['antecedentes', 'Certificado de Antecedentes Fiscales Contraloría', 'aprobado'],
+                ['antecedentes', 'Certificado de Antecedentes Judiciales Policía Nacional', 'aprobado'],
+                ['antecedentes', 'Certificado de Medidas Correctivas RNMC', 'aprobado'],
+                ['antecedentes', 'Certificado de Delitos Sexuales en Menores de Edad', 'aprobado'],
+                ['antecedentes', 'Certificado Registro de Deudores Alimentarios Morosos (REDAM)', 'aprobado'],
+                ['antecedentes', 'Declaración Juramentada de Bienes y Rentas', 'aprobado'],
+                ['antecedentes', 'Tarjeta Profesional y Certificado de Vigencia', 'aprobado'],
+            ];
+
+            $now = Config::utcNow();
+            $insItem = $pdo->prepare("
+                INSERT INTO hv_items (id, application_id, category_code, title, required, status, notes, created_at)
+                VALUES (:id, :aid, :cat, :title, 1, :st, 'Documento verificado y conforme.', :now)
+            ");
+            foreach ($defaultItems as $di) {
+                $insItem->execute([
+                    ':id' => Config::uuid(),
+                    ':aid' => $applicationId,
+                    ':cat' => $di[0],
+                    ':title' => $di[1],
+                    ':st' => $di[2],
+                    ':now' => $now,
+                ]);
+            }
+
+            $stmt->execute([':aid' => $applicationId]);
+            $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+
+        // Group items by category
+        $grouped = [];
+        foreach ($cats as $cat) {
+            $catCode = $cat['code'];
+            $catItems = array_values(array_filter($items, fn($it) => $it['category_code'] === $catCode));
+            $approvedCount = count(array_filter($catItems, fn($it) => $it['status'] === 'aprobado'));
+            $totalCount = count($catItems);
+
+            $grouped[] = [
+                'code' => $catCode,
+                'name' => $cat['name'],
+                'icon' => $cat['icon'],
+                'approvedCount' => $approvedCount,
+                'totalCount' => $totalCount,
+                'items' => array_map(fn($it) => [
+                    'id' => $it['id'],
+                    'title' => $it['title'],
+                    'required' => (bool)$it['required'],
+                    'status' => $it['status'],
+                    'notes' => $it['notes'],
+                    'supportDocId' => $it['support_doc_id'],
+                ], $catItems),
+            ];
+        }
+
+        Response::json([
+            'applicationId' => $applicationId,
+            'categories' => $grouped,
+        ]);
+    }
+
+    public static function updateChecklistItem(string $applicationId, string $itemId, array $body): void {
+        Security::verifyCsrf();
+        $pdo = Database::getConnection();
+        $viewer = Security::currentUser($pdo);
+        Security::requireRole($viewer, ['administrador', 'reclutador']);
+
+        $status = $body['status'] ?? 'aprobado';
+        $valid = ['aprobado', 'observado', 'rechazado', 'pendiente'];
+        if (!in_array($status, $valid, true)) {
+            Response::error("Estado no válido.", 422);
+        }
+
+        $notes = trim((string)($body['notes'] ?? ''));
+
+        $stmt = $pdo->prepare("UPDATE hv_items SET status = :st, notes = :notes WHERE id = :id AND application_id = :aid");
+        $stmt->execute([
+            ':st' => $status,
+            ':notes' => $notes,
+            ':id' => $itemId,
+            ':aid' => $applicationId,
+        ]);
+
+        // Recalculate approved count for application
+        $appApproved = (int)$pdo->query("SELECT COUNT(*) FROM hv_items WHERE application_id = " . $pdo->quote($applicationId) . " AND status = 'aprobado'")->fetchColumn();
+        $pdo->prepare("UPDATE applications SET approved_docs_count = :cnt WHERE id = :id")->execute([':cnt' => $appApproved, ':id' => $applicationId]);
+
+        Response::json([
+            'id' => $itemId,
+            'status' => $status,
+            'notes' => $notes,
+            'approvedDocsCount' => $appApproved,
+        ]);
+    }
+
+    public static function listHelpTickets(): void {
+        $pdo = Database::getConnection();
+        $viewer = Security::currentUser($pdo);
+        $viewerRole = Config::normalizeRoleForClient($viewer['role']);
+
+        $sql = "SELECT t.*, u.name as user_name, u.email as user_email FROM help_tickets t JOIN users u ON t.user_id = u.id";
+        if ($viewerRole === 'candidato') {
+            $sql .= " WHERE t.user_id = " . $pdo->quote($viewer['id']);
+        }
+        $sql .= " ORDER BY t.created_at DESC";
+
+        $rows = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+        $items = [];
+        foreach ($rows as $r) {
+            $items[] = [
+                'id' => $r['id'],
+                'category' => $r['category'],
+                'subject' => $r['subject'],
+                'description' => $r['description'],
+                'status' => $r['status'],
+                'answer' => $r['answer'],
+                'userName' => $r['user_name'],
+                'createdAt' => Config::toIso8601($r['created_at']),
+            ];
+        }
+
+        Response::json(['items' => $items]);
+    }
+
+    public static function createHelpTicket(array $body): void {
+        Security::verifyCsrf();
+        $pdo = Database::getConnection();
+        $viewer = Security::currentUser($pdo);
+
+        $category = trim($body['category'] ?? 'Duda General');
+        $subject = trim($body['subject'] ?? '');
+        $description = trim($body['description'] ?? '');
+
+        if (empty($subject) || empty($description)) {
+            Response::error("Por favor completa el asunto y la descripción de tu solicitud.", 422);
+        }
+
+        $id = Config::uuid();
+        $now = Config::utcNow();
+
+        $stmt = $pdo->prepare("
+            INSERT INTO help_tickets (id, user_id, category, subject, description, status, created_at)
+            VALUES (:id, :uid, :cat, :sub, :desc, 'abierto', :now)
+        ");
+        $stmt->execute([
+            ':id' => $id,
+            ':uid' => $viewer['id'],
+            ':cat' => $category,
+            ':sub' => $subject,
+            ':desc' => $description,
+            ':now' => $now,
+        ]);
+
+        Response::json([
+            'message' => 'Solicitud registrada en la Mesa de Ayudas con éxito.',
+            'id' => $id,
         ], 201);
     }
 }

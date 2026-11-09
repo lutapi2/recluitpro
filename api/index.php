@@ -153,7 +153,22 @@ try {
         DocumentsController::downloadDocument($m[1]);
     }
 
-    // --- APPLICATIONS ---
+    // --- APPLICATIONS & PROCESSES ---
+    if ($method === 'GET' && $path === '/processes/stats') {
+        ApplicationsController::getProcessStats();
+    }
+    if ($method === 'GET' && preg_match('#^/applications/([a-zA-Z0-9_-]+)/checklist$#', $path, $m)) {
+        ApplicationsController::getChecklist($m[1]);
+    }
+    if ($method === 'PATCH' && preg_match('#^/applications/([a-zA-Z0-9_-]+)/checklist/([a-zA-Z0-9_-]+)$#', $path, $m)) {
+        ApplicationsController::updateChecklistItem($m[1], $m[2], $body);
+    }
+    if ($method === 'GET' && $path === '/help/tickets') {
+        ApplicationsController::listHelpTickets();
+    }
+    if ($method === 'POST' && $path === '/help/tickets') {
+        ApplicationsController::createHelpTicket($body);
+    }
     if ($method === 'GET' && $path === '/applications') {
         ApplicationsController::listAllApplications($_GET);
     }

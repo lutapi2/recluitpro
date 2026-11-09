@@ -3,97 +3,255 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RecruitPro | Iniciar sesión</title>
+    <title>RecruitPro | Sistema de Selección CECAR</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="css/style.css" />
-    <link rel="stylesheet" href="css/tokens.css?v=6.0" />
-    <link rel="stylesheet" href="css/components.css?v=6.0" />
+    <link rel="stylesheet" href="css/cecar.css?v=7.0" />
   </head>
-  <body>
-    <div class="auth">
-      <section class="brand">
-        <div class="logo" style="display:flex;align-items:center;gap:10px;"><svg class="logo-mark-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="rp-logo-grad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#3b82f6"/>
-      <stop offset="100%" stop-color="#0ea5e9"/>
-    </linearGradient>
-  </defs>
-  <rect x="2" y="2" width="20" height="20" rx="6" fill="url(#rp-logo-grad)"/>
-  <path d="M12 7L13.4 10.6L17 12L13.4 13.4L12 17L10.6 13.4L7 12L10.6 10.6L12 7Z" fill="white"/>
-</svg> <span>RecruitPro</span></div>
-        <div>
-          <small>TALENT MANAGEMENT PLATFORM</small>
-          <h1>Conecta talento con oportunidades.</h1>
-          <p>
-            Plataforma profesional para candidatos, reclutadores y
-            administradores.
-          </p>
-        </div>
-        <div class="features">
-          <span>01 · Candidatos<br /><b>Gestiona tu perfil.</b></span>
-          <span>02 · Reclutadores<br /><b>Consulta candidatos.</b></span>
-          <span>03 · Administración<br /><b>Supervisa la plataforma.</b></span>
-        </div>
-      </section>
-      <section class="panel">
-        <div class="card">
-          <h2>Bienvenido de nuevo</h2>
-          <p>Ingresa tus credenciales para continuar.</p>
-          <div id="error" class="error"></div>
-          <label>
-            Correo electrónico
-            <input id="email" type="email" placeholder="nombre@correo.com" autocomplete="email" required />
-          </label>
-          <label>
-            Contraseña
-            <div class="password">
-              <input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                autocomplete="current-password"
-                required
-              />
-              <button type="button" onclick="togglePassword()" aria-label="Mostrar u ocultar contraseña">◉</button>
-            </div>
-          </label>
-                    <button id="login-btn" class="primary" onclick="login()">Iniciar sesión</button>
+  <body class="cecar-landing-body">
+    <!-- Navbar Institucional -->
+    <header class="cecar-navbar">
+      <a href="index.html" class="cecar-logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="24" height="24" rx="6" fill="#10b981" />
+          <path d="M12 6L14 10.5L18.5 12L14 13.5L12 18L10 13.5L5.5 12L10 10.5L12 6Z" fill="#ffffff" />
+        </svg>
+        <span>RecruitPro · CECAR</span>
+      </a>
+      <div style="display: flex; gap: 14px; align-items: center;">
+        <a href="empleos.html" class="cecar-btn-secondary" style="padding: 8px 18px; font-size: 0.88rem;">Convocatorias Abiertas</a>
+        <button class="cecar-btn-primary" style="padding: 8px 18px; font-size: 0.88rem;" onclick="openLoginModal()">Acceder</button>
+      </div>
+    </header>
 
-          <!-- Tarjeta de estado de autenticación ultra moderna (Linear / Stripe style) -->
-          <div id="auth-status-card" class="auth-status-card" style="display: none;">
-            <div class="auth-status-icon-wrap">
-              <div class="auth-spinner"></div>
-              <svg class="auth-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+    <!-- Hero Section CECAR (Fiel a la Imagen 1 de la Maqueta) -->
+    <main class="cecar-hero-container">
+      <div class="cecar-hero-left">
+        <div class="cecar-badge">
+          <span class="badge-dot"></span>
+          Nueva plataforma
+        </div>
+
+        <h1 class="cecar-hero-title">
+          Toda tu <span class="gradient-green">gestión administrativa</span> en un solo lugar
+        </h1>
+
+        <p class="cecar-hero-desc">
+          Una plataforma integral para administrar los procesos de la institución de forma ágil, segura y con trazabilidad total. Centraliza, controla y decide mejor.
+        </p>
+
+        <div class="cecar-hero-actions">
+          <button class="cecar-btn-primary" onclick="openLoginModal()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+              <polyline points="10 17 15 12 10 7" />
+              <line x1="15" y1="12" x2="3" y2="12" />
+            </svg>
+            Iniciar sesión
+          </button>
+
+          <button class="cecar-btn-secondary" onclick="openHowItWorksModal()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polygon points="10 8 16 12 10 16 10 8" />
+            </svg>
+            Ver cómo funciona
+          </button>
+        </div>
+      </div>
+
+      <!-- Tarjeta gráfica ilustrativa de estados (Fiel a la Imagen 1) -->
+      <div class="cecar-hero-right">
+        <div class="cecar-preview-card">
+          <div class="card-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+
+          <!-- Ítem 1: Aprobado -->
+          <div class="preview-item">
+            <div class="preview-icon green">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <path d="M9 15l2 2 4-4" />
               </svg>
             </div>
-            <div class="auth-status-texts">
-              <p id="auth-status-title" class="auth-status-title">Verificando credenciales...</p>
-              <p id="auth-status-subtitle" class="auth-status-subtitle">Conectando con el servidor seguro...</p>
+            <div class="preview-lines">
+              <div class="line w-75"></div>
+              <div class="line w-40"></div>
             </div>
-            <div class="auth-bottom-progress-track">
-              <div id="auth-bottom-progress-bar" class="auth-bottom-progress-bar"></div>
+            <span class="preview-tag tag-aprobado">Aprobado</span>
+          </div>
+
+          <!-- Ítem 2: En proceso -->
+          <div class="preview-item">
+            <div class="preview-icon amber">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            </div>
+            <div class="preview-lines">
+              <div class="line w-60"></div>
+              <div class="line w-30"></div>
+            </div>
+            <span class="preview-tag tag-proceso">En proceso</span>
+          </div>
+
+          <!-- Ítem 3: Firmado -->
+          <div class="preview-item">
+            <div class="preview-icon emerald">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+            </div>
+            <div class="preview-lines">
+              <div class="line w-85"></div>
+              <div class="line w-50"></div>
+            </div>
+            <span class="preview-tag tag-firmado">Firmado</span>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Botón Flotante Permanente: Tutorial (RF-083) -->
+    <button class="cecar-tutorial-pill" onclick="openTutorialModal()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+        <line x1="12" y1="17" x2="12.01" y2="17" />
+      </svg>
+      Tutorial
+    </button>
+
+    <!-- Modal de Iniciar Sesión -->
+    <div id="login-modal" class="cecar-modal-backdrop">
+      <div class="cecar-modal-card">
+        <button style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer;" onclick="closeLoginModal()">×</button>
+        <div style="margin-bottom: 24px;">
+          <h2 style="margin: 0 0 6px; font-size: 1.5rem; color: #fff;">Iniciar sesión</h2>
+          <p style="margin: 0; color: #94a3b8; font-size: 0.9rem;">Ingresa tus credenciales institucionales para acceder.</p>
+        </div>
+
+        <div id="error" class="error" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 0.88rem;"></div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">Correo electrónico</label>
+          <input id="email" type="email" placeholder="usuario@cecar.edu.co" autocomplete="email" class="cecar-search-input" style="width: 100%; box-sizing: border-box; padding: 12px;" required />
+        </div>
+
+        <div style="margin-bottom: 24px;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">Contraseña</label>
+          <div style="position: relative;">
+            <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" class="cecar-search-input" style="width: 100%; box-sizing: border-box; padding: 12px; padding-right: 40px;" required />
+            <button type="button" onclick="togglePassword()" style="position: absolute; right: 12px; top: 12px; background: none; border: none; color: #94a3b8; cursor: pointer;">◉</button>
+          </div>
+        </div>
+
+        <button id="login-btn" class="cecar-btn-primary" style="width: 100%; justify-content: center;" onclick="login()">
+          Ingresar al Sistema
+        </button>
+
+        <!-- Tarjeta de progreso de autenticación -->
+        <div id="auth-status-card" class="auth-status-card" style="display: none; margin-top: 16px;">
+          <div class="auth-status-icon-wrap">
+            <div class="auth-spinner"></div>
+          </div>
+          <div class="auth-status-texts">
+            <p id="auth-status-title" class="auth-status-title" style="margin: 0; font-size: 0.85rem; font-weight: 600;">Verificando credenciales...</p>
+          </div>
+        </div>
+
+        <div style="margin-top: 20px; text-align: center; font-size: 0.85rem; color: #94a3b8;">
+          <p style="margin: 0 0 8px;"><a href="recuperar.html" style="color: #10b981; text-decoration: none;">¿Olvidaste tu contraseña?</a></p>
+          <p style="margin: 0;">¿Eres aspirante nuevo? <a href="registro.html" style="color: #10b981; text-decoration: none; font-weight: 700;">Crear cuenta de candidato</a></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal "Cómo funciona" (RF-082 / RF-084) -->
+    <div id="how-modal" class="cecar-modal-backdrop">
+      <div class="cecar-modal-card" style="max-width: 620px;">
+        <button style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer;" onclick="closeHowItWorksModal()">×</button>
+        <h2 style="margin: 0 0 10px; font-size: 1.5rem; color: #fff;">¿Cómo funciona la plataforma?</h2>
+        <p style="color: #94a3b8; margin: 0 0 24px; font-size: 0.95rem;">El sistema gestiona de extremo a extremo las convocatorias y contratación institucional:</p>
+
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div style="display: flex; gap: 14px; background: rgba(255,255,255,0.03); padding: 14px; border-radius: 10px; border: 1px solid var(--cecar-border);">
+            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(16,185,129,0.2); color: #10b981; display: flex; align-items: center; justify-content: center; font-weight: 800;">1</div>
+            <div>
+              <h4 style="margin: 0 0 4px; color: #fff;">Postulación y Hoja de Vida por Ítems</h4>
+              <p style="margin: 0; font-size: 0.85rem; color: #94a3b8;">El candidato registra sus datos y adjunta los soportes obligatorios organizados por categorías.</p>
             </div>
           </div>
 
-          <!-- Acceso discreto para candidatos -->
-          <div class="candidate-banner-card">
-            <span class="banner-badge">¿Buscas trabajo?</span>
-            <p class="banner-desc">Conoce nuestras vacantes abiertas y postúlate en 1 minuto:</p>
-            <a href="empleos.html" class="banner-btn">Ver vacantes abiertas →</a>
+          <div style="display: flex; gap: 14px; background: rgba(255,255,255,0.03); padding: 14px; border-radius: 10px; border: 1px solid var(--cecar-border);">
+            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(245,158,11,0.2); color: #f59e0b; display: flex; align-items: center; justify-content: center; font-weight: 800;">2</div>
+            <div>
+              <h4 style="margin: 0 0 4px; color: #fff;">Verificación Documental y Subsanaciones</h4>
+              <p style="margin: 0; font-size: 0.85rem; color: #94a3b8;">Talento Humano revisa dato por dato con su evidencia en el visor dividido y solicita subsanaciones si hace falta.</p>
+            </div>
           </div>
-          <p class="center"><a href="recuperar.html">¿Olvidaste tu contraseña?</a></p>
-          <p class="center">
-            ¿No tienes una cuenta? <a href="registro.html">Crear cuenta</a>
-          </p>
+
+          <div style="display: flex; gap: 14px; background: rgba(255,255,255,0.03); padding: 14px; border-radius: 10px; border: 1px solid var(--cecar-border);">
+            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(5,150,105,0.2); color: #34d399; display: flex; align-items: center; justify-content: center; font-weight: 800;">3</div>
+            <div>
+              <h4 style="margin: 0 0 4px; color: #fff;">Entrevistas, Selección y Contratación</h4>
+              <p style="margin: 0; font-size: 0.85rem; color: #94a3b8;">El comité evalúa a los preseleccionados, formaliza la contratación y vincula al colaborador.</p>
+            </div>
+          </div>
         </div>
-      </section>
+      </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js" defer></script>
-    <script src="js/ui.js?v=6.0"></script>
+
+    <!-- Modal Tutorial Contextual (RF-083) -->
+    <div id="tutorial-modal" class="cecar-modal-backdrop">
+      <div class="cecar-modal-card">
+        <button style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer;" onclick="closeTutorialModal()">×</button>
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+          <div style="width: 40px; height: 40px; border-radius: 50%; background: #10b981; color: #fff; display: flex; align-items: center; justify-content: center;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          </div>
+          <h3 style="margin: 0; color: #fff; font-size: 1.3rem;">Guía Rápida del Sistema</h3>
+        </div>
+        <p style="color: #94a3b8; font-size: 0.92rem; line-height: 1.6; margin: 0 0 20px;">
+          Bienvenido a la plataforma institucional de selección y contratación. Aquí podrás:
+        </p>
+        <ul style="color: #cbd5e1; font-size: 0.88rem; line-height: 1.7; padding-left: 20px; margin: 0 0 24px;">
+          <li><b>Candidatos:</b> Consultar convocatorias docentes y administrativas, cargar certificados por ítem y seguir el estado de tu postulación en tiempo real.</li>
+          <li><b>Talento Humano:</b> Crear perfiles de cargo, revisar el checklist de 8 categorías documentales, calificar entrevistas y gestionar la vinculación.</li>
+          <li><b>Mesa de Ayudas:</b> Registrar solicitudes de soporte si tienes dudas con tus documentos.</li>
+        </ul>
+        <button class="cecar-btn-primary" style="width: 100%; justify-content: center;" onclick="closeTutorialModal()">Entendido</button>
+      </div>
+    </div>
+
     <script src="js/auth.js"></script>
+    <script>
+      function openLoginModal() {
+        document.getElementById('login-modal').classList.add('open');
+      }
+      function closeLoginModal() {
+        document.getElementById('login-modal').classList.remove('open');
+      }
+      function openHowItWorksModal() {
+        document.getElementById('how-modal').classList.add('open');
+      }
+      function closeHowItWorksModal() {
+        document.getElementById('how-modal').classList.remove('open');
+      }
+      function openTutorialModal() {
+        document.getElementById('tutorial-modal').classList.add('open');
+      }
+      function closeTutorialModal() {
+        document.getElementById('tutorial-modal').classList.remove('open');
+      }
+    </script>
   </body>
 </html>
