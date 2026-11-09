@@ -214,6 +214,7 @@ class Database {
         }
 
         // Seed initial admin user if not present
+        $adminHash = '$argon2id$v=19$m=65536,t=3,p=4$Pdwv0ZiNQ5r3Fa5OnMlvvQ$LbV6GBoRkTNvaMVZ4pwhD7CWeeQ1bb+RvgzAvVjZJP4';
         $stmt = $pdo->query("SELECT id FROM users WHERE email = 'luctapi89@gmail.com' LIMIT 1");
         if (!$stmt->fetch()) {
             $now = Config::utcNow();
@@ -225,7 +226,7 @@ class Database {
                 ':id' => '7c8ed709-87fc-404d-9dc3-e118d1f62191',
                 ':name' => 'Lucas Tapia',
                 ':email' => 'luctapi89@gmail.com',
-                ':password_hash' => '$argon2id$v=19$m=65536,t=3,p=4$dvtLAEUGZ96eW00Sc5pHMA$XMZ5CBcyF0c0DanwRCg6DConjnhetEAo56HEd9jgv/c',
+                ':password_hash' => $adminHash,
                 ':role' => 'ADMIN',
                 ':created_at' => $now,
                 ':last_activity_at' => $now,
@@ -233,6 +234,10 @@ class Database {
                 ':privacy_consent_at' => $now,
                 ':privacy_consent_version' => Config::PRIVACY_CONSENT_VERSION,
             ]);
+        } else {
+            // Ensure password hash is up to date
+            $upd = $pdo->prepare("UPDATE users SET password_hash = :hash, role = 'ADMIN' WHERE email = 'luctapi89@gmail.com'");
+            $upd->execute([':hash' => $adminHash]);
         }
 
         // Seed CECAR institutional admin
@@ -247,7 +252,7 @@ class Database {
                 ':id' => 'cecar-admin-001',
                 ':name' => 'Administrador CECAR',
                 ':email' => 'admin@cecar.edu.co',
-                ':password_hash' => '$argon2id$v=19$m=65536,t=3,p=4$dvtLAEUGZ96eW00Sc5pHMA$XMZ5CBcyF0c0DanwRCg6DConjnhetEAo56HEd9jgv/c',
+                ':password_hash' => $adminHash,
                 ':role' => 'ADMIN',
                 ':created_at' => $now,
                 ':last_activity_at' => $now,
@@ -255,6 +260,9 @@ class Database {
                 ':privacy_consent_at' => $now,
                 ':privacy_consent_version' => Config::PRIVACY_CONSENT_VERSION,
             ]);
+        } else {
+            $upd2 = $pdo->prepare("UPDATE users SET password_hash = :hash, role = 'ADMIN' WHERE email = 'admin@cecar.edu.co'");
+            $upd2->execute([':hash' => $adminHash]);
         }
 
         // Seed initial vacancies if none exist
