@@ -51,11 +51,13 @@ try {
     $path = '/' . trim($path, '/');
 
     // Parse JSON body if present
-    $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
     $rawBody = file_get_contents('php://input');
     $jsonBody = [];
-    if (str_contains($contentType, 'application/json') && !empty($rawBody)) {
-        $jsonBody = json_decode($rawBody, true) ?: [];
+    if (!empty($rawBody)) {
+        $decoded = json_decode($rawBody, true);
+        if (is_array($decoded)) {
+            $jsonBody = $decoded;
+        }
     }
 
     // Merge $_POST if present
