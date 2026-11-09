@@ -44,11 +44,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 try {
     $method = $_SERVER['REQUEST_METHOD'];
-    $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
-
-    // Normalize path by removing script name or trailing slashes
-    $path = preg_replace('#^/api#', '', $uri);
-    $path = '/' . trim($path, '/');
+    // Normalize path from PATH_INFO, query param or REQUEST_URI
+    if (!empty($_SERVER['PATH_INFO'])) {
+        $path = '/' . trim($_SERVER['PATH_INFO'], '/');
+    } elseif (isset($_GET['path'])) {
+        $path = '/' . trim($_GET['path'], '/');
+    } else {
+        $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+        $path = preg_replace('#^/api(/index\.php)?#', '', $uri);
+        $path = preg_replace('#^/index\.php#', '', $path);
+        $path = '/' . trim($path, '/');
+    }
 
     // Parse JSON body if present
     $rawBody = file_get_contents('php://input');

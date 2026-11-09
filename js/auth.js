@@ -1,6 +1,12 @@
+let apiBase = "/api";
+
 async function csrfToken() {
   try {
-    const response = await fetch("/api/auth/csrf", { credentials: "same-origin" });
+    let response = await fetch(`${apiBase}/auth/csrf`, { credentials: "same-origin" });
+    if (response.status === 404 && apiBase === "/api") {
+      apiBase = "/api/index.php";
+      response = await fetch(`${apiBase}/auth/csrf`, { credentials: "same-origin" });
+    }
     if (!response.ok) throw new Error("No se pudo iniciar una solicitud segura.");
     const result = await response.json();
     return result.csrfToken;
@@ -17,12 +23,21 @@ async function resendVerification() {
 
   try {
     const csrf = await csrfToken();
-    const response = await fetch("/api/auth/verification/resend", {
+    let response = await fetch(`${apiBase}/auth/verification/resend`, {
       method: "POST",
       credentials: "same-origin",
       headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf },
       body: JSON.stringify({ email: input.value.trim().toLowerCase() }),
     });
+    if (response.status === 404 && apiBase === "/api") {
+      apiBase = "/api/index.php";
+      response = await fetch(`${apiBase}/auth/verification/resend`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf },
+        body: JSON.stringify({ email: input.value.trim().toLowerCase() }),
+      });
+    }
     const result = await response.json();
     if (!response.ok) throw new Error(result.detail || "No se pudo reenviar el enlace.");
     message.textContent = result.message;
@@ -103,7 +118,7 @@ async function login() {
 
   try {
     const csrf = await csrfToken();
-    const response = await fetch("/api/auth/login", {
+    let response = await fetch(`${apiBase}/auth/login`, {
       method: "POST",
       credentials: "same-origin",
       headers: {
@@ -113,12 +128,25 @@ async function login() {
       body: JSON.stringify({ email: email.toLowerCase(), password }),
     });
 
+    // Fallback automático si mod_rewrite no está activo
+    if (response.status === 404 && apiBase === "/api") {
+      apiBase = "/api/index.php";
+      response = await fetch(`${apiBase}/auth/login`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrf,
+        },
+        body: JSON.stringify({ email: email.toLowerCase(), password }),
+      });
+    }
+
     clearInterval(progressInterval);
 
     if (!response.ok) {
       const result = await response.json().catch(() => ({}));
       
-      // Si el servidor responde explícitamente con 401 credenciales inválidas:
       if (statusCard) statusCard.style.display = "none";
       if (loginBtn) {
         loginBtn.disabled = false;
@@ -128,7 +156,7 @@ async function login() {
 
       const msg = Array.isArray(result.detail)
         ? result.detail.map((item) => item.msg).join(" ")
-        : result.detail || result.error || "Correo o contraseña incorrectos.";
+        : result.detail || result.error || (response.status === 404 ? "El servidor aún se está actualizando (404). Espera 1 minuto." : "Correo o contraseña incorrectos.");
 
       if (error) {
         error.textContent = msg;
@@ -158,7 +186,6 @@ async function login() {
   } catch (requestError) {
     clearInterval(progressInterval);
 
-    // Si el servidor backend no responde (ej. abriendo localmente como archivo o sin PHP local corriendo):
     console.warn("Backend no disponible (modo local o sin servidor). Activando acceso local institucional:", requestError);
 
     // Crear sesión institucional local
