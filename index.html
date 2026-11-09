@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RecruitPro | Iniciar sesión</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/tokens.css?v=6.0" />
+    <link rel="stylesheet" href="css/components.css?v=6.0" />
+  </head>
+  <body>
+    <div class="auth">
+      <section class="brand">
+        <div class="logo" style="display:flex;align-items:center;gap:10px;"><svg class="logo-mark-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="rp-logo-grad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#0ea5e9"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="20" height="20" rx="6" fill="url(#rp-logo-grad)"/>
+  <path d="M12 7L13.4 10.6L17 12L13.4 13.4L12 17L10.6 13.4L7 12L10.6 10.6L12 7Z" fill="white"/>
+</svg> <span>RecruitPro</span></div>
+        <div>
+          <small>TALENT MANAGEMENT PLATFORM</small>
+          <h1>Conecta talento con oportunidades.</h1>
+          <p>
+            Plataforma profesional para candidatos, reclutadores y
+            administradores.
+          </p>
+        </div>
+        <div class="features">
+          <span>01 · Candidatos<br /><b>Gestiona tu perfil.</b></span>
+          <span>02 · Reclutadores<br /><b>Consulta candidatos.</b></span>
+          <span>03 · Administración<br /><b>Supervisa la plataforma.</b></span>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="card">
+          <h2>Bienvenido de nuevo</h2>
+          <p>Ingresa tus credenciales para continuar.</p>
+          <div id="error" class="error"></div>
+          <label>
+            Correo electrónico
+            <input id="email" type="email" placeholder="nombre@correo.com" autocomplete="email" required />
+          </label>
+          <label>
+            Contraseña
+            <div class="password">
+              <input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                autocomplete="current-password"
+                required
+              />
+              <button type="button" onclick="togglePassword()" aria-label="Mostrar u ocultar contraseña">◉</button>
+            </div>
+          </label>
+                    <button id="login-btn" class="primary" onclick="login()">Iniciar sesión</button>
+
+          <!-- Tarjeta de estado de autenticación ultra moderna (Linear / Stripe style) -->
+          <div id="auth-status-card" class="auth-status-card" style="display: none;">
+            <div class="auth-status-icon-wrap">
+              <div class="auth-spinner"></div>
+              <svg class="auth-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+            </div>
+            <div class="auth-status-texts">
+              <p id="auth-status-title" class="auth-status-title">Verificando credenciales...</p>
+              <p id="auth-status-subtitle" class="auth-status-subtitle">Conectando con el servidor seguro...</p>
+            </div>
+            <div class="auth-bottom-progress-track">
+              <div id="auth-bottom-progress-bar" class="auth-bottom-progress-bar"></div>
+            </div>
+          </div>
+
+          <!-- Acceso discreto para candidatos -->
+          <div class="candidate-banner-card">
+            <span class="banner-badge">¿Buscas trabajo?</span>
+            <p class="banner-desc">Conoce nuestras vacantes abiertas y postúlate en 1 minuto:</p>
+            <a href="empleos.html" class="banner-btn">Ver vacantes abiertas →</a>
+          </div>
+          <p class="center"><a href="recuperar.html">¿Olvidaste tu contraseña?</a></p>
+          <p class="center">
+            ¿No tienes una cuenta? <a href="registro.html">Crear cuenta</a>
+          </p>
+        </div>
+      </section>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js" defer></script>
+    <script src="js/ui.js?v=6.0"></script>
+    <script src="js/auth.js"></script>
+  </body>
+</html>

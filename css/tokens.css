@@ -1,0 +1,155 @@
+/* ==========================================================================
+   RecruitPro · Design Tokens
+   Única fuente de verdad para color, tipografía, espaciado, radios,
+   sombras y movimiento. Tema claro por defecto; oscuro con [data-theme="dark"].
+   ========================================================================== */
+:root {
+  /* Tipografía */
+  --rp-font: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --rp-fw-regular: 400;
+  --rp-fw-semibold: 600;
+  --rp-fw-bold: 800;
+  --rp-fs-xs: 12px;
+  --rp-fs-sm: 13px;
+  --rp-fs-md: 14px;
+  --rp-fs-lg: 16px;
+  --rp-fs-xl: 20px;
+  --rp-fs-2xl: 24px;
+  --rp-fs-3xl: 32px;
+  --rp-fs-4xl: 40px;
+
+  /* Espaciado */
+  --rp-space-1: 4px;
+  --rp-space-2: 8px;
+  --rp-space-3: 12px;
+  --rp-space-4: 16px;
+  --rp-space-6: 24px;
+  --rp-space-8: 32px;
+
+  /* Radios */
+  --rp-radius-sm: 8px;
+  --rp-radius-md: 12px;
+  --rp-radius-lg: 16px;
+  --rp-radius-full: 9999px;
+
+  /* Marca */
+  --rp-primary: #2563eb;
+  --rp-primary-hover: #1d4ed8;
+  --rp-primary-2: #0ea5e9;
+  --rp-primary-soft: #eff6ff;
+  --rp-primary-gradient: linear-gradient(135deg, #2563eb, #0ea5e9);
+  --rp-accent: #7c3aed;
+  --rp-accent-soft: #f5f3ff;
+
+  /* Semánticos (≥ 4.5:1 sobre blanco) */
+  --rp-success: #047857;
+  --rp-success-soft: #ecfdf5;
+  --rp-warning: #b45309;
+  --rp-warning-soft: #fffbeb;
+  --rp-danger: #dc2626;
+  --rp-danger-soft: #fef2f2;
+
+  /* Superficies y texto */
+  --rp-bg: #f6f8fc;
+  --rp-surface: #ffffff;
+  --rp-surface-2: #f8fafc;
+  --rp-surface-hover: #f1f5f9;
+  --rp-border: #e2e8f0;
+  --rp-text: #0f172a;
+  --rp-text-2: #475569;
+  --rp-text-muted: #64748b;
+  --rp-glass: rgba(255, 255, 255, 0.78);
+  --rp-overlay: rgba(15, 23, 42, 0.45);
+
+  /* Sombras en capas */
+  --rp-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --rp-shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  --rp-shadow-lg: 0 12px 24px -8px rgba(15, 23, 42, 0.14), 0 4px 8px -4px rgba(15, 23, 42, 0.06);
+  --rp-shadow-xl: 0 24px 48px -12px rgba(15, 23, 42, 0.25);
+  --rp-focus-ring: 0 0 0 3px rgba(37, 99, 235, 0.35);
+
+  /* Movimiento */
+  --rp-dur-fast: 150ms;
+  --rp-dur-base: 250ms;
+  --rp-dur-slow: 400ms;
+  --rp-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --rp-ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --rp-primary: #3b82f6;
+  --rp-primary-hover: #60a5fa;
+  --rp-primary-soft: rgba(59, 130, 246, 0.18);
+  --rp-accent: #a855f7;
+  --rp-accent-soft: rgba(168, 85, 247, 0.18);
+
+  --rp-success: #10b981;
+  --rp-success-soft: rgba(16, 185, 129, 0.18);
+  --rp-warning: #f59e0b;
+  --rp-warning-soft: rgba(245, 158, 11, 0.18);
+  --rp-danger: #ef4444;
+  --rp-danger-soft: rgba(239, 68, 68, 0.18);
+
+  /* Verdadero Negro Puro (True OLED Black - Linear / Vercel style) */
+  --rp-bg: #000000;
+  --rp-surface: #0a0a0a;
+  --rp-surface-2: #121212;
+  --rp-surface-hover: #1c1c1c;
+  --rp-border: #262626;
+  --rp-text: #ffffff;
+  --rp-text-2: #a3a3a3;
+  --rp-text-muted: #737373;
+  --rp-glass: rgba(0, 0, 0, 0.85);
+  --rp-overlay: rgba(0, 0, 0, 0.85);
+
+  --rp-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.8);
+  --rp-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.7);
+  --rp-shadow-lg: 0 12px 28px -4px rgba(0, 0, 0, 0.9);
+  --rp-shadow-xl: 0 24px 48px -8px rgba(0, 0, 0, 0.95);
+
+  color-scheme: dark;
+}
+
+/* Puente con variables legadas de style.css para que lo existente herede el tema */
+:root,
+[data-theme="dark"] {
+  --bg: var(--rp-bg);
+  --text: var(--rp-text);
+  --muted: var(--rp-text-muted);
+  --line: var(--rp-border);
+  --blue: var(--rp-primary);
+  --bg-app: var(--rp-bg);
+  --bg-card: var(--rp-surface);
+  --bg-card-subtle: var(--rp-surface-2);
+  --bg-header: var(--rp-glass);
+  --bg-hover: var(--rp-surface-hover);
+  --text-primary: var(--rp-text);
+  --text-secondary: var(--rp-text-2);
+  --text-muted: var(--rp-text-muted);
+  --primary: var(--rp-primary);
+  --primary-subtle: var(--rp-primary-soft);
+}
+
+html.theme-transition,
+html.theme-transition * {
+  transition: background-color var(--rp-dur-base) ease, color var(--rp-dur-base) ease,
+    border-color var(--rp-dur-base) ease !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --rp-dur-fast: 0ms;
+    --rp-dur-base: 0ms;
+    --rp-dur-slow: 0ms;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

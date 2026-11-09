@@ -1,0 +1,25 @@
+services:
+  database:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: recruitpro
+      POSTGRES_USER: recruitpro
+      POSTGRES_PASSWORD: local-dev-only
+    ports:
+      - "5432:5432"
+    volumes:
+      - recruitpro-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U recruitpro -d recruitpro"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:v1.25
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+volumes:
+  recruitpro-postgres:

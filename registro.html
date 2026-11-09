@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RecruitPro | Crear cuenta</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/tokens.css?v=6.0" />
+    <link rel="stylesheet" href="css/components.css?v=6.0" />
+  </head>
+  <body>
+    <div class="auth">
+      <section class="brand">
+        <div class="logo" style="display:flex;align-items:center;gap:10px;"><svg class="logo-mark-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="rp-logo-grad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#0ea5e9"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="20" height="20" rx="6" fill="url(#rp-logo-grad)"/>
+  <path d="M12 7L13.4 10.6L17 12L13.4 13.4L12 17L10.6 13.4L7 12L10.6 10.6L12 7Z" fill="white"/>
+</svg> <span>RecruitPro</span></div>
+        <div>
+          <small>CREATE YOUR ACCOUNT</small>
+          <h1>Forma parte de nuestra plataforma.</h1>
+          <p>Crea una cuenta de candidato. Un administrador puede habilitar cuentas de reclutador.</p>
+        </div>
+        <div class="features">
+          <span>01 · Registro<br /><b>Crea tus credenciales.</b></span>
+          <span>02 · Seguridad<br /><b>Roles protegidos.</b></span>
+          <span>03 · Acceso<br /><b>Permisos por rol.</b></span>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="card">
+          <h2>Crear cuenta</h2>
+          <p>Completa tus datos para registrarte.</p>
+          <div id="error" class="error"></div>
+          <div id="privacy-notice" class="privacy-notice"></div>
+          <label for="name">
+            Nombre completo
+            <input id="name" placeholder="Ej. Carlos Pérez" autocomplete="name" required maxlength="100" />
+          </label>
+          <label for="email">
+            Correo electrónico
+            <input id="email" type="email" placeholder="nombre@correo.com" autocomplete="email" required maxlength="254" />
+          </label>
+          <label for="password">
+            Contraseña
+            <input
+              id="password"
+              type="password"
+              placeholder="Mínimo 6 caracteres"
+              autocomplete="new-password"
+              minlength="6"
+              maxlength="128"
+              required
+            />
+          </label>
+          <label class="consent-label">
+            <input id="privacy-consent" type="checkbox" required />
+            <span>Acepto el tratamiento de mis datos personales según el <a href="privacidad.html" target="_blank" rel="noopener">aviso de privacidad</a>. Entiendo que puedo retirar mi consentimiento y solicitar la eliminación de mis datos.</span>
+          </label>
+          <button id="register-btn" class="primary" type="button" onclick="register()">Crear cuenta</button>
+
+          <!-- Animación elegante de registro -->
+          <div id="auth-loader" class="auth-loader-container" style="display: none;">
+            <div class="auth-loader-visual">
+              <div class="auth-loader-ring"></div>
+              <div class="auth-loader-sparkle"><svg class="logo-mark-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="rp-logo-grad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#0ea5e9"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="20" height="20" rx="6" fill="url(#rp-logo-grad)"/>
+  <path d="M12 7L13.4 10.6L17 12L13.4 13.4L12 17L10.6 13.4L7 12L10.6 10.6L12 7Z" fill="white"/>
+</svg></div>
+            </div>
+            <div class="auth-progress-track">
+              <div id="auth-progress-fill" class="auth-progress-fill" style="width: 15%;"></div>
+            </div>
+            <p id="auth-status-text" class="auth-status-text">Creando tu perfil en RecruitPro...</p>
+            <div id="auth-sub-tip" class="auth-sub-tip" style="display: none;">
+              El servidor en la nube se está inicializando. Preparando tu cuenta...
+            </div>
+          </div>
+          <p class="center">
+            ¿Ya tienes una cuenta? <a href="index.html">Iniciar sesión</a>
+          </p>
+        </div>
+      </section>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js" defer></script>
+    <script src="js/ui.js?v=6.0"></script>
+    <script src="js/registro.js"></script>
+  </body>
+</html>
