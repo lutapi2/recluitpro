@@ -499,10 +499,6 @@ class ApplicationsController {
             'statusChanged' => $statusChanged,
             'emailSent' => $emailSent,
         ]);
-            'assignedRecruiterId' => $newAssignee,
-            'statusChanged' => $statusChanged,
-            'emailSent' => $emailSent,
-        ]);
     }
 
     public static function deleteApplication(string $applicationId): void {

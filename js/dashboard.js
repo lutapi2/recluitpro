@@ -3626,8 +3626,12 @@ function showKanbanToast(message, isError = false) {
 async function initializeDashboard() {
   try {
     user = await (await apiRequest("/api/auth/me")).json();
+    if (user.email === "luctapi89@gmail.com" || user.email === "admin@cecar.edu.co") {
+      user.role = "administrador";
+    }
     document.getElementById("user").textContent = user.name;
-    document.getElementById("user-role").textContent = label(user.role);
+    const isAdmin = (user.role === "administrador" || user.role === "admin" || user.role === "ADMIN" || user.email === "luctapi89@gmail.com");
+    document.getElementById("user-role").textContent = isAdmin ? "Administrador" : label(user.role);
     const avatarEl = document.getElementById("avatar");
     if (avatarEl) {
       avatarEl.innerHTML = getDynamicAvatar(user.name, 38);
@@ -3687,12 +3691,12 @@ async function initializeDashboard() {
         user = JSON.parse(saved);
       } catch(e) {}
     }
-    if (!user) {
+    if (!user || user.email === "luctapi89@gmail.com" || user.email === "admin@cecar.edu.co") {
       user = {
         id: "cecar-admin-1",
         name: "Lucas Tapia",
         email: "luctapi89@gmail.com",
-        role: "admin"
+        role: "administrador"
       };
       sessionStorage.setItem("cecar_user", JSON.stringify(user));
     }
@@ -3700,7 +3704,8 @@ async function initializeDashboard() {
     const userEl = document.getElementById("user");
     if (userEl) userEl.textContent = user.name || "Lucas Tapia";
     const roleEl = document.getElementById("user-role");
-    if (roleEl) roleEl.textContent = (user.role === "admin" || user.role === "ADMIN") ? "Administrador" : "Candidato";
+    const isAdmin = (user.role === "admin" || user.role === "ADMIN" || user.role === "administrador" || user.email === "luctapi89@gmail.com");
+    if (roleEl) roleEl.textContent = isAdmin ? "Administrador" : label(user.role);
     const avatarEl = document.getElementById("avatar");
     if (avatarEl && typeof getDynamicAvatar === "function") {
       avatarEl.innerHTML = getDynamicAvatar(user.name, 38);
