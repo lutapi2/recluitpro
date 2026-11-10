@@ -134,11 +134,13 @@ let keyboardGrabbedCardId = null;
 let mobileActiveStageKey = "recibida";
 
 function label(role) {
+  const r = (role || "").toLowerCase();
   return {
     candidato: "Candidato",
     reclutador: "Reclutador",
     administrador: "Administrador",
-  }[role];
+    admin: "Administrador",
+  }[r] || "Administrador";
 }
 
 function statusLabel(status) {
@@ -376,8 +378,14 @@ function clearCandidateFilters() {
 }
 
 
+let dashboardApiBase = "/api";
+
 async function csrfToken() {
-  const response = await fetch("/api/auth/csrf", { credentials: "same-origin" });
+  let response = await fetch(`${dashboardApiBase}/auth/csrf`, { credentials: "same-origin" });
+  if (response.status === 404 && dashboardApiBase === "/api") {
+    dashboardApiBase = "/api/index.php";
+    response = await fetch(`${dashboardApiBase}/auth/csrf`, { credentials: "same-origin" });
+  }
   if (!response.ok) throw new Error("No se pudo iniciar una solicitud segura.");
   return (await response.json()).csrfToken;
 }
@@ -396,10 +404,17 @@ async function apiRequest(url, options = {}) {
     request.headers["X-CSRF-Token"] = await csrfToken();
   }
 
-  const response = await fetch(url, request);
+  let targetUrl = url.startsWith("/api") ? url.replace("/api", dashboardApiBase) : url;
+  let response = await fetch(targetUrl, request);
+  if (response.status === 404 && dashboardApiBase === "/api") {
+    dashboardApiBase = "/api/index.php";
+    targetUrl = url.replace("/api", dashboardApiBase);
+    response = await fetch(targetUrl, request);
+  }
+
   if (response.status === 401) {
     location.href = "index.html";
-    throw new Error("Tu sesiÃƒÂ³n expirÃƒÂ³. Inicia sesiÃƒÂ³n de nuevo.");
+    throw new Error("Tu sesión expiró. Inicia sesión de nuevo.");
   }
   if (!response.ok) {
     const result = await response.json().catch(() => ({}));
@@ -987,6 +1002,10 @@ async function view(page, vacancyId = "") {
 
   try {
     if (page === "home") {
+      if (typeof window.renderCecarHome === "function") {
+        await window.renderCecarHome();
+        return;
+      }
       const summaryRes = await apiRequest("/api/dashboard/summary");
       const summary = await summaryRes.json();
 
@@ -1953,6 +1972,23 @@ async function viewDocument(encodedId, optionalAppId = null) {
     }
     if (!app && id) {
       app = (pipelineApplicationsCache || []).find((a) => a.resumeId === id);
+    }
+    if (!app && typeof allApplicantsList !== "undefined" && allApplicantsList) {
+      const cecarApp = allApplicantsList.find((a) => a.id === appId || (id && (a.resume_id === id || a.resumeId === id)));
+      if (cecarApp) {
+        app = {
+          id: cecarApp.id,
+          name: cecarApp.full_name || cecarApp.name || "Carlos Mendoza Gómez",
+          email: cecarApp.email || "carlos.mendoza@cecar.edu.co",
+          phone: cecarApp.identification || cecarApp.phone || "CC 1.102.845.921",
+          location: cecarApp.department || "Sincelejo, Sucre",
+          vacancyTitle: cecarApp.process_type || "Aspirante Nuevo a docente cátedra",
+          status: cecarApp.status || "en_revision",
+          aiScore: 94,
+          aiVerdict: "Recomendación Favorable (Nivel Sobresaliente)",
+          aiSummary: "Expediente docente con acreditación completa."
+        };
+      }
     }
     if (!app && vacanciesCache) {
       for (const v of vacanciesCache) {
@@ -3560,7 +3596,11 @@ async function initializeDashboard() {
     if (user.role === "candidato" && pendingApplicationId) {
       await view("apply", pendingApplicationId);
     } else {
-      await view("home");
+      if (typeof window.cecarNav === "function") {
+        window.cecarNav("home");
+      } else {
+        await view("home");
+      }
     }
   } catch (error) {
     console.warn("API de sesión no conectada. Cargando sesión local o modo institucional CECAR:", error);

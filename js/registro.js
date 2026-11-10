@@ -1,5 +1,11 @@
+let apiBase = "/api";
+
 async function csrfToken() {
-  const response = await fetch("/api/auth/csrf", { credentials: "same-origin" });
+  let response = await fetch(`${apiBase}/auth/csrf`, { credentials: "same-origin" });
+  if (response.status === 404 && apiBase === "/api") {
+    apiBase = "/api/index.php";
+    response = await fetch(`${apiBase}/auth/csrf`, { credentials: "same-origin" });
+  }
   if (!response.ok) throw new Error("No se pudo iniciar una solicitud segura.");
   return (await response.json()).csrfToken;
 }
@@ -67,7 +73,7 @@ async function register() {
   }, 4500);
 
   try {
-    const response = await fetch("/api/auth/register", {
+    let response = await fetch(`${apiBase}/auth/register`, {
       method: "POST",
       credentials: "same-origin",
       headers: {
@@ -81,6 +87,24 @@ async function register() {
         privacy_consent: consent.checked,
       }),
     });
+
+    if (response.status === 404 && apiBase === "/api") {
+      apiBase = "/api/index.php";
+      response = await fetch(`${apiBase}/auth/register`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": await csrfToken(),
+        },
+        body: JSON.stringify({
+          name: nameInput.value.trim(),
+          email: emailInput.value.trim().toLowerCase(),
+          password: passwordInput.value,
+          privacy_consent: consent.checked,
+        }),
+      });
+    }
 
     clearInterval(messageInterval);
     clearInterval(progressInterval);

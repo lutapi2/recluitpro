@@ -10,16 +10,30 @@ async function verifyEmail() {
   }
 
   button.disabled = true;
+  let apiBase = "/api";
   try {
-    const csrfResponse = await fetch("/api/auth/csrf", { credentials: "same-origin" });
+    let csrfResponse = await fetch(`${apiBase}/auth/csrf`, { credentials: "same-origin" });
+    if (csrfResponse.status === 404) {
+      apiBase = "/api/index.php";
+      csrfResponse = await fetch(`${apiBase}/auth/csrf`, { credentials: "same-origin" });
+    }
     if (!csrfResponse.ok) throw new Error("No se pudo iniciar una solicitud segura.");
     const { csrfToken } = await csrfResponse.json();
-    const response = await fetch("/api/auth/verify-email", {
+    let response = await fetch(`${apiBase}/auth/verify-email`, {
       method: "POST",
       credentials: "same-origin",
       headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
       body: JSON.stringify({ token }),
     });
+    if (response.status === 404 && apiBase === "/api") {
+      apiBase = "/api/index.php";
+      response = await fetch(`${apiBase}/auth/verify-email`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
+        body: JSON.stringify({ token }),
+      });
+    }
     const result = await response.json();
     if (!response.ok) throw new Error(result.detail || "No se pudo verificar el correo.");
     location.href = "dashboard.html";

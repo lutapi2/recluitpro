@@ -22,6 +22,13 @@ class AiController {
         $viewer = Security::currentUser($pdo);
         Security::requireRole($viewer, ['administrador', 'reclutador']);
 
+        if ($applicationId === '1' || $applicationId === 'default') {
+            $firstId = $pdo->query("SELECT id FROM applications ORDER BY created_at ASC LIMIT 1")->fetchColumn();
+            if ($firstId) {
+                $applicationId = (string)$firstId;
+            }
+        }
+
         $stmt = $pdo->prepare("
             SELECT a.*, 
                    v.title as vacancy_title, v.description as vacancy_description, v.type as vacancy_type,

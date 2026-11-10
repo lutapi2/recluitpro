@@ -168,7 +168,7 @@ try {
     if ($method === 'GET' && preg_match('#^/applications/([a-zA-Z0-9_-]+)/checklist$#', $path, $m)) {
         ApplicationsController::getChecklist($m[1]);
     }
-    if ($method === 'PATCH' && preg_match('#^/applications/([a-zA-Z0-9_-]+)/checklist/([a-zA-Z0-9_-]+)$#', $path, $m)) {
+    if (($method === 'PATCH' || $method === 'PUT') && preg_match('#^/applications/([a-zA-Z0-9_-]+)/checklist/([a-zA-Z0-9_-]+)$#', $path, $m)) {
         ApplicationsController::updateChecklistItem($m[1], $m[2], $body);
     }
     if ($method === 'GET' && $path === '/help/tickets') {

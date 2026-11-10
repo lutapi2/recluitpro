@@ -4,7 +4,7 @@ declare(strict_types=1);
 $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 
 // 1. API routes
-if (str_starts_with($uri, '/api/')) {
+if (str_starts_with($uri, '/api')) {
     require __DIR__ . '/api/index.php';
     return;
 }

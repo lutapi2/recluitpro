@@ -14,6 +14,13 @@
   --cecar-border: rgba(16, 185, 129, 0.22);
   --cecar-text-title: #f8fafc;
   --cecar-text-muted: #94a3b8;
+
+  /* RecruitPro tokens harmonized with CECAR Brand */
+  --rp-primary: #10b981;
+  --rp-primary-hover: #059669;
+  --rp-primary-gradient: linear-gradient(135deg, #10b981, #059669);
+  --rp-primary-soft: rgba(16, 185, 129, 0.15);
+  --rp-focus-ring: 0 0 0 3px rgba(16, 185, 129, 0.4);
 }
 
 /* --------------------------------------------------------------------------
@@ -387,7 +394,7 @@
 }
 
 /* 4 Tarjetas de Métricas (Imagen 2) */
-.cecar-metric-grid {
+.cecar-metric-grid, .cecar-metrics-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 20px;
@@ -400,8 +407,8 @@
   border-radius: 14px;
   padding: 20px;
   display: flex;
-  align-items: center;
-  gap: 16px;
+  flex-direction: column;
+  gap: 8px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
   transition: transform 0.2s ease, border-color 0.2s ease;
 }
@@ -411,7 +418,7 @@
   border-color: rgba(16, 185, 129, 0.4);
 }
 
-.metric-icon-box {
+.metric-icon, .metric-icon-box {
   width: 44px;
   height: 44px;
   border-radius: 10px;
@@ -420,6 +427,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.metric-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.1;
+}
+
+.metric-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--cecar-text-muted);
 }
 
 .metric-info h4 {
@@ -503,38 +523,68 @@
 }
 
 /* 6 Píldoras de Contador (Imagen 3) */
-.cecar-counter-grid {
+.cecar-counter-grid, .cecar-status-counters {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 14px;
   margin-bottom: 28px;
 }
 
-.cecar-counter-pill {
+@media (max-width: 1200px) {
+  .cecar-counter-grid, .cecar-status-counters {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .cecar-counter-grid, .cecar-status-counters {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.cecar-counter-pill, .cecar-counter-card {
   background: var(--cecar-card-bg);
   border: 1px solid var(--cecar-border);
   border-radius: 12px;
-  padding: 14px 16px;
+  padding: 16px 18px;
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s ease, border-color 0.15s ease;
 }
 
-.counter-num {
-  font-size: 1.5rem;
+.cecar-counter-pill:hover, .cecar-counter-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.counter-num, .cecar-counter-card .count {
+  font-size: 1.6rem;
   font-weight: 800;
   color: #ffffff;
+  line-height: 1.1;
 }
 
 .counter-num.green { color: #10b981; }
 .counter-num.amber { color: #f59e0b; }
 .counter-num.red { color: #ef4444; }
 
-.counter-label {
+.counter-label, .cecar-counter-card .label {
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--cecar-text-muted);
   line-height: 1.25;
+}
+
+/* Contenedor de Tabla */
+.cecar-table-card {
+  background: var(--cecar-card-bg);
+  border: 1px solid var(--cecar-border);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  margin-top: 20px;
 }
 
 /* Barra de Filtros Avanzada */
@@ -746,6 +796,140 @@
   cursor: pointer;
   font-size: 0.75rem;
   font-weight: 700;
+}
+
+/* Acordeón y Categorías del Drawer CECAR (Imágenes 4 y 5) */
+.cecar-category-card {
+  margin-bottom: 12px;
+  border: 1px solid var(--cecar-border);
+  border-radius: 12px;
+  background: var(--cecar-card-bg);
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.category-header {
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  background: #0b1a12;
+  transition: background 0.15s ease;
+  user-select: none;
+}
+
+.category-header:hover {
+  background: #0e2319;
+}
+
+.category-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #f8fafc;
+}
+
+.badge-count {
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.category-body {
+  padding: 14px 18px;
+  background: #091710;
+  border-top: 1px solid var(--cecar-border);
+}
+
+.cecar-doc-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.cecar-doc-item:last-child {
+  border-bottom: none;
+}
+
+.doc-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-width: 70%;
+}
+
+.doc-name {
+  color: #e2e8f0;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.doc-code {
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.doc-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Badges de Estado CECAR */
+.badge-aprobado {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.badge-en-proceso, .badge-pendiente {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.badge-observado {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.badge-rechazado {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.badge-firmado {
+  background: rgba(147, 51, 234, 0.2);
+  color: #c084fc;
+  border: 1px solid rgba(147, 51, 234, 0.3);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.8rem;
 }
 
 /* Modales CECAR (Tutorial y Login) */

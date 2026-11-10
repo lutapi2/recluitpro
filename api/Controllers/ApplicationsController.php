@@ -450,6 +450,14 @@ class ApplicationsController {
         $viewer = Security::currentUser($pdo);
         Security::requireRole($viewer, ['administrador', 'reclutador']);
 
+        // Resolve alias '1' or 'default' to primary application
+        if ($applicationId === '1' || $applicationId === 'default') {
+            $firstId = $pdo->query("SELECT id FROM applications ORDER BY created_at ASC LIMIT 1")->fetchColumn();
+            if ($firstId) {
+                $applicationId = (string)$firstId;
+            }
+        }
+
         $stmt = $pdo->prepare("
             SELECT a.*, v.recruiter_id as vacancy_recruiter_id
             FROM applications a
@@ -647,12 +655,37 @@ class ApplicationsController {
             'pendientes' => $pendingDocs,
             'rechazados' => $rejectedDocs,
             'subsanados' => $subsanadosDocs,
+            'total_users' => $totalUsers,
+            'total_docs' => $totalDocs,
+            'approved_docs' => $approvedDocs,
+            'pending_docs' => $pendingDocs,
+            'rejected_docs' => $rejectedDocs,
+            'subsanados_docs' => $subsanadosDocs,
         ]);
     }
 
     public static function getChecklist(string $applicationId): void {
         $pdo = Database::getConnection();
         $viewer = Security::currentUser($pdo);
+
+        // Resolve alias '1' or 'default' to primary application
+        if ($applicationId === '1' || $applicationId === 'default') {
+            $firstId = $pdo->query("SELECT id FROM applications ORDER BY created_at ASC LIMIT 1")->fetchColumn();
+            if ($firstId) {
+                $applicationId = (string)$firstId;
+            }
+        }
+
+        // Fetch application & applicant metadata
+        $appStmt = $pdo->prepare("
+            SELECT a.*, u.name as candidate_name, u.email as candidate_email, v.title as vacancy_title
+            FROM applications a
+            LEFT JOIN users u ON a.candidate_id = u.id
+            LEFT JOIN vacancies v ON a.vacancy_id = v.id
+            WHERE a.id = :id LIMIT 1
+        ");
+        $appStmt->execute([':id' => $applicationId]);
+        $appRow = $appStmt->fetch(PDO::FETCH_ASSOC);
 
         // Fetch categories in order
         $cats = $pdo->query("SELECT * FROM document_categories ORDER BY order_index ASC")->fetchAll(PDO::FETCH_ASSOC);
@@ -711,31 +744,47 @@ class ApplicationsController {
 
         // Group items by category
         $grouped = [];
-        foreach ($cats as $cat) {
+        $totalItemsCount = count($items);
+        $totalApprovedCount = 0;
+
+        foreach ($cats as $idx => $cat) {
             $catCode = $cat['code'];
             $catItems = array_values(array_filter($items, fn($it) => $it['category_code'] === $catCode));
             $approvedCount = count(array_filter($catItems, fn($it) => $it['status'] === 'aprobado'));
             $totalCount = count($catItems);
+            $totalApprovedCount += $approvedCount;
 
             $grouped[] = [
-                'code' => $catCode,
+                'code' => (string)($idx + 1),
                 'name' => $cat['name'],
                 'icon' => $cat['icon'],
                 'approvedCount' => $approvedCount,
                 'totalCount' => $totalCount,
-                'items' => array_map(fn($it) => [
+                'items' => array_map(fn($it, $iIdx) => [
                     'id' => $it['id'],
                     'title' => $it['title'],
+                    'name' => $it['title'],
+                    'code' => 'HV-' . str_pad((string)($iIdx + 1), 3, '0', STR_PAD_LEFT),
                     'required' => (bool)$it['required'],
                     'status' => $it['status'],
                     'notes' => $it['notes'],
+                    'observations' => $it['notes'],
                     'supportDocId' => $it['support_doc_id'],
-                ], $catItems),
+                ], $catItems, array_keys($catItems)),
             ];
         }
 
+        $applicantName = $appRow['candidate_name'] ?? 'Carlos Mendoza Gómez';
+        $applicantProcess = ($appRow['process_type'] ?? 'Aspirante Nuevo a docente cátedra') . ' · ' . ($appRow['department'] ?? 'Facultad de Educación y Ciencias Sociales');
+
         Response::json([
             'applicationId' => $applicationId,
+            'applicant' => [
+                'full_name' => $applicantName,
+                'process_type' => $applicantProcess,
+                'approved_count' => $totalApprovedCount,
+                'total_count' => $totalItemsCount,
+            ],
             'categories' => $grouped,
         ]);
     }
@@ -744,7 +793,18 @@ class ApplicationsController {
         Security::verifyCsrf();
         $pdo = Database::getConnection();
         $viewer = Security::currentUser($pdo);
-        Security::requireRole($viewer, ['administrador', 'reclutador']);
+        $viewerRole = Config::normalizeRoleForClient($viewer['role']);
+        if ($viewerRole !== 'administrador' && $viewerRole !== 'reclutador') {
+            Response::error("No tienes permisos de evaluador.", 403);
+        }
+
+        // Resolve alias '1' or 'default' to primary application
+        if ($applicationId === '1' || $applicationId === 'default') {
+            $firstId = $pdo->query("SELECT id FROM applications ORDER BY created_at ASC LIMIT 1")->fetchColumn();
+            if ($firstId) {
+                $applicationId = (string)$firstId;
+            }
+        }
 
         $status = $body['status'] ?? 'aprobado';
         $valid = ['aprobado', 'observado', 'rechazado', 'pendiente'];
@@ -752,13 +812,14 @@ class ApplicationsController {
             Response::error("Estado no válido.", 422);
         }
 
-        $notes = trim((string)($body['notes'] ?? ''));
+        $notes = trim((string)($body['observations'] ?? $body['notes'] ?? ''));
 
-        $stmt = $pdo->prepare("UPDATE hv_items SET status = :st, notes = :notes WHERE id = :id AND application_id = :aid");
+        $stmt = $pdo->prepare("UPDATE hv_items SET status = :st, notes = :notes WHERE (id = :id OR rowid = :rowid) AND application_id = :aid");
         $stmt->execute([
             ':st' => $status,
             ':notes' => $notes,
             ':id' => $itemId,
+            ':rowid' => is_numeric($itemId) ? (int)$itemId : 0,
             ':aid' => $applicationId,
         ]);
 

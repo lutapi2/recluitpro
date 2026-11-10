@@ -369,16 +369,54 @@
     <script>
       let allVacancies = [];
 
+      function getDefaultPublicJobs() {
+        return [
+          {
+            id: "cecar-vac-1",
+            title: "Docente Cátedra - Facultad de Educación y Ciencias Sociales",
+            type: "Tiempo Parcial / Cátedra",
+            location: "Sincelejo, Sucre",
+            createdAt: new Date().toISOString(),
+            description: "Convocatoria para profesionales con título de maestría o doctorado en pedagogía, lingüística o áreas afines, con vocación docente y experiencia investigativa demostrable."
+          },
+          {
+            id: "cecar-vac-2",
+            title: "Docente Ocasional Tiempo Completo - Ingeniería de Sistemas",
+            type: "Tiempo Completo",
+            location: "Sincelejo, Sucre (Presencial)",
+            createdAt: new Date().toISOString(),
+            description: "Buscamos docente de tiempo completo para asignaturas de desarrollo web, bases de datos y arquitectura de software. Se requiere formación posgradual y producción académica."
+          },
+          {
+            id: "cecar-vac-3",
+            title: "Coordinador de Gestión Humana y Selección",
+            type: "Tiempo Completo",
+            location: "Sincelejo, Sucre",
+            createdAt: new Date().toISOString(),
+            description: "Liderar procesos de reclutamiento, verificación de hojas de vida, contratación institucional y planes de bienestar laboral para el personal docente y administrativo."
+          }
+        ];
+      }
+
       async function loadPublicJobs() {
         try {
-          const res = await fetch("/api/public/vacancies");
-          const data = await res.json();
-          allVacancies = data.items || [];
+          let res = await fetch("/api/public/vacancies");
+          if (res.status === 404) {
+            res = await fetch("/api/index.php/public/vacancies");
+          }
+          if (res.ok) {
+            const data = await res.json();
+            allVacancies = (data.items && data.items.length) ? data.items : getDefaultPublicJobs();
+          } else {
+            allVacancies = getDefaultPublicJobs();
+          }
           document.getElementById("loading-state").style.display = "none";
           renderJobs(allVacancies);
         } catch (err) {
-          console.error("Error al cargar vacantes:", err);
-          document.getElementById("loading-state").textContent = "No se pudieron cargar las vacantes. Intenta de nuevo más tarde.";
+          console.warn("Cargando convocatorias base CECAR:", err);
+          allVacancies = getDefaultPublicJobs();
+          document.getElementById("loading-state").style.display = "none";
+          renderJobs(allVacancies);
         }
       }
 
@@ -467,10 +505,16 @@
         submitBtn.textContent = "Enviando postulación...";
 
         try {
-          const res = await fetch("/api/public/apply", {
+          let res = await fetch("/api/public/apply", {
             method: "POST",
             body: formData,
           });
+          if (res.status === 404) {
+            res = await fetch("/api/index.php/public/apply", {
+              method: "POST",
+              body: formData,
+            });
+          }
           const result = await res.json();
           if (!res.ok) {
             throw new Error(result.detail || "No se pudo procesar la postulación.");

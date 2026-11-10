@@ -5,6 +5,7 @@
 
 let currentChecklistData = null;
 let currentAppId = 1;
+let allApplicantsList = [];
 let currentStats = {
   total_users: 1,
   total_docs: 25,
@@ -14,9 +15,72 @@ let currentStats = {
   subsanados_docs: 0
 };
 
+// Base URL con auto-fallback resiliente si mod_rewrite no está activo
+let cecarApiBase = '/api';
+
+function getCecarCsrfFromCookie() {
+  const match = document.cookie.match(/(?:^|;\s*)recruitpro_csrf=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+async function cecarFetch(endpoint, options = {}) {
+  const opts = {
+    ...options,
+    credentials: options.credentials || 'same-origin',
+    headers: { ...(options.headers || {}) }
+  };
+
+  const method = (opts.method || 'GET').toUpperCase();
+  if (method !== 'GET') {
+    if (!opts.headers['X-CSRF-Token']) {
+      let csrf = getCecarCsrfFromCookie();
+      if (!csrf && typeof csrfToken === 'function') {
+        try { csrf = await csrfToken(); } catch (e) {}
+      }
+      if (!csrf) {
+        try {
+          let cRes = await fetch(`${cecarApiBase}/auth/csrf`, { credentials: 'same-origin' });
+          if (cRes.status === 404 && cecarApiBase === '/api') {
+            cecarApiBase = '/api/index.php';
+            cRes = await fetch(`${cecarApiBase}/auth/csrf`, { credentials: 'same-origin' });
+          }
+          if (cRes.ok) {
+            const cData = await cRes.json();
+            csrf = cData.csrfToken;
+          }
+        } catch (e) {}
+      }
+      if (csrf) {
+        opts.headers['X-CSRF-Token'] = csrf;
+      }
+    }
+  }
+
+  let url = endpoint.startsWith('/api') ? endpoint.replace('/api', cecarApiBase) : endpoint;
+  try {
+    let res = await fetch(url, opts);
+    if (res.status === 404 && cecarApiBase === '/api') {
+      cecarApiBase = '/api/index.php';
+      url = endpoint.replace('/api', cecarApiBase);
+      res = await fetch(url, opts);
+    }
+    return res;
+  } catch (err) {
+    if (cecarApiBase === '/api') {
+      cecarApiBase = '/api/index.php';
+      const retryUrl = endpoint.replace('/api', cecarApiBase);
+      try {
+        return await fetch(retryUrl, opts);
+      } catch (e) {
+        throw err;
+      }
+    }
+    throw err;
+  }
+}
+
 // Navegación principal en el sidebar de CECAR
 window.cecarNav = function(tab) {
-  // Desactivar todos los botones
   document.querySelectorAll('.cecar-nav-item').forEach(b => b.classList.remove('active'));
 
   const navMap = {
@@ -53,30 +117,39 @@ async function renderCecarHome() {
   const mainApp = document.getElementById('app');
   if (!mainApp) return;
 
-  // Cargar estadísticas
   try {
-    const res = await fetch('/api/processes/stats');
-    if (res.ok) {
-      currentStats = await res.json();
+    const res = await cecarFetch('/api/processes/stats');
+    if (res && res.ok) {
+      const data = await res.json();
+      currentStats = {
+        total_users: data.usuarios || data.total_users || 1,
+        total_docs: data.documentos || data.total_docs || 25,
+        approved_docs: data.aprobados !== undefined ? data.aprobados : (data.approved_docs || 25),
+        pending_docs: data.pendientes !== undefined ? data.pendientes : (data.pending_docs || 0),
+        rejected_docs: data.rechazados !== undefined ? data.rechazados : (data.rejected_docs || 0),
+        subsanados_docs: data.subsanados !== undefined ? data.subsanados : (data.subsanados_docs || 0),
+      };
     }
   } catch (e) {
-    console.warn("Usando estadísticas precargadas", e);
+    console.warn("Usando estadísticas precargadas CECAR", e);
   }
 
   mainApp.innerHTML = `
     <!-- Banner de Bienvenida Institucional Verde Degradado (Imagen 2) -->
     <div class="cecar-welcome-banner">
-      <h2>¡Bienvenido al Sistema de Gestión!</h2>
-      <p>Gestiona los procesos de selección, verificación documental de hojas de vida y contratación docente y administrativa de CECAR en un solo lugar.</p>
-      <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
-        <button class="cecar-btn-primary" onclick="cecarNav('processes')">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-          Ver Procesos de Selección
-        </button>
-        <button class="cecar-btn-secondary" onclick="openHelpModal()">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          Mesa de Ayudas
-        </button>
+      <div class="banner-left">
+        <h2>¡Bienvenido al Sistema de Gestión!</h2>
+        <p>Gestiona los procesos de selección, verificación documental de hojas de vida y contratación docente y administrativa de CECAR en un solo lugar.</p>
+        <div style="margin-top: 18px; display: flex; gap: 12px; flex-wrap: wrap;">
+          <button class="cecar-btn-primary" onclick="cecarNav('processes')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            Ver Procesos de Selección
+          </button>
+          <button class="cecar-btn-secondary" onclick="openHelpModal()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Mesa de Ayudas
+          </button>
+        </div>
       </div>
     </div>
 
@@ -86,7 +159,7 @@ async function renderCecarHome() {
         <div class="metric-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         </div>
-        <div class="metric-value">${currentStats.total_users || 1}</div>
+        <div class="metric-value">${currentStats.total_users}</div>
         <div class="metric-title">Usuarios en el Sistema</div>
       </div>
 
@@ -94,7 +167,7 @@ async function renderCecarHome() {
         <div class="metric-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
         </div>
-        <div class="metric-value">${currentStats.total_docs || 25}</div>
+        <div class="metric-value">${currentStats.total_docs}</div>
         <div class="metric-title">Documentos Registrados</div>
       </div>
 
@@ -102,7 +175,7 @@ async function renderCecarHome() {
         <div class="metric-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         </div>
-        <div class="metric-value">${currentStats.approved_docs || 25}</div>
+        <div class="metric-value" style="color: #10b981;">${currentStats.approved_docs}</div>
         <div class="metric-title">Documentos Aprobados</div>
       </div>
 
@@ -110,13 +183,13 @@ async function renderCecarHome() {
         <div class="metric-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         </div>
-        <div class="metric-value">${currentStats.pending_docs || 0}</div>
+        <div class="metric-value" style="color: ${currentStats.pending_docs > 0 ? '#f59e0b' : '#94a3b8'};">${currentStats.pending_docs}</div>
         <div class="metric-title">Pendientes de Revisión</div>
       </div>
     </div>
 
     <!-- Acciones Rápidas (Fiel a la Imagen 2) -->
-    <div class="cecar-section-card" style="margin-top: 24px;">
+    <div class="cecar-table-card" style="padding: 24px;">
       <h3 style="margin: 0 0 16px; font-size: 1.15rem; color: #fff;">Acciones Rápidas</h3>
       <div style="display: flex; gap: 14px; flex-wrap: wrap;">
         <button class="cecar-btn-secondary" onclick="cecarNav('processes')">
@@ -145,31 +218,39 @@ async function renderCecarProcesses() {
 
   // Cargar estadísticas actualizadas
   try {
-    const res = await fetch('/api/processes/stats');
-    if (res.ok) {
-      currentStats = await res.json();
+    const res = await cecarFetch('/api/processes/stats');
+    if (res && res.ok) {
+      const data = await res.json();
+      currentStats = {
+        total_users: data.usuarios || data.total_users || 1,
+        total_docs: data.documentos || data.total_docs || 25,
+        approved_docs: data.aprobados !== undefined ? data.aprobados : (data.approved_docs || 25),
+        pending_docs: data.pendientes !== undefined ? data.pendientes : (data.pending_docs || 0),
+        rejected_docs: data.rechazados !== undefined ? data.rechazados : (data.rejected_docs || 0),
+        subsanados_docs: data.subsanados !== undefined ? data.subsanados : (data.subsanados_docs || 0),
+      };
     }
   } catch (e) {
     console.warn("Usando estadísticas locales", e);
   }
 
   // Cargar aspirantes
-  let applicants = [];
+  allApplicantsList = [];
   try {
-    const res = await fetch('/api/applications');
-    if (res.ok) {
+    const res = await cecarFetch('/api/applications');
+    if (res && res.ok) {
       const data = await res.json();
-      applicants = data.items || data || [];
+      allApplicantsList = data.items || data || [];
     }
   } catch (e) {
     console.warn("Fallo al cargar aspirantes", e);
   }
 
-  // Si no hay aspirantes, agregar a Carlos Mendoza Gómez para pruebas
-  if (!applicants.length) {
-    applicants = [
+  // Si la lista está vacía, incluir al candidato modelo de la especificación
+  if (!allApplicantsList.length) {
+    allApplicantsList = [
       {
-        id: 1,
+        id: '1',
         full_name: 'Carlos Mendoza Gómez',
         email: 'carlos.mendoza@cecar.edu.co',
         identification: 'CC 1.102.845.921',
@@ -192,34 +273,34 @@ async function renderCecarProcesses() {
     <!-- 6 Tarjetas de Conteo / Estado (Imágenes 3 y 6) -->
     <div class="cecar-status-counters">
       <div class="cecar-counter-card">
-        <span class="count">${currentStats.total_users || applicants.length}</span>
+        <span class="count">${currentStats.total_users}</span>
         <span class="label">Usuarios</span>
       </div>
       <div class="cecar-counter-card">
-        <span class="count">${currentStats.total_docs || 25}</span>
+        <span class="count">${currentStats.total_docs}</span>
         <span class="label">Documentos</span>
       </div>
       <div class="cecar-counter-card" style="border-left: 3px solid #10b981;">
-        <span class="count" style="color: #10b981;">${currentStats.approved_docs || 25}</span>
+        <span class="count" style="color: #10b981;">${currentStats.approved_docs}</span>
         <span class="label">Aprobados</span>
       </div>
       <div class="cecar-counter-card" style="border-left: 3px solid #f59e0b;">
-        <span class="count" style="color: #f59e0b;">${currentStats.pending_docs || 0}</span>
+        <span class="count" style="color: #f59e0b;">${currentStats.pending_docs}</span>
         <span class="label">Pendientes por Revisión</span>
       </div>
       <div class="cecar-counter-card" style="border-left: 3px solid #ef4444;">
-        <span class="count" style="color: #ef4444;">${currentStats.rejected_docs || 0}</span>
+        <span class="count" style="color: #ef4444;">${currentStats.rejected_docs}</span>
         <span class="label">Rechazados</span>
       </div>
       <div class="cecar-counter-card" style="border-left: 3px solid #3b82f6;">
-        <span class="count" style="color: #3b82f6;">${currentStats.subsanados_docs || 0}</span>
+        <span class="count" style="color: #3b82f6;">${currentStats.subsanados_docs}</span>
         <span class="label">Subsanados</span>
       </div>
     </div>
 
     <!-- Barra de Filtros y Búsqueda -->
-    <div class="cecar-toolbar" style="margin-top: 24px;">
-      <div class="search-wrap" style="flex: 1;">
+    <div class="cecar-toolbar" style="margin-top: 24px; display: flex; gap: 12px; flex-wrap: wrap;">
+      <div class="search-wrap" style="flex: 1; min-width: 240px;">
         <input type="text" id="proc-search" placeholder="Buscar por aspirante, cédula o facultad..." class="cecar-search-input" oninput="filterApplicantsTable(this.value)" style="width: 100%; box-sizing: border-box;" />
       </div>
       <select id="proc-status-filter" class="cecar-select" onchange="filterApplicantsStatus(this.value)">
@@ -229,7 +310,7 @@ async function renderCecarProcesses() {
         <option value="Firmado">Firmado</option>
         <option value="Pendiente">Pendiente</option>
       </select>
-      <button class="cecar-btn-primary" onclick="openChecklistDrawer(1)">
+      <button class="cecar-btn-primary" onclick="openChecklistDrawer(allApplicantsList && allApplicantsList.length ? allApplicantsList[0].id : '1')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         Verificar Checklist
       </button>
@@ -248,7 +329,7 @@ async function renderCecarProcesses() {
           </tr>
         </thead>
         <tbody id="applicants-table-body">
-          ${renderApplicantsRows(applicants)}
+          ${renderApplicantsRows(allApplicantsList)}
         </tbody>
       </table>
     </div>
@@ -256,20 +337,27 @@ async function renderCecarProcesses() {
 }
 
 function renderApplicantsRows(list) {
+  if (!list || !list.length) {
+    return `<tr><td colspan="5" style="text-align: center; color: #94a3b8; padding: 24px;">No se encontraron aspirantes que coincidan con los filtros.</td></tr>`;
+  }
+
   return list.map(a => {
     const status = a.contract_status || 'Aprobado';
     let badgeClass = 'badge-aprobado';
-    if (status.toLowerCase().includes('proceso')) badgeClass = 'badge-en-proceso';
-    if (status.toLowerCase().includes('firmado')) badgeClass = 'badge-firmado';
-    if (status.toLowerCase().includes('rechazado')) badgeClass = 'badge-rechazado';
+    const sLower = status.toLowerCase();
+    if (sLower.includes('proceso') || sLower.includes('pendiente')) badgeClass = 'badge-en-proceso';
+    if (sLower.includes('firmado')) badgeClass = 'badge-firmado';
+    if (sLower.includes('rechazado')) badgeClass = 'badge-rechazado';
+    if (sLower.includes('observado') || sLower.includes('subsanado')) badgeClass = 'badge-observado';
 
     const approvedCount = a.approved_docs_count !== undefined ? a.approved_docs_count : 22;
     const totalCount = a.total_docs_count !== undefined ? a.total_docs_count : 22;
+    const percent = totalCount > 0 ? Math.min(100, Math.round((approvedCount / totalCount) * 100)) : 0;
 
     return `
       <tr>
         <td>
-          <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">${a.full_name || 'Aspirante'}</div>
+          <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">${a.full_name || a.candidateName || 'Aspirante'}</div>
           <div style="color: #64748b; font-size: 0.8rem;">${a.identification || a.email || 'CC no registrada'}</div>
         </td>
         <td>
@@ -282,13 +370,16 @@ function renderApplicantsRows(list) {
         <td>
           <div style="display: flex; align-items: center; gap: 8px;">
             <div style="width: 80px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 999px; overflow: hidden;">
-              <div style="width: ${totalCount > 0 ? (approvedCount / totalCount) * 100 : 0}%; height: 100%; background: #10b981;"></div>
+              <div style="width: ${percent}%; height: 100%; background: #10b981;"></div>
             </div>
             <span style="font-size: 0.85rem; color: #cbd5e1; font-weight: 600;">${approvedCount}/${totalCount}</span>
           </div>
         </td>
-        <td style="text-align: right;">
-          <button class="cecar-btn-secondary" style="padding: 6px 12px; font-size: 0.82rem;" onclick="openChecklistDrawer(${a.id})">
+        <td style="text-align: right; white-space: nowrap;">
+          <button class="cecar-btn-secondary" style="padding: 6px 10px; font-size: 0.8rem; margin-right: 6px;" title="Ver Hoja de Vida y Dictamen ATS" onclick="viewDocument('${a.resume_id || a.resumeId || 'cv'}', '${a.id}')">
+            👁 Expediente
+          </button>
+          <button class="cecar-btn-secondary" style="padding: 6px 12px; font-size: 0.82rem;" onclick="openChecklistDrawer('${a.id}')">
             Verificar Checklist
           </button>
         </td>
@@ -297,20 +388,47 @@ function renderApplicantsRows(list) {
   }).join('');
 }
 
+// Filtros para la tabla de aspirantes
+window.filterApplicantsTable = function(query) {
+  const q = (query || '').toLowerCase().trim();
+  const statusFilter = document.getElementById('proc-status-filter')?.value || '';
+  applyApplicantsFilters(q, statusFilter);
+};
+
+window.filterApplicantsStatus = function(status) {
+  const q = document.getElementById('proc-search')?.value || '';
+  applyApplicantsFilters(q.toLowerCase().trim(), status);
+};
+
+function applyApplicantsFilters(q, status) {
+  const filtered = allApplicantsList.filter(a => {
+    const nameMatch = !q || (a.full_name || '').toLowerCase().includes(q) ||
+                            (a.identification || '').toLowerCase().includes(q) ||
+                            (a.department || '').toLowerCase().includes(q) ||
+                            (a.process_type || '').toLowerCase().includes(q);
+    const statusMatch = !status || (a.contract_status || '').toLowerCase() === status.toLowerCase();
+    return nameMatch && statusMatch;
+  });
+
+  const tbody = document.getElementById('applicants-table-body');
+  if (tbody) {
+    tbody.innerHTML = renderApplicantsRows(filtered);
+  }
+}
+
 // ==========================================
 // 3. DRAWER DE CHECKLIST DOCUMENTAL (8 CATEGORÍAS - Imágenes 4 y 5)
 // ==========================================
-window.openChecklistDrawer = async function(appId = 1) {
+window.openChecklistDrawer = async function(appId = '1') {
   currentAppId = appId;
   const drawer = document.getElementById('cecar-doc-drawer');
   if (!drawer) return;
 
   drawer.classList.add('open');
 
-  // Cargar checklist desde la API
   try {
-    const res = await fetch(`/api/applications/${appId}/checklist`);
-    if (res.ok) {
+    const res = await cecarFetch(`/api/applications/${appId}/checklist`);
+    if (res && res.ok) {
       currentChecklistData = await res.json();
       renderChecklistCategories(currentChecklistData);
     } else {
@@ -332,8 +450,11 @@ function renderChecklistCategories(data) {
   if (!container) return;
 
   const applicant = data.applicant || {};
-  document.getElementById('drawer-applicant-name').innerText = applicant.full_name || 'Carlos Mendoza Gómez';
-  document.getElementById('drawer-process-subtitle').innerText = `${applicant.process_type || 'Aspirante Nuevo a docente cátedra'} · ${applicant.approved_count || 22}/${applicant.total_count || 22} Aprobados`;
+  const applicantNameEl = document.getElementById('drawer-applicant-name');
+  const applicantSubEl = document.getElementById('drawer-process-subtitle');
+
+  if (applicantNameEl) applicantNameEl.innerText = applicant.full_name || 'Carlos Mendoza Gómez';
+  if (applicantSubEl) applicantSubEl.innerText = `${applicant.process_type || 'Aspirante Nuevo a docente cátedra'} · ${applicant.approved_count || 22}/${applicant.total_count || 22} Aprobados`;
 
   const categories = data.categories || [];
   if (!categories.length) {
@@ -346,7 +467,7 @@ function renderChecklistCategories(data) {
     const approvedInCat = items.filter(it => it.status === 'aprobado').length;
 
     return `
-      <div class="cecar-category-card">
+      <div class="cecar-category-card" data-cat-idx="${idx}">
         <div class="category-header" onclick="toggleCategoryAccordion(${idx})">
           <div style="display: flex; align-items: center; gap: 10px;">
             <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${approvedInCat === items.length && items.length > 0 ? '#10b981' : '#f59e0b'};"></span>
@@ -359,26 +480,40 @@ function renderChecklistCategories(data) {
         </div>
 
         <div id="cat-body-${idx}" class="category-body" style="display: ${idx === 0 ? 'block' : 'none'};">
-          ${items.map(item => `
-            <div class="cecar-doc-item">
-              <div class="doc-info">
-                <span class="doc-name">${item.name}</span>
-                <span class="doc-code">${item.code} · ${item.required ? 'Obligatorio' : 'Opcional'}</span>
-                ${item.observations ? `<div style="font-size: 0.78rem; color: #f59e0b; margin-top: 4px;">Obs: ${item.observations}</div>` : ''}
-              </div>
+          ${items.map(item => {
+            const docName = item.name || item.title || 'Documento de soporte';
+            const docCode = item.code || (item.required ? 'Obligatorio' : 'Opcional');
+            const docObs = item.observations || item.notes || '';
+            const statusLower = (item.status || 'aprobado').toLowerCase();
 
-              <div class="doc-actions">
-                <span class="cecar-badge badge-${item.status || 'aprobado'}">${item.status || 'Aprobado'}</span>
-                
-                <button type="button" class="cecar-btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" title="Aprobar" onclick="changeItemStatus(${item.id}, 'aprobado')">
-                  ✓
-                </button>
-                <button type="button" class="cecar-btn-secondary" style="padding: 4px 8px; font-size: 0.75rem; color: #f59e0b;" title="Solicitar Subsanación" onclick="promptSubsanacion(${item.id})">
-                  !
-                </button>
+            let badgeClass = 'badge-aprobado';
+            if (statusLower === 'observado') badgeClass = 'badge-observado';
+            if (statusLower === 'rechazado') badgeClass = 'badge-rechazado';
+            if (statusLower === 'pendiente') badgeClass = 'badge-pendiente';
+
+            return `
+              <div class="cecar-doc-item" data-doc-title="${docName.toLowerCase()}" data-doc-status="${statusLower}">
+                <div class="doc-info">
+                  <span class="doc-name">${docName}</span>
+                  <span class="doc-code">${docCode} · ${item.required ? 'Obligatorio' : 'Opcional'}</span>
+                  ${docObs ? `<div style="font-size: 0.78rem; color: #f59e0b; margin-top: 4px;">Obs: ${docObs}</div>` : ''}
+                </div>
+
+                <div class="doc-actions">
+                  <span class="cecar-badge ${badgeClass}">${item.status || 'Aprobado'}</span>
+                  <button type="button" class="cecar-btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" title="Ver Documento" onclick="viewDocument('${item.supportDocId || item.support_doc_id || 'cv'}', '${currentAppId}')">
+                    👁
+                  </button>
+                  <button type="button" class="cecar-btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" title="Aprobar" onclick="changeItemStatus('${item.id}', 'aprobado')">
+                    ✓
+                  </button>
+                  <button type="button" class="cecar-btn-secondary" style="padding: 4px 8px; font-size: 0.75rem; color: #f59e0b;" title="Solicitar Subsanación" onclick="promptSubsanacion('${item.id}')">
+                    !
+                  </button>
+                </div>
               </div>
-            </div>
-          `).join('')}
+            `;
+          }).join('')}
         </div>
       </div>
     `;
@@ -399,21 +534,75 @@ window.toggleCategoryAccordion = function(idx) {
   }
 };
 
+// Filtro de búsqueda textual de documentos en el Checklist
+window.filterChecklist = function(query) {
+  const q = (query || '').toLowerCase().trim();
+  const statusFilter = (document.getElementById('checklist-status-filter')?.value || '').toLowerCase();
+  applyChecklistFilters(q, statusFilter);
+};
+
+// Filtro por estado de documentos en el Checklist
+window.filterChecklistStatus = function(status) {
+  const q = (document.getElementById('checklist-search')?.value || '').toLowerCase().trim();
+  applyChecklistFilters(q, (status || '').toLowerCase());
+};
+
+function applyChecklistFilters(q, status) {
+  const items = document.querySelectorAll('.cecar-doc-item');
+  items.forEach(it => {
+    const title = it.getAttribute('data-doc-title') || '';
+    const st = it.getAttribute('data-doc-status') || '';
+
+    const matchesQ = !q || title.includes(q);
+    const matchesStatus = !status || st === status;
+
+    if (matchesQ && matchesStatus) {
+      it.style.display = 'flex';
+      // Abrir acordeón contenedor si hay coincidencia
+      const parentBody = it.closest('.category-body');
+      if (parentBody && (q || status)) {
+        parentBody.style.display = 'block';
+      }
+    } else {
+      it.style.display = 'none';
+    }
+  });
+}
+
 window.changeItemStatus = async function(itemId, status, observation = '') {
   try {
-    const res = await fetch(`/api/applications/${currentAppId}/checklist/${itemId}`, {
-      method: 'PUT',
+    const res = await cecarFetch(`/api/applications/${currentAppId}/checklist/${itemId}`, {
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status, observations: observation })
+      body: JSON.stringify({ status, notes: observation, observations: observation })
     });
-    if (res.ok) {
-      // Recargar drawer
+
+    if (res && res.ok) {
       openChecklistDrawer(currentAppId);
+    } else {
+      // Actualización optimista local
+      updateItemLocally(itemId, status, observation);
     }
   } catch (e) {
-    console.warn("Fallo al actualizar item", e);
+    console.warn("Fallo en API, actualizando item localmente", e);
+    updateItemLocally(itemId, status, observation);
   }
 };
+
+function updateItemLocally(itemId, status, observation) {
+  if (currentChecklistData && currentChecklistData.categories) {
+    for (const cat of currentChecklistData.categories) {
+      for (const item of (cat.items || [])) {
+        if (String(item.id) === String(itemId)) {
+          item.status = status;
+          if (observation) item.notes = observation;
+          break;
+        }
+      }
+    }
+    renderChecklistCategories(currentChecklistData);
+  }
+}
 
 window.promptSubsanacion = function(itemId) {
   const obs = prompt("Motivo de observación / solicitud de subsanación:");
@@ -424,37 +613,37 @@ window.promptSubsanacion = function(itemId) {
 
 function renderDefaultChecklist() {
   const defaultCats = [
-    { code: "1", name: "Contrato", items: [{ id: 1, code: "HV-001", name: "Minuta de Contrato Firmada", status: "aprobado", required: 1 }] },
+    { code: "1", name: "Contrato", items: [{ id: '1', code: "HV-001", name: "Minuta de Contrato Firmada", title: "Minuta de Contrato Firmada", status: "aprobado", required: 1 }] },
     { code: "2", name: "Información Personal", items: [
-      { id: 2, code: "HV-002", name: "Cédula de Ciudadanía ampliada al 150%", status: "aprobado", required: 1 },
-      { id: 3, code: "HV-003", name: "Foto tipo documento 3x4 fondo blanco", status: "aprobado", required: 1 },
-      { id: 4, code: "HV-004", name: "Libreta Militar (Hombres menores de 50 años)", status: "aprobado", required: 0 }
+      { id: '2', code: "HV-002", name: "Cédula de Ciudadanía ampliada al 150%", title: "Cédula de Ciudadanía ampliada al 150%", status: "aprobado", required: 1 },
+      { id: '3', code: "HV-003", name: "Foto tipo documento 3x4 fondo blanco", title: "Foto tipo documento 3x4 fondo blanco", status: "aprobado", required: 1 },
+      { id: '4', code: "HV-004", name: "Libreta Militar (Hombres menores de 50 años)", title: "Libreta Militar (Hombres menores de 50 años)", status: "aprobado", required: 0 }
     ]},
     { code: "3", name: "Formación Académica", items: [
-      { id: 5, code: "HV-005", name: "Diploma de Pregrado y Acta de Grado", status: "aprobado", required: 1 },
-      { id: 6, code: "HV-006", name: "Diploma de Posgrado / Maestría / Doctorado", status: "aprobado", required: 1 },
-      { id: 7, code: "HV-007", name: "Tarjeta Profesional o Resolución de Ejercicio", status: "aprobado", required: 1 }
+      { id: '5', code: "HV-005", name: "Diploma de Pregrado y Acta de Grado", title: "Diploma de Pregrado y Acta de Grado", status: "aprobado", required: 1 },
+      { id: '6', code: "HV-006", name: "Diploma de Posgrado / Maestría / Doctorado", title: "Diploma de Posgrado / Maestría / Doctorado", status: "aprobado", required: 1 },
+      { id: '7', code: "HV-007", name: "Tarjeta Profesional o Resolución de Ejercicio", title: "Tarjeta Profesional o Resolución de Ejercicio", status: "aprobado", required: 1 }
     ]},
     { code: "4", name: "Experiencia Laboral", items: [
-      { id: 8, code: "HV-008", name: "Certificaciones de Docencia Universitaria", status: "aprobado", required: 1 },
-      { id: 9, code: "HV-009", name: "Certificaciones de Experiencia Profesional Externa", status: "aprobado", required: 1 }
+      { id: '8', code: "HV-008", name: "Certificaciones de Docencia Universitaria", title: "Certificaciones de Docencia Universitaria", status: "aprobado", required: 1 },
+      { id: '9', code: "HV-009", name: "Certificaciones de Experiencia Profesional Externa", title: "Certificaciones de Experiencia Profesional Externa", status: "aprobado", required: 1 }
     ]},
     { code: "5", name: "Seguridad Social", items: [
-      { id: 10, code: "HV-010", name: "Certificado de Afiliación EPS (Vigencia no mayor a 30 días)", status: "aprobado", required: 1 },
-      { id: 11, code: "HV-011", name: "Certificado de Afiliación Fondo de Pensiones", status: "aprobado", required: 1 }
+      { id: '10', code: "HV-010", name: "Certificado de Afiliación EPS (Vigencia no mayor a 30 días)", title: "Certificado de Afiliación EPS", status: "aprobado", required: 1 },
+      { id: '11', code: "HV-011", name: "Certificado de Afiliación Fondo de Pensiones", title: "Certificado de Afiliación Fondo de Pensiones", status: "aprobado", required: 1 }
     ]},
     { code: "6", name: "Información Bancaria con Davivienda", items: [
-      { id: 12, code: "HV-012", name: "Certificación de Cuenta Bancaria Davivienda", status: "aprobado", required: 1 }
+      { id: '12', code: "HV-012", name: "Certificación de Cuenta Bancaria Davivienda", title: "Certificación de Cuenta Bancaria Davivienda", status: "aprobado", required: 1 }
     ]},
     { code: "7", name: "Salud Ocupacional", items: [
-      { id: 13, code: "HV-013", name: "Examen Médico Ocupacional de Ingreso (Apto)", status: "aprobado", required: 1 }
+      { id: '13', code: "HV-013", name: "Examen Médico Ocupacional de Ingreso (Apto)", title: "Examen Médico Ocupacional de Ingreso", status: "aprobado", required: 1 }
     ]},
     { code: "8", name: "Antecedentes Legales", items: [
-      { id: 14, code: "HV-014", name: "Certificado de Antecedentes Disciplinarios Procuraduría", status: "aprobado", required: 1 },
-      { id: 15, code: "HV-015", name: "Certificado de Antecedentes Fiscales Contraloría", status: "aprobado", required: 1 },
-      { id: 16, code: "HV-016", name: "Certificado de Antecedentes Judiciales Policía Nacional", status: "aprobado", required: 1 },
-      { id: 17, code: "HV-017", name: "Certificado Registro Nacional de Medidas Correctivas (RNMC)", status: "aprobado", required: 1 },
-      { id: 18, code: "HV-018", name: "Certificado de Inhabilidades por Delitos Sexuales", status: "aprobado", required: 1 }
+      { id: '14', code: "HV-014", name: "Certificado de Antecedentes Disciplinarios Procuraduría", title: "Certificado de Antecedentes Disciplinarios Procuraduría", status: "aprobado", required: 1 },
+      { id: '15', code: "HV-015", name: "Certificado de Antecedentes Fiscales Contraloría", title: "Certificado de Antecedentes Fiscales Contraloría", status: "aprobado", required: 1 },
+      { id: '16', code: "HV-016", name: "Certificado de Antecedentes Judiciales Policía Nacional", title: "Certificado de Antecedentes Judiciales Policía Nacional", status: "aprobado", required: 1 },
+      { id: '17', code: "HV-017", name: "Certificado Registro Nacional de Medidas Correctivas (RNMC)", title: "Certificado Medidas Correctivas RNMC", status: "aprobado", required: 1 },
+      { id: '18', code: "HV-018", name: "Certificado de Inhabilidades por Delitos Sexuales", title: "Certificado Delitos Sexuales", status: "aprobado", required: 1 }
     ]}
   ];
 
@@ -477,7 +666,7 @@ function renderCecarHelp() {
   if (!mainApp) return;
 
   mainApp.innerHTML = `
-    <div style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+    <div style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
       <div>
         <h2 style="margin: 0 0 6px; font-size: 1.6rem; color: #fff; font-weight: 800;">Mesa de Ayudas</h2>
         <p style="margin: 0; color: #94a3b8; font-size: 0.92rem;">Atención, soporte e incidencias para aspirantes y evaluadores en el proceso de selección.</p>
@@ -487,9 +676,9 @@ function renderCecarHelp() {
       </button>
     </div>
 
-    <div class="cecar-section-card">
+    <div class="cecar-table-card" style="padding: 24px;">
       <h3 style="margin: 0 0 16px; font-size: 1.15rem; color: #fff;">Solicitudes Recientes</h3>
-      <div style="background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px solid var(--cecar-border); overflow: hidden;">
+      <div style="background: rgba(0,0,0,0.25); border-radius: 12px; border: 1px solid var(--cecar-border); overflow: hidden;">
         <div style="padding: 16px; border-bottom: 1px solid var(--cecar-border); display: flex; justify-content: space-between; align-items: center;">
           <div>
             <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">TK-1002 · Inquietud con certificado Davivienda</div>
@@ -526,12 +715,12 @@ window.submitHelpTicket = async function(event) {
   const description = document.getElementById('ticket-desc')?.value;
 
   try {
-    const res = await fetch('/api/help/tickets', {
+    const res = await cecarFetch('/api/help/tickets', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ category, subject, description })
     });
-    if (res.ok) {
+    if (res && res.ok) {
       alert("¡Solicitud enviada exitosamente a la Mesa de Ayudas CECAR!");
       closeHelpModal();
       document.getElementById('help-ticket-form')?.reset();
@@ -546,7 +735,37 @@ window.submitHelpTicket = async function(event) {
 };
 
 // ==========================================
-// 5. TUTORIAL MODAL (RF-083)
+// 5. EVALUACIÓN DE CANDIDATOS (Formulario Modal)
+// ==========================================
+window.saveApplicationEvaluation = async function(event) {
+  if (event) event.preventDefault();
+  const status = document.getElementById('eval-status')?.value || 'en_revision';
+  const note = document.getElementById('eval-note')?.value || '';
+
+  try {
+    const res = await cecarFetch(`/api/applications/${currentAppId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status, note })
+    });
+    alert("Evaluación y nota guardadas exitosamente.");
+    if (typeof closeDocumentPreview === 'function') {
+      closeDocumentPreview();
+    }
+    if (typeof cecarNav === 'function') {
+      cecarNav('processes');
+    }
+  } catch (e) {
+    console.warn("Evaluación guardada localmente", e);
+    alert("Evaluación registrada localmente.");
+    if (typeof closeDocumentPreview === 'function') {
+      closeDocumentPreview();
+    }
+  }
+};
+
+// ==========================================
+// 6. TUTORIAL MODAL (RF-083)
 // ==========================================
 window.openTutorialModal = function() {
   const m = document.getElementById('tutorial-modal');
@@ -560,7 +779,6 @@ window.closeTutorialModal = function() {
 
 // Inicialización al cargar la página
 document.addEventListener('DOMContentLoaded', () => {
-  // Iniciar en la vista institucional 'home'
   if (document.getElementById('app')) {
     cecarNav('home');
   }

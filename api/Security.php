@@ -106,6 +106,11 @@ class Security {
 
     public static function currentUser(PDO $pdo): array {
         $token = $_COOKIE[Config::SESSION_COOKIE] ?? null;
+        if (!$token && !empty($_SERVER['HTTP_AUTHORIZATION'])) {
+            if (preg_match('/Bearer\s+(.*)$/i', $_SERVER['HTTP_AUTHORIZATION'], $matches)) {
+                $token = trim($matches[1]);
+            }
+        }
         if (!$token) {
             Response::error("Inicia sesión para continuar.", 401);
         }
