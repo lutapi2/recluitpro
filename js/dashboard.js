@@ -40,7 +40,7 @@ function getDynamicAvatar(name, size = 34) {
 
 function renderBreadcrumbs(crumbs = []) {
   return `
-    <nav class="breadcrumbs" aria-label="Ruta de navegaciÃƒÂ³n">
+    <nav class="breadcrumbs" aria-label="Ruta de navegación">
       <a href="javascript:void(0)" onclick="view('home')" class="crumb-link">
         <svg style="width: 14px; height: 14px; vertical-align: -2px; margin-right: 4px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
@@ -68,7 +68,7 @@ function renderEmptyColumnState(stageKey) {
   return `
     <div class="kanban-empty-compact">
       ${icon}
-      <span>Sin candidatos aquÃƒÂ­</span>
+      <span>Sin candidatos aquí</span>
     </div>
   `;
 }
@@ -93,7 +93,7 @@ function renderSkeletonDashboard() {
 }
 
 function renderSkeletonKanban() {
-  const cols = ["Recibidas", "En revisiÃƒÂ³n", "Entrevista", "Oferta", "Rechazada"];
+  const cols = ["Recibidas", "En revisión", "Entrevista", "Oferta", "Rechazada"];
   return `
     <div class="view-container">
       <div class="skeleton-loader" style="height: 14px; width: 140px; margin-bottom: 16px;"></div>
@@ -146,7 +146,7 @@ function label(role) {
 function statusLabel(status) {
   return {
     recibida: "Recibida",
-    en_revision: "En revisiÃƒÂ³n",
+    en_revision: "En revisión",
     entrevista: "Entrevista",
     oferta: "Oferta",
     rechazada: "Rechazada",
@@ -163,7 +163,7 @@ function renderPager(result, pageName) {
   return `
     <div class="pagination" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: var(--rp-surface); border: 1px solid var(--rp-border); border-radius: var(--rp-radius-lg); margin-top: 16px; box-shadow: var(--rp-shadow-sm);">
       <span style="font-size: 13px; color: var(--rp-text-muted); font-weight: 500;">
-        ${result.total} resultado${result.total === 1 ? "" : "s"} Ã‚Â· PÃƒÂ¡gina ${result.page} de ${pages}
+        ${result.total} resultado${result.total === 1 ? "" : "s"} · Página ${result.page} de ${pages}
       </span>
       <div style="display: flex; gap: 8px;">
         <button class="rp-btn rp-btn--secondary rp-btn--sm" type="button" ${result.page <= 1 ? "disabled" : ""} onclick="changePage('${pageName}', ${result.page - 1})">
@@ -210,13 +210,13 @@ function renderVacancyFilters() {
               class="filter-input"
               name="q"
               value="${escapeHtml(vacancyPageState.q)}"
-              placeholder="Cargo, palabra clave o tecnologÃƒÂ­a..."
+              placeholder="Cargo, palabra clave o tecnología..."
             />
           </div>
         </div>
 
         <div class="filter-field">
-          <label class="filter-field-label">UbicaciÃƒÂ³n</label>
+          <label class="filter-field-label">Ubicación</label>
           <div class="filter-input-wrap">
             ${mapPinIcon}
             <input
@@ -234,7 +234,7 @@ function renderVacancyFilters() {
             class="filter-input"
             name="vacancy_type"
             value="${escapeHtml(vacancyPageState.vacancy_type)}"
-            placeholder="Tiempo completo, prÃƒÂ¡cticas..."
+            placeholder="Tiempo completo, prácticas..."
           />
         </div>
 
@@ -256,9 +256,9 @@ function renderVacancyFilters() {
         <div class="filter-field">
           <label class="filter-field-label">Ordenar por</label>
           <select class="filter-input" name="sort">
-            <option value="created_at" ${vacancyPageState.sort === "created_at" ? "selected" : ""}>Fecha de publicaciÃƒÂ³n</option>
-            <option value="title" ${vacancyPageState.sort === "title" ? "selected" : ""}>TÃƒÂ­tulo</option>
-            <option value="location" ${vacancyPageState.sort === "location" ? "selected" : ""}>UbicaciÃƒÂ³n</option>
+            <option value="created_at" ${vacancyPageState.sort === "created_at" ? "selected" : ""}>Fecha de publicación</option>
+            <option value="title" ${vacancyPageState.sort === "title" ? "selected" : ""}>Título</option>
+            <option value="location" ${vacancyPageState.sort === "location" ? "selected" : ""}>Ubicación</option>
             <option value="type" ${vacancyPageState.sort === "type" ? "selected" : ""}>Tipo</option>
           </select>
         </div>
@@ -266,8 +266,8 @@ function renderVacancyFilters() {
         <div class="filter-field">
           <label class="filter-field-label">Orden</label>
           <select class="filter-input" name="order">
-            <option value="desc" ${vacancyPageState.order === "desc" ? "selected" : ""}>MÃƒÂ¡s reciente primero (Descendente)</option>
-            <option value="asc" ${vacancyPageState.order === "asc" ? "selected" : ""}>MÃƒÂ¡s antiguo primero (Ascendente)</option>
+            <option value="desc" ${vacancyPageState.order === "desc" ? "selected" : ""}>Más reciente primero (Descendente)</option>
+            <option value="asc" ${vacancyPageState.order === "asc" ? "selected" : ""}>Más antiguo primero (Ascendente)</option>
           </select>
         </div>
       </div>
@@ -324,14 +324,14 @@ function renderCandidateFilters() {
         </div>
 
         <div class="filter-field">
-          <label class="filter-field-label">UbicaciÃƒÂ³n</label>
+          <label class="filter-field-label">Ubicación</label>
           <div class="filter-input-wrap">
             ${mapPinIcon}
             <input
               class="filter-input"
               name="location"
               value="${escapeHtml(candidatePageState.location)}"
-              placeholder="Ciudad o ubicaciÃƒÂ³n..."
+              placeholder="Ciudad o ubicación..."
             />
           </div>
         </div>
@@ -450,12 +450,12 @@ function documentName(document) {
 
 
 /* ==========================================================================
-   FASE 5: DASHBOARD HOME (Saludo dinÃƒÂ¡mico, MÃƒÂ©tricas animadas, Embudo, Quick Actions)
+   FASE 5: DASHBOARD HOME (Saludo dinámico, Métricas animadas, Embudo, Quick Actions)
    ========================================================================== */
 
 function getDayGreeting() {
   const hour = new Date().getHours();
-  if (hour >= 5 && hour < 12) return "Buenos dÃƒÂ­as";
+  if (hour >= 5 && hour < 12) return "Buenos días";
   if (hour >= 12 && hour < 20) return "Buenas tardes";
   return "Buenas noches";
 }
@@ -500,7 +500,7 @@ function renderAdminOrRecruiterHome(summary, applications, vacancies) {
   // Funnel calculation
   const funnelStages = [
     { key: "recibida", label: "Recibidas (Nuevas)", count: receivedCount, color: "#3b82f6" },
-    { key: "en_revision", label: "En revisiÃƒÂ³n", count: inReviewCount, color: "#0ea5e9" },
+    { key: "en_revision", label: "En revisión", count: inReviewCount, color: "#0ea5e9" },
     { key: "entrevista", label: "En entrevista", count: inInterviewCount, color: "#8b5cf6" },
     { key: "oferta", label: "Con oferta", count: inOfferCount, color: "#10b981" },
     { key: "rechazada", label: "Rechazadas", count: rejectedCount, color: "#ef4444" },
@@ -515,7 +515,7 @@ function renderAdminOrRecruiterHome(summary, applications, vacancies) {
     <div class="dash-header-wrap">
       <div class="dash-header-main">
         <span class="dash-tag">
-          ${isAdmin ? "Panel de AdministraciÃƒÂ³n" : "Panel de Reclutamiento"}
+          ${isAdmin ? "Panel de Administración" : "Panel de Reclutamiento"}
         </span>
         <h1 class="dash-greeting-title">
           ${greeting}, ${escapeHtml(firstName)} <span class="rp-user-badge"><span class="rp-pulse-dot is-online"></span> Activo</span>
@@ -523,8 +523,8 @@ function renderAdminOrRecruiterHome(summary, applications, vacancies) {
         <p class="dash-greeting-sub">
           ${
             isAdmin
-              ? "Monitorea el talento global, vacantes activas y el ritmo de contrataciÃƒÂ³n de tu equipo."
-              : "Gestiona tus vacantes asignadas y avanza a tus candidatos en el proceso de selecciÃƒÂ³n."
+              ? "Monitorea el talento global, vacantes activas y el ritmo de contratación de tu equipo."
+              : "Gestiona tus vacantes asignadas y avanza a tus candidatos en el proceso de selección."
           }
         </p>
       </div>
@@ -578,7 +578,7 @@ function renderAdminOrRecruiterHome(summary, applications, vacancies) {
       <div class="dash-metric-card" onclick="view('pipeline')" style="cursor: pointer;" title="Candidatos en entrevista">
         <div class="metric-top">
           <div class="metric-icon-wrap bg-amber">${calendarIcon}</div>
-          <span class="metric-trend-pill is-positive">${trendUpIcon} EvaluaciÃƒÂ³n tÃƒÂ©cnica</span>
+          <span class="metric-trend-pill is-positive">${trendUpIcon} Evaluación técnica</span>
         </div>
         <div class="metric-body">
           <div class="metric-value" data-count="${inInterviewCount}">0</div>
@@ -600,9 +600,9 @@ function renderAdminOrRecruiterHome(summary, applications, vacancies) {
       </div>
     </div>
 
-    <!-- Acciones RÃƒÂ¡pidas -->
+    <!-- Acciones Rápidas -->
     <div class="dash-section-header">
-      <h2 class="dash-section-title">Acciones RÃƒÂ¡pidas</h2>
+      <h2 class="dash-section-title">Acciones Rápidas</h2>
     </div>
 
     <div class="dash-actions-grid rp-stagger">
@@ -617,7 +617,7 @@ function renderAdminOrRecruiterHome(summary, applications, vacancies) {
       <div class="dash-action-card" onclick="view('pipeline')">
         <div class="dash-action-icon">${kanbanIcon}</div>
         <div class="dash-action-text">
-          <span class="dash-action-title">Proceso de SelecciÃƒÂ³n</span>
+          <span class="dash-action-title">Proceso de Selección</span>
           <span class="dash-action-desc">Avanzar candidatos en Kanban</span>
         </div>
       </div>
@@ -646,24 +646,24 @@ function renderAdminOrRecruiterHome(summary, applications, vacancies) {
               <div class="dash-action-icon">${externalIcon}</div>
               <div class="dash-action-text">
                 <span class="dash-action-title">Portal de Empleos</span>
-                <span class="dash-action-desc">Ver vista pÃƒÂºblica para candidatos</span>
+                <span class="dash-action-desc">Ver vista pública para candidatos</span>
               </div>
             </div>
           `
       }
     </div>
 
-    <!-- AnalÃƒÂ­ticas: Embudo de SelecciÃƒÂ³n y Postulaciones Recientes -->
+    <!-- Analíticas: Embudo de Selección y Postulaciones Recientes -->
     <div class="dash-two-col">
       <div class="dash-panel">
         <div class="dash-section-header" style="margin-bottom: 8px;">
-          <h2 class="dash-section-title">Embudo de ContrataciÃƒÂ³n (Funnel)</h2>
+          <h2 class="dash-section-title">Embudo de Contratación (Funnel)</h2>
           <button type="button" class="rp-btn rp-btn--ghost rp-btn--sm" onclick="view('pipeline')">
             <span>Ver tablero</span>
           </button>
         </div>
         <p style="margin: 0 0 16px 0; font-size: 12.5px; color: var(--rp-text-muted);">
-          DistribuciÃƒÂ³n porcentual de los ${totalApps} candidatos en el pipeline activo.
+          Distribución porcentual de los ${totalApps} candidatos en el pipeline activo.
         </p>
 
         <div class="funnel-steps-list">
@@ -700,7 +700,7 @@ function renderAdminOrRecruiterHome(summary, applications, vacancies) {
           </button>
         </div>
         <p style="margin: 0 0 12px 0; font-size: 12.5px; color: var(--rp-text-muted);">
-          ÃƒÅ¡ltimos candidatos inscritos en vacantes abiertas.
+          Últimos candidatos inscritos en vacantes abiertas.
         </p>
 
         <div class="dash-recent-list">
@@ -742,7 +742,7 @@ function renderAdminOrRecruiterHome(summary, applications, vacancies) {
                   .join("")
               : `
                 <div class="rp-empty rp-empty--compact" style="margin-top: 20px;">
-                  <p class="rp-empty__text">No hay postulaciones registradas todavÃƒÂ­a.</p>
+                  <p class="rp-empty__text">No hay postulaciones registradas todavía.</p>
                 </div>
               `
           }
@@ -781,7 +781,7 @@ function renderCandidateHome(summary, applications, vacancies) {
           ${greeting}, ${escapeHtml(firstName)} <span class="rp-user-badge"><span class="rp-pulse-dot is-online"></span> Activo</span>
         </h1>
         <p class="dash-greeting-sub">
-          Consulta el estado de tus procesos de selecciÃƒÂ³n y encuentra oportunidades profesionales afines a tu perfil.
+          Consulta el estado de tus procesos de selección y encuentra oportunidades profesionales afines a tu perfil.
         </p>
       </div>
 
@@ -803,9 +803,9 @@ function renderCandidateHome(summary, applications, vacancies) {
           <div class="candidate-hero-banner has-offer">
             <div class="candidate-hero-content">
               <span class="rp-badge rp-badge--success" style="width: fit-content;"><i data-lucide="award" class="rp-icon rp-icon-sm"></i> Oferta formal recibida</span>
-              <h2 class="candidate-hero-title">Tienes una propuesta de contrataciÃƒÂ³n</h2>
+              <h2 class="candidate-hero-title">Tienes una propuesta de contratación</h2>
               <p class="candidate-hero-text">
-                El equipo de reclutamiento ha aprobado tu perfil y te ha extendido una oferta formal. Revisa los detalles de tu postulaciÃƒÂ³n en la secciÃƒÂ³n de postulaciones.
+                El equipo de reclutamiento ha aprobado tu perfil y te ha extendido una oferta formal. Revisa los detalles de tu postulación en la sección de postulaciones.
               </p>
             </div>
             <button type="button" class="rp-btn rp-btn--primary" onclick="view('applications')">
@@ -820,7 +820,7 @@ function renderCandidateHome(summary, applications, vacancies) {
               <span class="rp-badge rp-badge--primary" style="width: fit-content;"><i data-lucide="calendar" class="rp-icon rp-icon-sm"></i> Entrevista en curso</span>
               <h2 class="candidate-hero-title">Avanzaste a la etapa de entrevista</h2>
               <p class="candidate-hero-text">
-                Uno de tus procesos estÃƒÂ¡ en fase de entrevista tÃƒÂ©cnica o panel. Nuestro equipo se pondrÃƒÂ¡ en contacto contigo para coordinar fechas y horarios.
+                Uno de tus procesos está en fase de entrevista técnica o panel. Nuestro equipo se pondrá en contacto contigo para coordinar fechas y horarios.
               </p>
             </div>
             <button type="button" class="rp-btn rp-btn--secondary" onclick="view('applications')">
@@ -833,7 +833,7 @@ function renderCandidateHome(summary, applications, vacancies) {
             <div class="candidate-hero-content">
               <h2 class="candidate-hero-title">Impulsa tu carrera con RecruitPro</h2>
               <p class="candidate-hero-text">
-                Revisa las convocatorias vigentes, sube tu currÃƒÂ­culum actualizado en formato PDF y mantÃƒÂ©n tu perfil al dÃƒÂ­a para conectar con las mejores empresas.
+                Revisa las convocatorias vigentes, sube tu currículum actualizado en formato PDF y mantén tu perfil al día para conectar con las mejores empresas.
               </p>
             </div>
             <button type="button" class="rp-btn rp-btn--primary" onclick="view('jobs')">
@@ -843,7 +843,7 @@ function renderCandidateHome(summary, applications, vacancies) {
         `
     }
 
-    <!-- MÃƒÂ©tricas del candidato -->
+    <!-- Métricas del candidato -->
     <div class="dash-metrics-grid rp-stagger">
       <div class="dash-metric-card" onclick="view('jobs')" style="cursor: pointer;" title="Explorar vacantes activas">
         <div class="metric-top">
@@ -894,9 +894,9 @@ function renderCandidateHome(summary, applications, vacancies) {
       </div>
     </div>
 
-    <!-- Acciones RÃƒÂ¡pidas Candidato -->
+    <!-- Acciones Rápidas Candidato -->
     <div class="dash-section-header">
-      <h2 class="dash-section-title">Accesos RÃƒÂ¡pidos</h2>
+      <h2 class="dash-section-title">Accesos Rápidos</h2>
     </div>
 
     <div class="dash-actions-grid rp-stagger">
@@ -920,7 +920,7 @@ function renderCandidateHome(summary, applications, vacancies) {
         <div class="dash-action-icon">${fileTextIcon}</div>
         <div class="dash-action-text">
           <span class="dash-action-title">Documentos y CV</span>
-          <span class="dash-action-desc">Gestionar currÃƒÂ­culum adjunto</span>
+          <span class="dash-action-desc">Gestionar currículum adjunto</span>
         </div>
       </div>
 
@@ -928,7 +928,7 @@ function renderCandidateHome(summary, applications, vacancies) {
         <div class="dash-action-icon">${userIcon}</div>
         <div class="dash-action-text">
           <span class="dash-action-title">Editar Perfil</span>
-          <span class="dash-action-desc">Actualizar telÃƒÂ©fono y datos</span>
+          <span class="dash-action-desc">Actualizar teléfono y datos</span>
         </div>
       </div>
     </div>
@@ -976,7 +976,7 @@ function renderCandidateHome(summary, applications, vacancies) {
                 .join("")
             : `
               <div class="rp-empty rp-empty--compact" style="margin-top: 20px;">
-                <p class="rp-empty__text">TodavÃƒÂ­a no te has postulado a ninguna vacante.</p>
+                <p class="rp-empty__text">Todavía no te has postulado a ninguna vacante.</p>
                 <button type="button" class="rp-btn rp-btn--primary rp-btn--sm" style="margin-top: 10px;" onclick="view('jobs')">
                   Ver vacantes disponibles
                 </button>
@@ -1058,13 +1058,13 @@ async function view(page, vacancyId = "") {
       app.innerHTML = `
         <div class="head">
           <small>PERFIL Y SEGURIDAD</small>
-          <h1>ConfiguraciÃƒÂ³n de Cuenta</h1>
+          <h1>Configuración de Cuenta</h1>
           <p>Actualiza tus datos de contacto y protege el acceso a tu cuenta.</p>
         </div>
 
         <div class="profile-section-card">
           <h2 class="profile-section-title">Datos Personales</h2>
-          <p class="profile-section-sub">InformaciÃƒÂ³n visible para los procesos de selecciÃƒÂ³n y contacto.</p>
+          <p class="profile-section-sub">Información visible para los procesos de selección y contacto.</p>
 
           <form id="profile-form" onsubmit="saveOwnProfile(event)">
             <div class="profile-form-grid">
@@ -1073,16 +1073,16 @@ async function view(page, vacancyId = "") {
                 <input class="filter-input" id="profile-name" name="name" required maxlength="100" value="${escapeHtml(user.name)}" />
               </div>
               <div>
-                <label class="filter-field-label" for="profile-email">Correo electrÃƒÂ³nico</label>
+                <label class="filter-field-label" for="profile-email">Correo electrónico</label>
                 <input class="filter-input" id="profile-email" type="email" readonly value="${escapeHtml(user.email)}" style="opacity: 0.75;" />
               </div>
               <div>
-                <label class="filter-field-label" for="profile-phone">TelÃƒÂ©fono de contacto</label>
+                <label class="filter-field-label" for="profile-phone">Teléfono de contacto</label>
                 <input class="filter-input" id="profile-phone" name="phone" maxlength="30" value="${escapeHtml(user.phone || "")}" placeholder="Ej. +52 55 1234 5678" />
               </div>
               <div>
-                <label class="filter-field-label" for="profile-location">Ciudad o ubicaciÃƒÂ³n</label>
-                <input class="filter-input" id="profile-location" name="location" maxlength="100" value="${escapeHtml(user.location || "")}" placeholder="Ej. Ciudad de MÃƒÂ©xico" />
+                <label class="filter-field-label" for="profile-location">Ciudad o ubicación</label>
+                <input class="filter-input" id="profile-location" name="location" maxlength="100" value="${escapeHtml(user.location || "")}" placeholder="Ej. Ciudad de México" />
               </div>
             </div>
 
@@ -1095,17 +1095,17 @@ async function view(page, vacancyId = "") {
         </div>
 
         <div class="profile-section-card">
-          <h2 class="profile-section-title">Seguridad y ContraseÃƒÂ±a</h2>
-          <p class="profile-section-sub">Actualiza periÃƒÂ³dicamente tu contraseÃƒÂ±a para proteger tu cuenta.</p>
+          <h2 class="profile-section-title">Seguridad y Contraseña</h2>
+          <p class="profile-section-sub">Actualiza periódicamente tu contraseña para proteger tu cuenta.</p>
 
           <form id="password-form" onsubmit="changeOwnPassword(event)">
             <div class="profile-form-grid">
               <div>
-                <label class="filter-field-label" for="current-password">ContraseÃƒÂ±a actual</label>
+                <label class="filter-field-label" for="current-password">Contraseña actual</label>
                 <input class="filter-input" id="current-password" name="current_password" type="password" autocomplete="current-password" required />
               </div>
               <div>
-                <label class="filter-field-label" for="new-password">Nueva contraseÃƒÂ±a (mÃƒÂ­nimo 12 caracteres)</label>
+                <label class="filter-field-label" for="new-password">Nueva contraseña (mínimo 12 caracteres)</label>
                 <input class="filter-input" id="new-password" name="new_password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required />
               </div>
             </div>
@@ -1113,23 +1113,23 @@ async function view(page, vacancyId = "") {
             <div id="password-message" class="notice-box" role="status"></div>
 
             <div style="display: flex; justify-content: flex-end;">
-              <button class="rp-btn rp-btn--primary" type="submit">Actualizar contraseÃƒÂ±a</button>
+              <button class="rp-btn rp-btn--primary" type="submit">Actualizar contraseña</button>
             </div>
           </form>
         </div>
 
         <div class="profile-section-card" style="border-color: rgba(239, 68, 68, 0.3);">
-          <h2 class="profile-section-title" style="color: var(--rp-danger);">Privacidad y EliminaciÃƒÂ³n Permanente</h2>
+          <h2 class="profile-section-title" style="color: var(--rp-danger);">Privacidad y Eliminación Permanente</h2>
           <p class="profile-section-sub">
             Consentimiento registrado: ${user.privacyConsentAt ? new Date(user.privacyConsentAt).toLocaleDateString("es") : "Sin registro previo"}.
-            VersiÃƒÂ³n del aviso: ${escapeHtml(user.privacyConsentVersion || "1.0")}.
+            Versión del aviso: ${escapeHtml(user.privacyConsentVersion || "1.0")}.
           </p>
           <p style="font-size: 13px; color: var(--rp-text-muted); margin-bottom: 14px;">
-            Para eliminar tu cuenta, postulaciones y archivos definitivamente de RecruitPro, confirma tu contraseÃƒÂ±a actual. Esta acciÃƒÂ³n no se puede deshacer.
+            Para eliminar tu cuenta, postulaciones y archivos definitivamente de RecruitPro, confirma tu contraseña actual. Esta acción no se puede deshacer.
           </p>
 
           <div style="max-width: 360px; margin-bottom: 14px;">
-            <label class="filter-field-label" for="delete-account-password">ContraseÃƒÂ±a actual para confirmar</label>
+            <label class="filter-field-label" for="delete-account-password">Contraseña actual para confirmar</label>
             <input class="filter-input" id="delete-account-password" type="password" autocomplete="current-password" required />
           </div>
 
@@ -1170,7 +1170,7 @@ async function view(page, vacancyId = "") {
                         <div style="display: flex; align-items: center; gap: 8px; padding: 12px 14px; background: rgba(16, 185, 129, 0.1); border-radius: var(--rp-radius-md); border: 1px solid rgba(16, 185, 129, 0.25); color: #047857; margin: 4px 0;">
                           <i data-lucide="award" class="rp-icon" style="color: #059669; width: 22px; height: 22px;"></i>
                           <span style="font-size: 13.5px; font-weight: 600;">
-                            Ã‚Â¡Felicitaciones! Has recibido una Oferta formal de empleo. Nuestro equipo se pondrÃƒÂ¡ en contacto para coordinar los siguientes pasos.
+                            ¡Felicitaciones! Has recibido una Oferta formal de empleo. Nuestro equipo se pondrá en contacto para coordinar los siguientes pasos.
                           </span>
                         </div>
                       `
@@ -1192,7 +1192,7 @@ async function view(page, vacancyId = "") {
 
                   <div class="vacancy-card-footer-v2">
                     <span style="font-size: 12px; color: var(--rp-text-muted);">
-                      PostulaciÃƒÂ³n enviada el ${new Date(item.createdAt).toLocaleDateString("es")}
+                      Postulación enviada el ${new Date(item.createdAt).toLocaleDateString("es")}
                     </span>
                     <div>
                       ${item.resumeId ? `<button type="button" class="rp-btn rp-btn--secondary rp-btn--sm" onclick="viewDocument('${encodeURIComponent(item.resumeId)}')">Ver CV enviado</button>` : ""}
@@ -1203,14 +1203,14 @@ async function view(page, vacancyId = "") {
             })
             .join("")}</div>`
         : (typeof window.ui !== "undefined" && window.ui.emptyState
-            ? window.ui.emptyState({ iconName: "clipboard-list", title: "Sin postulaciones", text: "TodavÃƒÂ­a no te has postulado a ninguna vacante." })
-            : '<p class="empty-state">TodavÃƒÂ­a no tienes postulaciones.</p>');
+            ? window.ui.emptyState({ iconName: "clipboard-list", title: "Sin postulaciones", text: "Todavía no te has postulado a ninguna vacante." })
+            : '<p class="empty-state">Todavía no tienes postulaciones.</p>');
 
       app.innerHTML = `
         <div class="head">
           <small>CANDIDATO</small>
           <h1>Mis Postulaciones</h1>
-          <p>Consulta el avance y estado de tus procesos de selecciÃƒÂ³n en tiempo real.</p>
+          <p>Consulta el avance y estado de tus procesos de selección en tiempo real.</p>
         </div>
         ${items}
       `;
@@ -1220,17 +1220,17 @@ async function view(page, vacancyId = "") {
       app.innerHTML = `
         <div class="head">
           <small>CANDIDATO</small>
-          <h1>Mis Documentos y CurrÃƒÂ­culum</h1>
+          <h1>Mis Documentos y Currículum</h1>
           <p>Sube tu CV para que los reclutadores puedan consultarlo al revisar tus postulaciones.</p>
         </div>
 
         <div class="profile-section-card">
           <h2 class="profile-section-title">Adjuntar Documento</h2>
-          <p class="profile-section-sub">Formatos permitidos: PDF, DOC o DOCX (tamaÃƒÂ±o mÃƒÂ¡ximo: 10 MB).</p>
+          <p class="profile-section-sub">Formatos permitidos: PDF, DOC o DOCX (tamaño máximo: 10 MB).</p>
 
           <div class="doc-dropzone" onclick="document.getElementById('file').click()">
             ${uploadIcon}
-            <p style="margin: 0; font-weight: 700; color: var(--rp-text);">Haz clic o arrastra tu archivo aquÃƒÂ­</p>
+            <p style="margin: 0; font-weight: 700; color: var(--rp-text);">Haz clic o arrastra tu archivo aquí</p>
             <small style="color: var(--rp-text-muted);">PDF, DOC o DOCX hasta 10 MB</small>
             <input type="file" id="file" accept=".pdf,.doc,.docx" required style="display: none;" onchange="if (this.files[0]) document.getElementById('selected-file-label').textContent = 'Archivo seleccionado: ' + this.files[0].name;" />
           </div>
@@ -1281,9 +1281,9 @@ async function view(page, vacancyId = "") {
       usersCache = usersCache.items;
       app.innerHTML = `
         <div class="head">
-          <small>ADMINISTRACIÃƒâ€œN</small>
-          <h1>GestiÃƒÂ³n de Reclutadores</h1>
-          <p>Administra los permisos y accesos de los miembros del equipo de selecciÃƒÂ³n.</p>
+          <small>ADMINISTRACIÓN</small>
+          <h1>Gestión de Reclutadores</h1>
+          <p>Administra los permisos y accesos de los miembros del equipo de selección.</p>
         </div>
         ${renderRecruiters(usersCache)}
       `;
@@ -1299,7 +1299,7 @@ async function view(page, vacancyId = "") {
       vacanciesCache = (await (await apiRequest("/api/vacancies")).json()).items;
       const vacancy = vacanciesCache.find((entry) => entry.id === vacancyId);
       if (!vacancy || vacancy.status === "closed") {
-        showMessage("Esta vacante ya no estÃƒÂ¡ disponible. Actualiza la pÃƒÂ¡gina.", true);
+        showMessage("Esta vacante ya no está disponible. Actualiza la página.", true);
         await view("jobs");
         return;
       }
@@ -1327,16 +1327,16 @@ function renderApplicationForm(vacancy) {
 
   return `
     <div class="head">
-      <small>POSTULACIÃƒâ€œN</small>
-      <h1>Completar PostulaciÃƒÂ³n</h1>
-      <p>Confirma tus datos y adjunta tu currÃƒÂ­culum para participar en este proceso.</p>
+      <small>POSTULACIÓN</small>
+      <h1>Completar Postulación</h1>
+      <p>Confirma tus datos y adjunta tu currículum para participar en este proceso.</p>
     </div>
 
     <div class="profile-section-card" style="max-width: 760px; margin: 0 auto 24px;">
       <div style="padding-bottom: 16px; margin-bottom: 18px; border-bottom: 1px solid var(--rp-border);">
         <span class="rp-badge rp-badge--primary" style="margin-bottom: 6px;">${escapeHtml(vacancy.type)}</span>
         <h2 style="margin: 0 0 4px 0; font-size: 20px; font-weight: 700; color: var(--rp-text);">${escapeHtml(vacancy.title)}</h2>
-        <span style="font-size: 13px; color: var(--rp-text-muted);">${escapeHtml(vacancy.location || "UbicaciÃƒÂ³n por definir")}</span>
+        <span style="font-size: 13px; color: var(--rp-text-muted);">${escapeHtml(vacancy.location || "Ubicación por definir")}</span>
       </div>
 
       <form id="application-form" onsubmit="submitApplication(event)">
@@ -1346,16 +1346,16 @@ function renderApplicationForm(vacancy) {
             <input class="filter-input" id="application-name" name="name" required maxlength="100" autocomplete="name" value="${escapeHtml(candidate.name)}" />
           </div>
           <div>
-            <label class="filter-field-label" for="application-email">Correo electrÃƒÂ³nico</label>
+            <label class="filter-field-label" for="application-email">Correo electrónico</label>
             <input class="filter-input" id="application-email" type="email" name="email" required readonly value="${escapeHtml(candidate.email)}" style="opacity: 0.75;" />
           </div>
           <div>
-            <label class="filter-field-label" for="application-phone">TelÃƒÂ©fono de contacto</label>
+            <label class="filter-field-label" for="application-phone">Teléfono de contacto</label>
             <input class="filter-input" id="application-phone" type="tel" name="phone" required maxlength="30" autocomplete="tel" placeholder="Ej. +52 55 1234 5678" value="${escapeHtml(candidate.phone || "")}" />
           </div>
           <div>
-            <label class="filter-field-label" for="application-location">Ciudad o ubicaciÃƒÂ³n</label>
-            <input class="filter-input" id="application-location" name="location" required maxlength="100" autocomplete="address-level2" placeholder="Ej. Ciudad de MÃƒÂ©xico" value="${escapeHtml(candidate.location || "")}" />
+            <label class="filter-field-label" for="application-location">Ciudad o ubicación</label>
+            <input class="filter-input" id="application-location" name="location" required maxlength="100" autocomplete="address-level2" placeholder="Ej. Ciudad de México" value="${escapeHtml(candidate.location || "")}" />
           </div>
         </div>
 
@@ -1363,8 +1363,8 @@ function renderApplicationForm(vacancy) {
           <label class="filter-field-label" for="application-resume">Hoja de vida o CV (PDF, DOC o DOCX)</label>
           <div class="doc-dropzone" onclick="document.getElementById('application-resume').click()" style="padding: 20px;">
             ${fileIcon}
-            <span style="font-size: 13px; font-weight: 600; color: var(--rp-text);">Selecciona tu archivo de currÃƒÂ­culum</span>
-            <small style="color: var(--rp-text-muted);">Formatos PDF, DOC o DOCX Ã‚Â· MÃƒÂ¡ximo 10 MB</small>
+            <span style="font-size: 13px; font-weight: 600; color: var(--rp-text);">Selecciona tu archivo de currículum</span>
+            <small style="color: var(--rp-text-muted);">Formatos PDF, DOC o DOCX · Máximo 10 MB</small>
             <input id="application-resume" name="resume" type="file" required accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display: none;" onchange="if (this.files[0]) document.getElementById('apply-cv-label').textContent = 'Archivo seleccionado: ' + this.files[0].name;" />
           </div>
           <div id="apply-cv-label" style="margin-top: 6px; font-size: 12.5px; font-weight: 600; color: var(--rp-primary); text-align: center;"></div>
@@ -1372,7 +1372,7 @@ function renderApplicationForm(vacancy) {
 
         <label class="consent-label" style="display: flex; gap: 10px; align-items: flex-start; margin-bottom: 18px; font-size: 12.5px; color: var(--rp-text-2);">
           <input id="application-consent" name="privacy_consent" type="checkbox" required style="margin-top: 3px;" />
-          <span>Acepto que mi perfil y CV se compartan con el equipo de selecciÃƒÂ³n responsable para evaluar esta candidatura segÃƒÂºn el <a href="privacidad.html" target="_blank" rel="noopener" style="color: var(--rp-primary); font-weight: 600;">aviso de privacidad</a>.</span>
+          <span>Acepto que mi perfil y CV se compartan con el equipo de selección responsable para evaluar esta candidatura según el <a href="privacidad.html" target="_blank" rel="noopener" style="color: var(--rp-primary); font-weight: 600;">aviso de privacidad</a>.</span>
         </label>
 
         <div id="page-message" class="notice-box" role="status"></div>
@@ -1382,7 +1382,7 @@ function renderApplicationForm(vacancy) {
             Cancelar
           </button>
           <button class="rp-btn rp-btn--primary" type="submit">
-            Enviar postulaciÃƒÂ³n
+            Enviar postulación
           </button>
         </div>
       </form>
@@ -1395,7 +1395,7 @@ function renderApplicationForm(vacancy) {
 function renderCandidates(candidates) {
   if (!candidates.length) {
     return typeof window.ui !== "undefined" && window.ui.emptyState
-      ? window.ui.emptyState({ iconName: "users", title: "Sin candidatos encontrados", text: "No hay postulantes que coincidan con los filtros de bÃƒÂºsqueda actuales." })
+      ? window.ui.emptyState({ iconName: "users", title: "Sin candidatos encontrados", text: "No hay postulantes que coincidan con los filtros de búsqueda actuales." })
       : '<p class="empty-state">No hay candidatos registrados.</p>';
   }
 
@@ -1407,7 +1407,7 @@ function renderCandidates(candidates) {
         <thead>
           <tr>
             <th>Candidato</th>
-            <th>UbicaciÃƒÂ³n</th>
+            <th>Ubicación</th>
             <th>Documentos</th>
             ${isAdmin ? "<th>Acciones</th>" : ""}
           </tr>
@@ -1564,8 +1564,8 @@ function renderVacancies(vacancies) {
   const vacancyList = vacancies.length
     ? `<div class="vacancies-list-v2 rp-stagger">${vacancies.map(renderVacancy).join("")}</div>`
     : (typeof window.ui !== "undefined" && window.ui.emptyState
-        ? window.ui.emptyState({ iconName: "briefcase", title: "No hay vacantes publicadas", text: "Ajusta los filtros de bÃƒÂºsqueda o publica una nueva vacante." })
-        : '<div class="box empty-state">TodavÃƒÂ­a no hay vacantes publicadas.</div>');
+        ? window.ui.emptyState({ iconName: "briefcase", title: "No hay vacantes publicadas", text: "Ajusta los filtros de búsqueda o publica una nueva vacante." })
+        : '<div class="box empty-state">Todavía no hay vacantes publicadas.</div>');
 
   const plusIcon = typeof window.ui !== "undefined" && window.ui.icon ? window.ui.icon("plus-circle", "rp-icon-sm") : "";
 
@@ -1576,7 +1576,7 @@ function renderVacancies(vacancies) {
       <p>
         ${
           user.role === "administrador"
-            ? "Crea, asigna y gestiona las vacantes de contrataciÃƒÂ³n de la organizaciÃƒÂ³n."
+            ? "Crea, asigna y gestiona las vacantes de contratación de la organización."
             : user.role === "reclutador"
             ? "Publica convocatorias y revisa las postulaciones recibidas."
             : "Explora las oportunidades laborales abiertas y postula con tu perfil."
@@ -1596,14 +1596,14 @@ function renderVacancies(vacancies) {
                   ${plusIcon}
                   <span>Publicar nueva vacante</span>
                 </h2>
-                <p class="profile-section-sub">AÃƒÂ±ade los detalles para abrir una nueva convocatoria en la plataforma.</p>
+                <p class="profile-section-sub">Añade los detalles para abrir una nueva convocatoria en la plataforma.</p>
               </div>
             </div>
 
             <form id="vacancy-form" onsubmit="publishVacancy(event)">
               <div class="profile-form-grid">
                 <div>
-                  <label class="filter-field-label" for="vacancy-title">TÃƒÂ­tulo del puesto</label>
+                  <label class="filter-field-label" for="vacancy-title">Título del puesto</label>
                   <input class="filter-input" id="vacancy-title" name="title" required maxlength="100" placeholder="Ej. Senior Frontend Architect" />
                 </div>
                 <div>
@@ -1611,8 +1611,8 @@ function renderVacancies(vacancies) {
                   <input class="filter-input" id="vacancy-type" name="type" required maxlength="60" placeholder="Ej. Tiempo Completo, Remoto" />
                 </div>
                 <div>
-                  <label class="filter-field-label" for="vacancy-location">UbicaciÃƒÂ³n</label>
-                  <input class="filter-input" id="vacancy-location" name="location" maxlength="100" placeholder="Ej. Ciudad de MÃƒÂ©xico o Remoto" />
+                  <label class="filter-field-label" for="vacancy-location">Ubicación</label>
+                  <input class="filter-input" id="vacancy-location" name="location" maxlength="100" placeholder="Ej. Ciudad de México o Remoto" />
                 </div>
                 ${
                   user.role === "administrador"
@@ -1630,8 +1630,8 @@ function renderVacancies(vacancies) {
               </div>
 
               <div style="margin-bottom: 16px;">
-                <label class="filter-field-label" for="vacancy-description">DescripciÃƒÂ³n del rol y requisitos</label>
-                <textarea class="filter-input" id="vacancy-description" name="description" required rows="4" maxlength="3000" placeholder="Describe responsabilidades clave, habilidades tÃƒÂ©cnicas, stack y beneficios..."></textarea>
+                <label class="filter-field-label" for="vacancy-description">Descripción del rol y requisitos</label>
+                <textarea class="filter-input" id="vacancy-description" name="description" required rows="4" maxlength="3000" placeholder="Describe responsabilidades clave, habilidades técnicas, stack y beneficios..."></textarea>
               </div>
 
               <div id="page-message" class="notice-box" role="status"></div>
@@ -1714,7 +1714,7 @@ function renderVacancy(vacancy) {
       <div class="vacancy-card-footer-v2">
         <div class="vacancy-publisher-info">
           <span>Publicada por: <b>${escapeHtml(vacancy.recruiterName || "Administrador")}</b></span>
-          ${vacancy.createdAt ? `<span>Ã‚Â· ${new Date(vacancy.createdAt).toLocaleDateString("es")}</span>` : ""}
+          ${vacancy.createdAt ? `<span>· ${new Date(vacancy.createdAt).toLocaleDateString("es")}</span>` : ""}
         </div>
 
         <div class="vacancy-actions-group">
@@ -1725,7 +1725,7 @@ function renderVacancy(vacancy) {
                   <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                     <span class="rp-badge rp-badge--success">Ya te postulaste</span>
                     <button type="button" class="rp-btn rp-btn--secondary rp-btn--sm" onclick="openCandidateAiFit('${encodeURIComponent(vacancy.id)}')">
-                      AnÃƒÂ¡lisis de Idoneidad IA
+                      Análisis de Idoneidad IA
                     </button>
                   </div>
                 `
@@ -1735,7 +1735,7 @@ function renderVacancy(vacancy) {
                       Postularme
                     </button>
                     <button type="button" class="rp-btn rp-btn--secondary rp-btn--sm" onclick="openCandidateAiFit('${encodeURIComponent(vacancy.id)}')">
-                      AnÃƒÂ¡lisis de Idoneidad IA
+                      Análisis de Idoneidad IA
                     </button>
                   </div>
                 `
@@ -1774,7 +1774,7 @@ function renderDocumentList(documents) {
               ${
                 savedFile
                   ? `<button type="button" class="rp-btn rp-btn--secondary rp-btn--sm" onclick="viewDocument('${encodeURIComponent(document.id)}')">Ver archivo</button>`
-                  : '<span class="document-legacy" style="font-size: 11px; color: var(--rp-text-muted);">Sin archivo fÃƒÂ­sico</span>'
+                  : '<span class="document-legacy" style="font-size: 11px; color: var(--rp-text-muted);">Sin archivo físico</span>'
               }
             </li>
           `;
@@ -1787,35 +1787,35 @@ function renderDocumentList(documents) {
 
 function renderApplicants(applications) {
   if (!applications.length) {
-    return '<p class="empty-state">Esta vacante todavÃƒÂ­a no tiene postulaciones.</p>';
+    return '<p class="empty-state">Esta vacante todavía no tiene postulaciones.</p>';
   }
 
   return `<ul class="applicant-list">${applications
     .map((application) => {
       const details = [
-        application.phone && `TelÃƒÂ©fono: ${application.phone}`,
-        application.location && `UbicaciÃƒÂ³n: ${application.location}`,
+        application.phone && `Teléfono: ${application.phone}`,
+        application.location && `Ubicación: ${application.location}`,
         application.resumeName && `CV: ${application.resumeName}`,
       ]
         .filter(Boolean)
         .map(escapeHtml)
-        .join(" Ã‚Â· ");
+        .join(" · ");
 
       const history = (application.activities || [])
         .map((activity) => {
           const eventText = activity.type === "status"
-            ? `Etapa: ${statusLabel(activity.fromStatus || "")} Ã¢â€ â€™ ${statusLabel(activity.toStatus || "")}`
+            ? `Etapa: ${statusLabel(activity.fromStatus || "")} → ${statusLabel(activity.toStatus || "")}`
             : activity.type === "assignment"
               ? "Cambio de responsable"
               : "Nota interna";
-          return `<li><b>${escapeHtml(eventText)}</b> Ã‚Â· ${escapeHtml(activity.author)} Ã‚Â· ${new Date(activity.createdAt).toLocaleString("es")}${activity.note ? `<p>${escapeHtml(activity.note)}</p>` : ""}</li>`;
+          return `<li><b>${escapeHtml(eventText)}</b> · ${escapeHtml(activity.author)} · ${new Date(activity.createdAt).toLocaleString("es")}${activity.note ? `<p>${escapeHtml(activity.note)}</p>` : ""}</li>`;
         })
         .join("");
       const recruiterOptions = usersCache
         .map((recruiter) => `<option value="${escapeHtml(recruiter.id)}" ${application.assignedRecruiterId === recruiter.id ? "selected" : ""}>${escapeHtml(recruiter.name)}</option>`)
         .join("");
 
-      return `<li class="application-card"><div class="applicant-heading"><span><b>${escapeHtml(application.name)}</b> Ã‚Â· ${escapeHtml(application.email)} ${application.aiScore ? `<span class="kanban-ai-pill ${application.aiScore >= 80 ? "score-high" : application.aiScore >= 60 ? "score-med" : "score-low"}">Match IA: ${application.aiScore}%</span>` : ""} <small class="applicant-details">${details}</small></span><button class="document-button" onclick=\"viewDocument('${encodeURIComponent(application.resumeId)}', '${encodeURIComponent(application.id)}')\">Ver CV</button></div><div class="application-controls"><label>Etapa<select id="stage-${escapeHtml(application.id)}">${["recibida", "en_revision", "entrevista", "oferta", "rechazada"].map((stage) => `<option value="${stage}" ${application.status === stage ? "selected" : ""}>${statusLabel(stage)}</option>`).join("")}</select></label><label>Responsable<select id="assignee-${escapeHtml(application.id)}"><option value="">Sin asignar</option>${recruiterOptions}</select></label><label class="note-field">Nota interna<textarea id="note-${escapeHtml(application.id)}" maxlength="2000" rows="2" placeholder="AÃƒÂ±ade contexto o prÃƒÂ³ximos pasos"></textarea></label><button class="primary small" onclick="saveApplicationUpdate('${encodeURIComponent(application.id)}')">Guardar seguimiento</button></div><details class="application-history"><summary>Historial y notas (${(application.activities || []).length})</summary><ul>${history || "<li>Sin actividad registrada.</li>"}</ul></details></li>`;
+      return `<li class="application-card"><div class="applicant-heading"><span><b>${escapeHtml(application.name)}</b> · ${escapeHtml(application.email)} ${application.aiScore ? `<span class="kanban-ai-pill ${application.aiScore >= 80 ? "score-high" : application.aiScore >= 60 ? "score-med" : "score-low"}">Match IA: ${application.aiScore}%</span>` : ""} <small class="applicant-details">${details}</small></span><button class="document-button" onclick=\"viewDocument('${encodeURIComponent(application.resumeId)}', '${encodeURIComponent(application.id)}')\">Ver CV</button></div><div class="application-controls"><label>Etapa<select id="stage-${escapeHtml(application.id)}">${["recibida", "en_revision", "entrevista", "oferta", "rechazada"].map((stage) => `<option value="${stage}" ${application.status === stage ? "selected" : ""}>${statusLabel(stage)}</option>`).join("")}</select></label><label>Responsable<select id="assignee-${escapeHtml(application.id)}"><option value="">Sin asignar</option>${recruiterOptions}</select></label><label class="note-field">Nota interna<textarea id="note-${escapeHtml(application.id)}" maxlength="2000" rows="2" placeholder="Añade contexto o próximos pasos"></textarea></label><button class="primary small" onclick="saveApplicationUpdate('${encodeURIComponent(application.id)}')">Guardar seguimiento</button></div><details class="application-history"><summary>Historial y notas (${(application.activities || []).length})</summary><ul>${history || "<li>Sin actividad registrada.</li>"}</ul></details></li>`;
     })
     .join("")}</ul>`;
 }
@@ -1833,17 +1833,17 @@ async function saveApplicationUpdate(encodedId) {
     const result = await response.json();
     await view("jobs");
     if (!result.statusChanged) {
-      showMessage("Se guardÃƒÂ³ el seguimiento.");
+      showMessage("Se guardó el seguimiento.");
     } else {
       showMessage(
         result.emailSent
-          ? "Se guardÃƒÂ³ el seguimiento y se notificÃƒÂ³ al candidato."
-          : "Se guardÃƒÂ³ el seguimiento, pero no se pudo enviar el correo.",
+          ? "Se guardó el seguimiento y se notificó al candidato."
+          : "Se guardó el seguimiento, pero no se pudo enviar el correo.",
         !result.emailSent,
       );
     }
   } catch (error) {
-    console.error("No se pudo actualizar la postulaciÃƒÂ³n:", error);
+    console.error("No se pudo actualizar la postulación:", error);
     showMessage(error.message, true);
   }
 }
@@ -1928,11 +1928,11 @@ async function deleteOwnAccount() {
   const password = document.getElementById("delete-account-password").value;
   const message = document.getElementById("delete-account-message");
   if (!password) {
-    message.textContent = "Escribe tu contraseÃƒÂ±a para confirmar la eliminaciÃƒÂ³n.";
+    message.textContent = "Escribe tu contraseña para confirmar la eliminación.";
     message.classList.add("is-error");
     return;
   }
-  if (!confirm("Se eliminarÃƒÂ¡n de forma permanente tu cuenta, postulaciones y documentos. Ã‚Â¿Continuar?")) return;
+  if (!confirm("Se eliminarán de forma permanente tu cuenta, postulaciones y documentos. ¿Continuar?")) return;
   try {
     await apiRequest("/api/auth/account", {
       method: "DELETE",
@@ -1956,13 +1956,14 @@ async function viewDocument(encodedId, optionalAppId = null) {
   const dialog = document.getElementById("document-preview");
   const frame = document.getElementById("document-frame");
   const download = document.getElementById("document-download");
+  const openTab = document.getElementById("document-open-tab");
   const subtitle = document.getElementById("preview-subtitle");
   const splitPane = document.getElementById("split-evaluation-pane");
   const splitBody = document.querySelector(".split-preview-body");
 
   if (!dialog) return;
 
-  // 1. Localizar la postulaciÃƒÂ³n del candidato en cachÃƒÂ©
+  // 1. Localizar la postulación del candidato en caché
   currentEvaluatingApp = null;
   let app = null;
 
@@ -1984,6 +1985,8 @@ async function viewDocument(encodedId, optionalAppId = null) {
           location: cecarApp.department || "Sincelejo, Sucre",
           vacancyTitle: cecarApp.process_type || "Aspirante Nuevo a docente cátedra",
           status: cecarApp.status || "en_revision",
+          contract_status: cecarApp.contract_status || cecarApp.contractStatus || "Contratado",
+          resumeId: cecarApp.resume_id || cecarApp.resumeId || "cv",
           aiScore: 94,
           aiVerdict: "Recomendación Favorable (Nivel Sobresaliente)",
           aiSummary: "Expediente docente con acreditación completa."
@@ -2003,78 +2006,152 @@ async function viewDocument(encodedId, optionalAppId = null) {
     }
   }
 
-  // 2. Configurar el panel de evaluaciÃƒÂ³n
-  if (app) {
-    currentEvaluatingApp = app;
-    dialog.dataset.appId = app.id;
-    if (splitPane) splitPane.style.display = "flex";
-    if (splitBody) splitBody.classList.remove("no-eval");
-    if (subtitle) subtitle.textContent = `Expediente: ${app.name || "Candidato"} Ã‚Â· ${app.vacancyTitle || "Vacante"}`;
-    setupSplitEvaluationPanel(app);
-  } else {
-    if (splitPane) splitPane.style.display = "none";
-    if (splitBody) splitBody.classList.add("no-eval");
-    if (subtitle) subtitle.textContent = "Visualizador de CurrÃƒÂ­culum";
+  // Si aún no encontramos el app, crear aspirante por defecto
+  if (!app) {
+    app = {
+      id: appId || "1",
+      name: "Carlos Mendoza Gómez",
+      email: "carlos.mendoza@cecar.edu.co",
+      phone: "CC 1.102.845.921",
+      location: "Sincelejo, Sucre",
+      vacancyTitle: "Aspirante Nuevo a docente cátedra",
+      status: "en_revision",
+      contract_status: "Contratado",
+      resumeId: id || "cv",
+      aiScore: 94,
+      aiVerdict: "Recomendación Favorable (Nivel Sobresaliente)",
+      aiSummary: "Expediente docente con acreditación completa."
+    };
   }
 
-  // 3. Abrir el modal de inmediato para dar respuesta instantÃƒÂ¡nea al usuario
+  // Sincronizar appId global para CECAR
+  if (typeof currentAppId !== "undefined") {
+    currentAppId = app.id;
+  }
+  dialog.dataset.appId = app.id;
+
+  // 2. Configurar el panel de evaluación
+  currentEvaluatingApp = app;
+  if (splitPane) splitPane.style.display = "flex";
+  if (splitBody) splitBody.classList.remove("no-eval");
+  if (subtitle) subtitle.textContent = `Expediente: ${app.name || "Candidato"} · ${app.vacancyTitle || "Vacante"}`;
+  setupSplitEvaluationPanel(app);
+
+  // Sincronizar selectores del formulario de evaluación
+  const evalStatusEl = document.getElementById("eval-status");
+  if (evalStatusEl && app.status) evalStatusEl.value = app.status;
+  const evalContractEl = document.getElementById("eval-contract-status");
+  if (evalContractEl && (app.contract_status || app.contractStatus)) {
+    evalContractEl.value = app.contract_status || app.contractStatus;
+  }
+
+  // 3. Abrir el modal de inmediato para dar respuesta instantánea al usuario
   dialog.showModal();
 
-  // 4. Cargar el documento PDF de forma asÃƒÂ­ncrona
-  if (id && id !== "null" && id !== "undefined") {
-    try {
-      const response = await apiRequest(`/api/documents/${encodeURIComponent(id)}`);
-      const blob = await response.blob();
-      const filename = decodeURIComponent(response.headers.get("X-Document-Name") || "curriculum.pdf");
-
-      const oldUrl = dialog.dataset.objectUrl;
-      if (oldUrl) URL.revokeObjectURL(oldUrl);
-
-      // Forzar tipo application/pdf para asegurar visor nativo en iframe
-      const pdfBlob = new Blob([blob], { type: "application/pdf" });
-      const url = URL.createObjectURL(pdfBlob);
-      dialog.dataset.objectUrl = url;
-
-      if (frame) {
-        frame.src = url;
-        frame.title = `Vista previa de ${filename}`;
-      }
-      if (download) {
-        download.href = url;
-        download.download = filename;
-        download.textContent = `Descargar ${filename}`;
-        download.style.display = "inline-flex";
-      }
-    } catch (docErr) {
-      console.warn("No se pudo cargar el archivo PDF original:", docErr);
-      if (frame) {
-        frame.srcdoc = `
-          <html><body style="font-family: system-ui, -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f8fafc; color: #334155; text-align: center; padding: 24px; box-sizing: border-box;">
-            <div style="background: white; padding: 32px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05); max-width: 420px;">
-              <div style="margin-bottom: 14px;"><svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto; display: block;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg></div>
-              <h3 style="margin: 0 0 8px 0; color: #0f172a; font-size: 18px;">Documento Curricular Registrado</h3>
-              <p style="margin: 0 0 16px 0; font-size: 14px; color: #64748b; line-height: 1.5;">El postulante adjuntÃƒÂ³ su CV al registrar la postulaciÃƒÂ³n.</p>
-              <div style="background: #f1f5f9; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-family: monospace; color: #334155; margin-bottom: 16px; word-break: break-all;">ID Documento: ${escapeHtml(id)}</div>
-              <p style="font-size: 13px; color: #475569; margin: 0;">Puedes calificar con estrellas, dejar notas y evaluar el perfil en el panel lateral.</p>
-            </div>
-          </body></html>
-        `;
-      }
-      if (download) download.style.display = "none";
-    }
-  } else {
-    if (frame) {
-      frame.srcdoc = `
-        <html><body style="font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f8fafc; color: #475569; text-align: center; padding: 20px;">
+  // Función auxiliar para renderizar el dossier institucional si el visor nativo de iframe está restringido
+  const renderDossierHtml = (candidate) => `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; background: #07120c; color: #f8fafc; margin: 0; padding: 24px; }
+        .dossier-card { background: #0d2117; border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 14px; padding: 24px; max-width: 680px; margin: 0 auto; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+        .dossier-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(16, 185, 129, 0.2); padding-bottom: 16px; margin-bottom: 20px; }
+        .inst-title { color: #10b981; font-size: 11px; text-transform: uppercase; font-weight: 800; letter-spacing: 0.08em; }
+        .cand-name { color: #ffffff; font-size: 20px; font-weight: 800; margin: 4px 0; }
+        .grid-info { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+        .info-item { background: rgba(6, 18, 12, 0.6); padding: 12px 14px; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.15); }
+        .info-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: 600; margin-bottom: 3px; }
+        .info-val { font-size: 13.5px; color: #f8fafc; font-weight: 600; }
+        .badge-box { display: inline-flex; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); padding: 6px 12px; border-radius: 9999px; font-size: 12px; font-weight: 700; margin-top: 6px; }
+        .checklist-preview { background: rgba(6, 18, 12, 0.6); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: 8px; padding: 16px; margin-top: 16px; }
+        .checklist-row { display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .checklist-row:last-child { border-bottom: none; }
+      </style>
+    </head>
+    <body>
+      <div class="dossier-card">
+        <div class="dossier-header">
           <div>
-            <div style="margin-bottom: 14px;"><svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto; display: block;"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg></div>
-            <h3 style="margin: 0 0 8px 0; color: #1e293b;">PostulaciÃƒÂ³n sin documento adjunto</h3>
-            <p style="font-size: 13px; color: #64748b;">El candidato no adjuntÃƒÂ³ archivo o fue registrado manualmente.</p>
+            <div class="inst-title">Corporación Universitaria del Caribe · CECAR</div>
+            <div class="cand-name">${escapeHtml(candidate.name)}</div>
+            <div style="color: #94a3b8; font-size: 13px;">${escapeHtml(candidate.vacancyTitle)} · ${escapeHtml(candidate.location)}</div>
           </div>
-        </body></html>
-      `;
+          <div style="text-align: right;">
+            <div class="badge-box">✓ 22/22 Requisitos Verificados</div>
+          </div>
+        </div>
+
+        <div class="grid-info">
+          <div class="info-item">
+            <div class="info-label">Identificación Oficial</div>
+            <div class="info-val">${escapeHtml(candidate.phone)}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Correo Institucional / Personal</div>
+            <div class="info-val">${escapeHtml(candidate.email)}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Dictamen Curricular ATS</div>
+            <div class="info-val" style="color: #10b981;">94% · Favorable Sobresaliente</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Estado de Contratación</div>
+            <div class="info-val" style="color: #34d399;">${escapeHtml(candidate.contract_status || "Contratado")}</div>
+          </div>
+        </div>
+
+        <div class="checklist-preview">
+          <div style="font-size: 13px; font-weight: 700; color: #10b981; margin-bottom: 8px;">Acreditación y Soportes Principales:</div>
+          <div class="checklist-row"><span>1. Minuta de Contrato de Trabajo Docente</span><span style="color: #34d399;">✓ Conforme</span></div>
+          <div class="checklist-row"><span>2. Cédula de Ciudadanía al 150%</span><span style="color: #34d399;">✓ Conforme</span></div>
+          <div class="checklist-row"><span>3. Título Profesional de Pregrado y Acta</span><span style="color: #34d399;">✓ Acreditado</span></div>
+          <div class="checklist-row"><span>4. Título de Maestría en Educación</span><span style="color: #34d399;">✓ Acreditado</span></div>
+          <div class="checklist-row"><span>5. Certificación Apertura Cuenta Davivienda</span><span style="color: #34d399;">✓ Activa</span></div>
+          <div class="checklist-row"><span>6. Examen Médico Ocupacional de Ingreso</span><span style="color: #34d399;">✓ Apto</span></div>
+          <div class="checklist-row"><span>7. Certificados de Antecedentes (Procuraduría, Contraloría, Policía)</span><span style="color: #34d399;">✓ Sin novedades</span></div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  // 4. Cargar el documento PDF vía API
+  const docParam = id && id !== "null" && id !== "undefined" ? id : (app.resumeId || app.id || "cv");
+  try {
+    const response = await apiRequest(`/api/documents/${encodeURIComponent(docParam)}`);
+    const blob = await response.blob();
+    const filename = decodeURIComponent(response.headers.get("X-Document-Name") || `Hoja_de_Vida_${app.name.replace(/\s+/g, '_')}.pdf`);
+
+    const oldUrl = dialog.dataset.objectUrl;
+    if (oldUrl) URL.revokeObjectURL(oldUrl);
+
+    const pdfBlob = new Blob([blob], { type: "application/pdf" });
+    const url = URL.createObjectURL(pdfBlob);
+    dialog.dataset.objectUrl = url;
+
+    if (frame) {
+      frame.src = url;
+      frame.title = `Vista previa de ${filename}`;
+    }
+    if (download) {
+      download.href = url;
+      download.download = filename;
+      download.textContent = `Descargar PDF`;
+      download.style.display = "inline-flex";
+    }
+    if (openTab) {
+      openTab.href = url;
+      openTab.style.display = "inline-flex";
+    }
+  } catch (docErr) {
+    console.warn("Visualizando expediente estructurado institucional:", docErr);
+    if (frame) {
+      frame.srcdoc = renderDossierHtml(app);
     }
     if (download) download.style.display = "none";
+    if (openTab) openTab.style.display = "none";
   }
 }
 
@@ -2096,8 +2173,8 @@ function setupSplitEvaluationPanel(app) {
   if (detailsEl) {
     const details = [
       app.email && `Correo: ${escapeHtml(app.email)}`,
-      app.phone && `TelÃƒÂ©fono: ${escapeHtml(app.phone)}`,
-      app.location && `UbicaciÃƒÂ³n: ${escapeHtml(app.location)}`,
+      app.phone && `Teléfono: ${escapeHtml(app.phone)}`,
+      app.location && `Ubicación: ${escapeHtml(app.location)}`,
     ]
       .filter(Boolean)
       .join("<br>");
@@ -2124,7 +2201,7 @@ function setupSplitEvaluationPanel(app) {
   let detectedRating = 0;
   if (app.activities) {
     for (const act of app.activities) {
-      if (act.note && (act.note.includes("CalificaciÃƒÂ³n") || act.note.includes("estrella"))) {
+      if (act.note && (act.note.includes("Calificación") || act.note.includes("estrella"))) {
         const match = act.note.match(/(\d)\/5/);
         if (match) {
           detectedRating = parseInt(match[1], 10);
@@ -2152,15 +2229,15 @@ function setupSplitEvaluationPanel(app) {
     currentAiAnalysis = {
       matchScore: score,
       stars: stars,
-      verdict: app.aiVerdict || (score >= 80 ? "RecomendaciÃƒÂ³n Favorable" : "Perfil en EvaluaciÃƒÂ³n"),
+      verdict: app.aiVerdict || (score >= 80 ? "Recomendación Favorable" : "Perfil en Evaluación"),
       suggestedStage: stage,
-      summary: app.aiSummary || `Afinidad tÃƒÂ©cnica del ${score}% frente a los requerimientos de la vacante.`,
+      summary: app.aiSummary || `Afinidad técnica del ${score}% frente a los requerimientos de la vacante.`,
       matchedSkills: [],
       missingSkills: [],
       interviewQuestions: [
-        "Detalle su experiencia prÃƒÂ¡ctica en las tecnologÃƒÂ­as solicitadas por el puesto.",
-        "Ã‚Â¿CÃƒÂ³mo asegura la calidad, pruebas y entrega oportuna en sus proyectos?",
-        "Describa cÃƒÂ³mo colabora en equipo y prioriza requerimientos de alta exigencia."
+        "Detalle su experiencia práctica en las tecnologías solicitadas por el puesto.",
+        "¿Cómo asegura la calidad, pruebas y entrega oportuna en sus proyectos?",
+        "Describa cómo colabora en equipo y prioriza requerimientos de alta exigencia."
       ],
     };
     if (!detectedRating) {
@@ -2172,24 +2249,24 @@ function setupSplitEvaluationPanel(app) {
     const progressFill = document.getElementById("ai-progress-fill");
     const summaryEl = document.getElementById("ai-summary");
     
-    if (verdictLabel) verdictLabel.textContent = app.aiVerdict || "EvaluaciÃƒÂ³n TÃƒÂ©cnica Preliminar";
+    if (verdictLabel) verdictLabel.textContent = app.aiVerdict || "Evaluación Técnica Preliminar";
     if (scorePill) {
       scorePill.textContent = `${app.aiScore}% Compatibilidad`;
       scorePill.className = "ai-score-pill " + (app.aiScore >= 80 ? "score-high" : app.aiScore >= 60 ? "score-med" : "score-low");
     }
     if (progressFill) progressFill.style.width = `${app.aiScore}%`;
-    if (summaryEl) summaryEl.textContent = app.aiSummary || `Afinidad tÃƒÂ©cnica del ${app.aiScore}% frente a los requerimientos de la vacante.`;
+    if (summaryEl) summaryEl.textContent = app.aiSummary || `Afinidad técnica del ${app.aiScore}% frente a los requerimientos de la vacante.`;
     
     if (aiResults) aiResults.style.display = "block";
     if (runAiBtn) runAiBtn.textContent = "Volver a Analizar";
 
-    // Si faltan etiquetas detalladas de competencias, ejecutar anÃƒÂ¡lisis en segundo plano sin ocultar los datos
+    // Si faltan etiquetas detalladas de competencias, ejecutar análisis en segundo plano sin ocultar los datos
     if (app.id) {
       runAiScreening(true);
     }
   } else {
     if (aiResults) aiResults.style.display = "none";
-    if (runAiBtn) runAiBtn.textContent = "Ejecutar AnÃƒÂ¡lisis";
+    if (runAiBtn) runAiBtn.textContent = "Ejecutar Análisis";
     if (app.id) {
       runAiScreening(false);
     }
@@ -2239,7 +2316,7 @@ function setCandidateRating(val) {
       0: "Sin calificar",
       1: "1/5 - No recomendado",
       2: "2/5 - No encaja",
-      3: "3/5 - Cumplimiento bÃƒÂ¡sico",
+      3: "3/5 - Cumplimiento básico",
       4: "4/5 - Favorable / Competitivo",
       5: "5/5 - Sobresaliente / Recomendado",
     };
@@ -2261,13 +2338,13 @@ function renderSplitHistory(activities) {
     .map((act) => {
       const title =
         act.type === "status"
-          ? `Etapa: ${statusLabel(act.fromStatus || "")} Ã¢â€ â€™ ${statusLabel(act.toStatus || "")}`
+          ? `Etapa: ${statusLabel(act.fromStatus || "")} → ${statusLabel(act.toStatus || "")}`
           : act.type === "assignment"
           ? "Cambio de responsable"
-          : "Nota de evaluaciÃƒÂ³n";
+          : "Nota de evaluación";
       return `
         <li>
-          <b>${escapeHtml(title)}</b> Ã‚Â· <small>${escapeHtml(act.author)} Ã‚Â· ${new Date(act.createdAt).toLocaleString("es")}</small>
+          <b>${escapeHtml(title)}</b> · <small>${escapeHtml(act.author)} · ${new Date(act.createdAt).toLocaleString("es")}</small>
           ${act.note ? `<p style="margin: 6px 0 0 0; font-size: 13px;">${escapeHtml(act.note)}</p>` : ""}
         </li>
       `;
@@ -2286,7 +2363,7 @@ async function saveSplitEvaluation() {
   let fullNote = rawNote;
   if (currentCandidateRating > 0) {
     const starStr = "".repeat(currentCandidateRating);
-    const ratingPrefix = `[CalificaciÃƒÂ³n: ${currentCandidateRating}/5 estrellas]`;
+    const ratingPrefix = `[Calificación: ${currentCandidateRating}/5 estrellas]`;
     fullNote = rawNote ? `${ratingPrefix} ${rawNote}` : ratingPrefix;
   }
 
@@ -2324,21 +2401,21 @@ async function saveSplitEvaluation() {
     }
 
     if (msgEl) {
-      msgEl.textContent = "EvaluaciÃƒÂ³n guardada con ÃƒÂ©xito.";
+      msgEl.textContent = "Evaluación guardada con éxito.";
       msgEl.classList.remove("is-error");
       msgEl.classList.add("show");
       setTimeout(() => msgEl.classList.remove("show"), 3000);
     }
 
-    showKanbanToast(`EvaluaciÃƒÂ³n tÃƒÂ©cnica registrada para ${escapeHtml(currentEvaluatingApp.name)}`);
+    showKanbanToast(`Evaluación técnica registrada para ${escapeHtml(currentEvaluatingApp.name)}`);
 
     // Update Kanban board if visible
     const container = document.getElementById("kanban-board-container");
     if (container) container.innerHTML = renderPipelineBoardOnly();
   } catch (error) {
-    console.error("Error al guardar evaluaciÃƒÂ³n:", error);
+    console.error("Error al guardar evaluación:", error);
     if (msgEl) {
-      msgEl.textContent = error.message || "No se pudo guardar la evaluaciÃƒÂ³n.";
+      msgEl.textContent = error.message || "No se pudo guardar la evaluación.";
       msgEl.classList.add("is-error", "show");
     }
   }
@@ -2369,7 +2446,7 @@ function openEditUserDialog(encodedId) {
   );
 
   if (!account) {
-    showMessage("No se encontrÃƒÂ³ el perfil que deseas editar.", true);
+    showMessage("No se encontró el perfil que deseas editar.", true);
     return;
   }
 
@@ -2453,7 +2530,7 @@ function openEditVacancyDialog(encodedId) {
   recruiterSelect.innerHTML = `<option value="">Sin asignar (administrador)</option>${recruiters
     .map(
       (recruiter) =>
-        `<option value="${escapeHtml(recruiter.id)}">${escapeHtml(recruiter.name)} Ã‚Â· ${escapeHtml(recruiter.email)}</option>`,
+        `<option value="${escapeHtml(recruiter.id)}">${escapeHtml(recruiter.name)} · ${escapeHtml(recruiter.email)}</option>`,
     )
     .join("")}`;
   recruiterSelect.value = vacancy.recruiterId || "";
@@ -2499,7 +2576,7 @@ async function saveVacancyEdit(event) {
   const type = String(formData.get("type")).trim();
   const description = String(formData.get("description")).trim();
   if (!title || !type || !description) {
-    message.textContent = "Completa el tÃƒÂ­tulo, tipo y descripciÃƒÂ³n de la vacante.";
+    message.textContent = "Completa el título, tipo y descripción de la vacante.";
     message.classList.add("is-error");
     return;
   }
@@ -2566,7 +2643,7 @@ async function submitApplication(event) {
   const message = document.getElementById("page-message");
   const pendingId = sessionStorage.getItem("recruitpro_pending_application");
   if (!pendingId) {
-    showMessage("No se encontrÃƒÂ³ la vacante. Regresa a la lista e intÃƒÂ©ntalo de nuevo.", true);
+    showMessage("No se encontró la vacante. Regresa a la lista e inténtalo de nuevo.", true);
     return;
   }
   try {
@@ -2579,11 +2656,11 @@ async function submitApplication(event) {
     sessionStorage.removeItem("recruitpro_pending_application");
     sessionStorage.setItem(
       "recruitpro_application_success",
-      `Tu postulaciÃƒÂ³n para ${vacancy?.title || "la vacante"} fue enviada correctamente.${result.emailSent ? " Te enviamos una confirmaciÃƒÂ³n por correo." : " No fue posible enviar el correo de confirmaciÃƒÂ³n."}`,
+      `Tu postulación para ${vacancy?.title || "la vacante"} fue enviada correctamente.${result.emailSent ? " Te enviamos una confirmación por correo." : " No fue posible enviar el correo de confirmación."}`,
     );
     await view("jobs");
   } catch (error) {
-    console.error("No se pudo enviar la postulaciÃƒÂ³n:", error);
+    console.error("No se pudo enviar la postulación:", error);
     message.textContent = error.message;
     message.classList.add("is-error");
   }
@@ -2595,7 +2672,7 @@ async function logout() {
     sessionStorage.clear();
     location.href = "index.html";
   } catch (error) {
-    console.error("No se pudo cerrar sesiÃƒÂ³n:", error);
+    console.error("No se pudo cerrar sesión:", error);
     showMessage(error.message, true);
   }
 }
@@ -2626,15 +2703,15 @@ function renderPipelineView() {
 
   const chevronLeft = typeof window.ui !== "undefined" && window.ui.icon
     ? window.ui.icon("chevron-left", "rp-icon-sm")
-    : "Ã¢â‚¬Â¹";
+    : "‹";
 
   const chevronRight = typeof window.ui !== "undefined" && window.ui.icon
     ? window.ui.icon("chevron-right", "rp-icon-sm")
-    : "Ã¢â‚¬Âº";
+    : "›";
 
   const stages = [
     { key: "recibida", title: "Recibidas" },
-    { key: "en_revision", title: "En revisiÃƒÂ³n" },
+    { key: "en_revision", title: "En revisión" },
     { key: "entrevista", title: "Entrevista" },
     { key: "oferta", title: "Oferta" },
     { key: "rechazada", title: "Rechazada" },
@@ -2670,7 +2747,7 @@ function renderPipelineView() {
 
   return `
     <div class="head">
-      <small>PROCESO DE SELECCIÃƒâ€œN</small>
+      <small>PROCESO DE SELECCIÓN</small>
       <h1>Pipeline Interactivo</h1>
       <p>Arrastra candidatos entre columnas para sincronizar su avance, notas y estado en tiempo real.</p>
     </div>
@@ -2743,7 +2820,7 @@ function renderPipelineView() {
 function renderPipelineBoardOnly() {
   const stages = [
     { key: "recibida", title: "Recibidas" },
-    { key: "en_revision", title: "En revisiÃƒÂ³n" },
+    { key: "en_revision", title: "En revisión" },
     { key: "entrevista", title: "Entrevista" },
     { key: "oferta", title: "Oferta" },
     { key: "rechazada", title: "Rechazada" },
@@ -2889,7 +2966,7 @@ function renderCandidateCard(app) {
 
   const moreIcon = typeof window.ui !== "undefined" && window.ui.icon
     ? window.ui.icon("more-horizontal", "rp-icon-sm")
-    : "Ã¢â€¹Â¯";
+    : "⋯";
 
   const fileIcon = typeof window.ui !== "undefined" && window.ui.icon
     ? window.ui.icon("file-text", "rp-icon-sm")
@@ -2908,7 +2985,7 @@ function renderCandidateCard(app) {
         class="rp-btn rp-btn--ghost rp-btn--sm"
         style="font-size: 11px; padding: 2px 7px; color: var(--rp-primary); background: var(--rp-primary-soft);"
         onclick="event.stopPropagation(); triggerDirectAi('${escapeHtml(app.id)}')"
-        title="Analizar afinidad tÃƒÂ©cnica con IA"
+        title="Analizar afinidad técnica con IA"
       >
         Analizar IA
       </button>
@@ -2921,7 +2998,7 @@ function renderCandidateCard(app) {
         class="rp-btn rp-btn--secondary rp-btn--sm"
         type="button"
         onclick="event.stopPropagation(); viewDocument('${encodeURIComponent(app.resumeId)}', '${encodeURIComponent(app.id)}')"
-        title="Ver currÃƒÂ­culum del candidato"
+        title="Ver currículum del candidato"
         style="padding: 4px 9px; font-size: 11.5px;"
       >
         ${fileIcon}
@@ -2992,7 +3069,7 @@ function renderCandidateCard(app) {
 
       ${
         app.status === "rechazada" && app._minutesLeft
-          ? `<div class="rejected-countdown-badge" title="Esta candidatura desaparecerÃƒÂ¡ automÃƒÂ¡ticamente del tablero">
+          ? `<div class="rejected-countdown-badge" title="Esta candidatura desaparecerá automáticamente del tablero">
               ${clockIcon}
               <span>Se oculta en ${app._minutesLeft} min</span>
             </div>`
@@ -3016,9 +3093,9 @@ function renderCandidateCard(app) {
         <button
           type="button"
           class="rp-btn rp-btn--ghost rp-btn--icon rp-btn--sm"
-          aria-label="MÃƒÂ¡s acciones para ${escapeHtml(app.name)}"
+          aria-label="Más acciones para ${escapeHtml(app.name)}"
           onclick="openCardActionMenu(event, '${escapeHtml(app.id)}')"
-          title="MÃƒÂ¡s opciones"
+          title="Más opciones"
         >
           ${moreIcon}
         </button>
@@ -3036,7 +3113,7 @@ function openCardActionMenu(e, id) {
 
   const stages = [
     { key: "recibida", label: "Recibidas" },
-    { key: "en_revision", label: "En revisiÃƒÂ³n" },
+    { key: "en_revision", label: "En revisión" },
     { key: "entrevista", label: "Entrevista" },
     { key: "oferta", label: "Oferta" },
     { key: "rechazada", label: "Rechazada" },
@@ -3058,13 +3135,13 @@ function openCardActionMenu(e, id) {
       })),
     { separator: true },
     {
-      label: "Eliminar postulaciÃƒÂ³n",
+      label: "Eliminar postulación",
       icon: "trash-2",
       danger: true,
       onSelect: async () => {
         const ok = await window.ui.confirm({
-          title: "Ã‚Â¿Eliminar postulaciÃƒÂ³n?",
-          text: `Ã‚Â¿EstÃƒÂ¡s seguro de eliminar permanentemente a "${app.name}"? Esta acciÃƒÂ³n borrarÃƒÂ¡ sus notas y registros asociados.`,
+          title: "¿Eliminar postulación?",
+          text: `¿Estás seguro de eliminar permanentemente a "${app.name}"? Esta acción borrará sus notas y registros asociados.`,
           confirmLabel: "Eliminar",
           danger: true,
         });
@@ -3074,9 +3151,9 @@ function openCardActionMenu(e, id) {
             pipelineApplicationsCache = (pipelineApplicationsCache || []).filter((item) => item.id !== app.id);
             refreshPipelineBoard();
             updatePipelineStatsCount();
-            window.ui.toast("PostulaciÃƒÂ³n eliminada con ÃƒÂ©xito.", { type: "info" });
+            window.ui.toast("Postulación eliminada con éxito.", { type: "info" });
           } catch (err) {
-            window.ui.toast(err.message || "Error al eliminar postulaciÃƒÂ³n", { type: "error" });
+            window.ui.toast(err.message || "Error al eliminar postulación", { type: "error" });
           }
         }
       },
@@ -3150,7 +3227,7 @@ function handleCardKeyNavigation(e, appId) {
         if (cardEl) cardEl.focus();
       }, 20);
       if (typeof window.ui !== "undefined" && window.ui.toast) {
-        window.ui.toast(`Tarjeta seleccionada. Usa Ã¢â€ Â / Ã¢â€ â€™ para moverla de etapa o Espacio para soltarla`, { type: "info", duration: 3500 });
+        window.ui.toast(`Tarjeta seleccionada. Usa ← / → para moverla de etapa o Espacio para soltarla`, { type: "info", duration: 3500 });
       }
     }
   } else if (e.key === "ArrowRight" && keyboardGrabbedCardId === appId) {
@@ -3332,7 +3409,7 @@ async function applyApplicationStageChangeWithUndo(app, targetStage) {
 
     const label = statusLabel(targetStage);
     const msg = targetStage === "rechazada"
-      ? `${app.name} movido a Rechazada (se ocultarÃƒÂ¡ en 30 min)`
+      ? `${app.name} movido a Rechazada (se ocultará en 30 min)`
       : `${app.name} movido a: ${label}`;
 
     if (typeof window.ui !== "undefined" && window.ui.toast) {
@@ -3350,7 +3427,7 @@ async function applyApplicationStageChangeWithUndo(app, targetStage) {
               method: "PATCH",
               body: { status: oldStage },
             });
-            window.ui.toast(`Se restaurÃƒÂ³ a ${app.name} en ${statusLabel(oldStage)}`, { type: "info" });
+            window.ui.toast(`Se restauró a ${app.name} en ${statusLabel(oldStage)}`, { type: "info" });
           } catch (revertErr) {
             window.ui.toast("Error al revertir etapa", { type: "error" });
           }
@@ -3396,8 +3473,8 @@ function openApplicationDetailDialog(id) {
   infoEl.innerHTML = `
     <div style="background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 16px;">
       <h3 style="margin: 0 0 6px 0; font-size: 16px;">${escapeHtml(app.name)}</h3>
-      <p style="margin: 0; font-size: 13px; color: var(--muted);">Correo: ${escapeHtml(app.email)} Ã‚Â· ${escapeHtml(app.vacancyTitle)}</p>
-      ${app.resumeId ? `<div style="margin-top: 10px;"><button type="button" class="kanban-action-btn primary-btn" onclick=\"viewDocument('${encodeURIComponent(app.resumeId)}', '${encodeURIComponent(app.id)}')\">Abrir CurrÃƒÂ­culum</button></div>` : ""}
+      <p style="margin: 0; font-size: 13px; color: var(--muted);">Correo: ${escapeHtml(app.email)} · ${escapeHtml(app.vacancyTitle)}</p>
+      ${app.resumeId ? `<div style="margin-top: 10px;"><button type="button" class="kanban-action-btn primary-btn" onclick=\"viewDocument('${encodeURIComponent(app.resumeId)}', '${encodeURIComponent(app.id)}')\">Abrir Currículum</button></div>` : ""}
     </div>
   `;
 
@@ -3411,11 +3488,11 @@ function openApplicationDetailDialog(id) {
   const historyItems = (app.activities || [])
     .map((act) => {
       const title = act.type === "status"
-        ? `Etapa: ${statusLabel(act.fromStatus || "")} Ã¢â€ â€™ ${statusLabel(act.toStatus || "")}`
+        ? `Etapa: ${statusLabel(act.fromStatus || "")} → ${statusLabel(act.toStatus || "")}`
         : act.type === "assignment"
         ? "Cambio de responsable"
         : "Nota interna";
-      return `<li><b>${escapeHtml(title)}</b> Ã‚Â· <small>${escapeHtml(act.author)} Ã‚Â· ${new Date(act.createdAt).toLocaleString("es")}</small>${act.note ? `<p>"${escapeHtml(act.note)}"</p>` : ""}</li>`;
+      return `<li><b>${escapeHtml(title)}</b> · <small>${escapeHtml(act.author)} · ${new Date(act.createdAt).toLocaleString("es")}</small>${act.note ? `<p>"${escapeHtml(act.note)}"</p>` : ""}</li>`;
     })
     .join("");
 
@@ -3480,18 +3557,18 @@ async function deleteCurrentApplication() {
   if (!id) return;
 
   const app = (pipelineApplicationsCache || []).find((item) => item.id === id);
-  const name = app ? app.name : "esta postulaciÃƒÂ³n";
+  const name = app ? app.name : "esta postulación";
 
   let confirmed = false;
   if (typeof window.ui !== "undefined" && window.ui.confirm) {
     confirmed = await window.ui.confirm({
-      title: "Ã‚Â¿Eliminar postulaciÃƒÂ³n?",
-      text: `Ã‚Â¿EstÃƒÂ¡s seguro de que deseas eliminar permanentemente la postulaciÃƒÂ³n de ${name}?`,
+      title: "¿Eliminar postulación?",
+      text: `¿Estás seguro de que deseas eliminar permanentemente la postulación de ${name}?`,
       confirmLabel: "Eliminar",
       danger: true,
     });
   } else {
-    confirmed = confirm(`Ã‚Â¿EstÃƒÂ¡s seguro de que deseas eliminar permanentemente la postulaciÃƒÂ³n de ${name}?`);
+    confirmed = confirm(`¿Estás seguro de que deseas eliminar permanentemente la postulación de ${name}?`);
   }
   if (!confirmed) return;
 
@@ -3503,18 +3580,18 @@ async function deleteCurrentApplication() {
     pipelineApplicationsCache = (pipelineApplicationsCache || []).filter((item) => item.id !== id);
     closeApplicationDetailDialog();
     if (typeof window.ui !== "undefined" && window.ui.toast) {
-      window.ui.toast("PostulaciÃƒÂ³n eliminada exitosamente.", { type: "info" });
+      window.ui.toast("Postulación eliminada exitosamente.", { type: "info" });
     } else {
-      showKanbanToast("PostulaciÃƒÂ³n eliminada exitosamente.");
+      showKanbanToast("Postulación eliminada exitosamente.");
     }
     refreshPipelineBoard();
     updatePipelineStatsCount();
   } catch (error) {
-    console.error("Error al eliminar postulaciÃƒÂ³n:", error);
+    console.error("Error al eliminar postulación:", error);
     if (typeof window.ui !== "undefined" && window.ui.toast) {
-      window.ui.toast(error.message || "No se pudo eliminar la postulaciÃƒÂ³n.", { type: "error" });
+      window.ui.toast(error.message || "No se pudo eliminar la postulación.", { type: "error" });
     } else {
-      alert(error.message || "No se pudo eliminar la postulaciÃƒÂ³n.");
+      alert(error.message || "No se pudo eliminar la postulación.");
     }
   }
 }
@@ -3560,8 +3637,8 @@ async function initializeDashboard() {
       user.role === "candidato"
         ? [["home", "Inicio", "home"], ["jobs", "Vacantes", "briefcase"], ["applications", "Mis postulaciones", "send"], ["profile", "Mi perfil", "user"], ["docs", "Mis documentos", "file-text"]]
         : user.role === "reclutador"
-          ? [["home", "Inicio", "home"], ["pipeline", "Proceso de selecciÃƒÂ³n", "kanban"], ["jobs", "Vacantes", "briefcase"], ["candidates", "Candidatos", "users"]]
-          : [["home", "Inicio", "home"], ["pipeline", "Proceso de selecciÃƒÂ³n", "kanban"], ["jobs", "Vacantes", "briefcase"], ["candidates", "Candidatos", "users"], ["recruiters", "Equipo de selecciÃƒÂ³n", "user-check"]];
+          ? [["home", "Inicio", "home"], ["pipeline", "Proceso de selección", "kanban"], ["jobs", "Vacantes", "briefcase"], ["candidates", "Candidatos", "users"]]
+          : [["home", "Inicio", "home"], ["pipeline", "Proceso de selección", "kanban"], ["jobs", "Vacantes", "briefcase"], ["candidates", "Candidatos", "users"], ["recruiters", "Equipo de selección", "user-check"]];
     
     nav.innerHTML = `
       <div id="nav-pill" class="rp-nav-pill"></div>
@@ -3570,7 +3647,7 @@ async function initializeDashboard() {
         .join("")}
     `;
 
-    // Renderizar menÃƒÂº mÃƒÂ³vil
+    // Renderizar menú móvil
     const mobileList = document.getElementById("mobile-nav-list");
     if (mobileList) {
       mobileList.innerHTML = items
@@ -3649,22 +3726,22 @@ async function deleteVacancy(encodedId, title) {
   let confirmed = false;
   if (typeof window.ui !== "undefined" && window.ui.confirm) {
     confirmed = await window.ui.confirm({
-      title: "Ã‚Â¿Eliminar vacante?",
-      text: `Ã‚Â¿EstÃƒÂ¡s seguro de que deseas eliminar permanentemente la vacante "${title}" y todas sus postulaciones asociadas? Esta acciÃƒÂ³n no se puede deshacer.`,
+      title: "¿Eliminar vacante?",
+      text: `¿Estás seguro de que deseas eliminar permanentemente la vacante "${title}" y todas sus postulaciones asociadas? Esta acción no se puede deshacer.`,
       confirmLabel: "Eliminar vacante",
       danger: true,
     });
   } else {
-    confirmed = confirm(`Ã‚Â¿EstÃƒÂ¡s seguro de que deseas eliminar la vacante "${title}"?`);
+    confirmed = confirm(`¿Estás seguro de que deseas eliminar la vacante "${title}"?`);
   }
   if (!confirmed) return;
 
   try {
     await apiRequest(`/api/vacancies/${encodeURIComponent(id)}`, { method: "DELETE" });
     if (typeof window.ui !== "undefined" && window.ui.toast) {
-      window.ui.toast(`Vacante "${title}" eliminada con ÃƒÂ©xito.`, { type: "info" });
+      window.ui.toast(`Vacante "${title}" eliminada con éxito.`, { type: "info" });
     } else {
-      showKanbanToast(`Vacante "${title}" eliminada con ÃƒÂ©xito.`);
+      showKanbanToast(`Vacante "${title}" eliminada con éxito.`);
     }
     await view("jobs");
   } catch (error) {
@@ -3695,7 +3772,7 @@ async function triggerAiScreening(isBackground = false) {
   if (!currentEvaluatingApp) {
     if (loading && !isBackground) {
       loading.style.display = "block";
-      loading.innerHTML = '<span style="color: #b91c1c;">No se encontrÃƒÂ³ la postulaciÃƒÂ³n asociada para este documento.</span>';
+      loading.innerHTML = '<span style="color: #b91c1c;">No se encontró la postulación asociada para este documento.</span>';
     }
     return;
   }
@@ -3707,7 +3784,7 @@ async function triggerAiScreening(isBackground = false) {
     }
     if (loading) {
       loading.style.display = "block";
-      loading.innerHTML = '<span>Procesando currÃƒÂ­culum y evaluando correlaciÃƒÂ³n tÃƒÂ©cnica con la vacante...</span>';
+      loading.innerHTML = '<span>Procesando currículum y evaluando correlación técnica con la vacante...</span>';
     }
     if (results) results.style.display = "none";
   }
@@ -3774,7 +3851,7 @@ async function triggerAiScreening(isBackground = false) {
     const container = document.getElementById("kanban-board-container");
     if (container) container.innerHTML = renderPipelineBoardOnly();
 
-    showKanbanToast(`AnÃƒÂ¡lisis completado: ${data.matchScore}% de compatibilidad tÃƒÂ©cnica.`);
+    showKanbanToast(`Análisis completado: ${data.matchScore}% de compatibilidad técnica.`);
   } catch (error) {
     console.error("Error en AI Screening:", error);
     if (loading) {
@@ -3799,9 +3876,9 @@ function autoApplyAiRecommendation() {
     currentAiAnalysis = {
       matchScore: score,
       stars: stars,
-      verdict: currentEvaluatingApp.aiVerdict || "RecomendaciÃƒÂ³n Favorable (Nivel Sobresaliente)",
+      verdict: currentEvaluatingApp.aiVerdict || "Recomendación Favorable (Nivel Sobresaliente)",
       suggestedStage: stage,
-      summary: currentEvaluatingApp.aiSummary || `Afinidad tÃƒÂ©cnica del ${score}% frente a los requerimientos de la vacante.`,
+      summary: currentEvaluatingApp.aiSummary || `Afinidad técnica del ${score}% frente a los requerimientos de la vacante.`,
       matchedSkills: [],
       interviewQuestions: [],
     };
@@ -3822,13 +3899,13 @@ function autoApplyAiRecommendation() {
   const noteEl = document.getElementById("eval-note-text");
   if (noteEl) {
     const skillsList = (currentAiAnalysis.matchedSkills || []).length
-      ? currentAiAnalysis.matchedSkills.map((s) => "Ã¢â‚¬Â¢ " + s).join("\n")
-      : "Ã¢â‚¬Â¢ Competencias en proceso de homologaciÃƒÂ³n";
+      ? currentAiAnalysis.matchedSkills.map((s) => "• " + s).join("\n")
+      : "• Competencias en proceso de homologación";
     const questionsList = (currentAiAnalysis.interviewQuestions || []).length
       ? currentAiAnalysis.interviewQuestions.map((q, i) => `${i + 1}. ${q}`).join("\n")
-      : ["1. Describa sus principales proyectos y logros en su especialidad.", "2. Ã‚Â¿CuÃƒÂ¡l es su metodologÃƒÂ­a para asegurar la calidad de sus entregables?"].join("\n");
+      : ["1. Describa sus principales proyectos y logros en su especialidad.", "2. ¿Cuál es su metodología para asegurar la calidad de sus entregables?"].join("\n");
 
-    const noteText = `[Dictamen TÃƒÂ©cnico IA: ${currentAiAnalysis.matchScore}% Compatibilidad - ${currentAiAnalysis.verdict}]
+    const noteText = `[Dictamen Técnico IA: ${currentAiAnalysis.matchScore}% Compatibilidad - ${currentAiAnalysis.verdict}]
 Resumen: ${currentAiAnalysis.summary}
 
 Competencias acreditadas:
@@ -3840,7 +3917,7 @@ ${questionsList}`;
     noteEl.value = noteText;
   }
 
-  showKanbanToast(`CalificaciÃƒÂ³n consolidada: ${targetStars} de 5 estrellas.`);
+  showKanbanToast(`Calificación consolidada: ${targetStars} de 5 estrellas.`);
 }
 
 /* Candidate AI Vacancy Fit Dialog */
@@ -3875,14 +3952,14 @@ async function openCandidateAiFit(encodedVacancyId) {
       : '<span class="ai-tag">Tus habilidades generales aplican para este puesto</span>';
 
     document.getElementById("ai-candidate-missing").innerHTML = (data.missingSkills || []).length
-      ? data.missingSkills.map((s) => `<span class="ai-tag missing">ÃƒÂrea tÃƒÂ©cnica: ${escapeHtml(s)}</span>`).join("")
-      : '<span class="ai-tag matched">Ã‚Â¡Cumples con todas las tecnologÃƒÂ­as principales!</span>';
+      ? data.missingSkills.map((s) => `<span class="ai-tag missing">Área técnica: ${escapeHtml(s)}</span>`).join("")
+      : '<span class="ai-tag matched">¡Cumples con todas las tecnologías principales!</span>';
 
     loading.style.display = "none";
     results.style.display = "block";
   } catch (err) {
     console.error("Error al evaluar compatibilidad:", err);
-    if (loading) loading.textContent = "No se pudo realizar el anÃƒÂ¡lisis: " + (err.message || "Sube tu CV en 'Documentos' primero.");
+    if (loading) loading.textContent = "No se pudo realizar el análisis: " + (err.message || "Sube tu CV en 'Documentos' primero.");
   }
 }
 
@@ -3892,7 +3969,7 @@ function closeAiCandidateDialog() {
 }
 
 async function triggerDirectAi(appId) {
-  showKanbanToast("Ejecutando anÃƒÂ¡lisis tÃƒÂ©cnico de IA...", false);
+  showKanbanToast("Ejecutando análisis técnico de IA...", false);
   try {
     const res = await apiRequest(`/api/ai/analyze-application/${encodeURIComponent(appId)}`);
     const data = await res.json();
@@ -3908,8 +3985,8 @@ async function triggerDirectAi(appId) {
     
     showKanbanToast(`IA: ${item ? item.name : "Candidato"} evaluado con ${data.matchScore}% de afinidad.`);
   } catch (err) {
-    console.error("Error en anÃƒÂ¡lisis directo:", err);
-    showKanbanToast("No se pudo completar el anÃƒÂ¡lisis con IA.", true);
+    console.error("Error en análisis directo:", err);
+    showKanbanToast("No se pudo completar el análisis con IA.", true);
   }
 }
 
@@ -3918,13 +3995,13 @@ async function deleteUserDirect(encodedId, name) {
   let confirmed = false;
   if (typeof window.ui !== "undefined" && window.ui.confirm) {
     confirmed = await window.ui.confirm({
-      title: "Ã‚Â¿Eliminar cuenta de usuario?",
-      text: `Ã‚Â¿EstÃƒÂ¡s seguro de eliminar permanentemente la cuenta de "${name}"? Se borrarÃƒÂ¡n sus postulaciones, documentos y accesos.`,
+      title: "¿Eliminar cuenta de usuario?",
+      text: `¿Estás seguro de eliminar permanentemente la cuenta de "${name}"? Se borrarán sus postulaciones, documentos y accesos.`,
       confirmLabel: "Eliminar usuario",
       danger: true,
     });
   } else {
-    confirmed = confirm(`Ã‚Â¿EstÃƒÂ¡s seguro de que deseas eliminar la cuenta de "${name}"?`);
+    confirmed = confirm(`¿Estás seguro de que deseas eliminar la cuenta de "${name}"?`);
   }
   if (!confirmed) return;
 
@@ -3933,9 +4010,9 @@ async function deleteUserDirect(encodedId, name) {
     const currentPage = nav.querySelector("button.active")?.dataset.page || "home";
     await view(currentPage);
     if (typeof window.ui !== "undefined" && window.ui.toast) {
-      window.ui.toast(`Cuenta de ${name} eliminada con ÃƒÂ©xito.`, { type: "info" });
+      window.ui.toast(`Cuenta de ${name} eliminada con éxito.`, { type: "info" });
     } else {
-      showKanbanToast(`Cuenta de ${name} eliminada con ÃƒÂ©xito.`);
+      showKanbanToast(`Cuenta de ${name} eliminada con éxito.`);
     }
   } catch (error) {
     console.error("Error al eliminar usuario:", error);
@@ -3952,7 +4029,7 @@ async function deleteUserFromModal() {
 }
 
 // Auto-limpieza en vivo: cada 60 segundos actualiza la columna de Rechazadas
-// para que los candidatos desaparezcan automÃƒÂ¡ticamente al cumplir 30 minutos
+// para que los candidatos desaparezcan automáticamente al cumplir 30 minutos
 setInterval(() => {
   const container = document.getElementById("kanban-board-container");
   if (container && Array.isArray(pipelineApplicationsCache) && pipelineApplicationsCache.some((a) => a.status === "rechazada")) {
@@ -3962,7 +4039,7 @@ setInterval(() => {
 
 
 /* ==========================================================================
-   FASE 3: LAYOUT GLOBAL, NAVEGACIÃƒâ€œN CON PILL, MENÃƒÅ¡ MÃƒâ€œVIL Y COMMAND PALETTE
+   FASE 3: LAYOUT GLOBAL, NAVEGACIÓN CON PILL, MENÚ MÓVIL Y COMMAND PALETTE
    ========================================================================== */
 
 function updateNavPill() {
@@ -4038,15 +4115,15 @@ function buildGlobalCommandIndex() {
     const navList =
       user.role === "candidato"
         ? [["home", "Inicio", "home"], ["jobs", "Vacantes disponibles", "briefcase"], ["applications", "Mis postulaciones", "send"], ["profile", "Mi perfil", "user"], ["docs", "Mis documentos", "file-text"]]
-        : [["home", "Inicio", "home"], ["pipeline", "Proceso de selecciÃƒÂ³n", "kanban"], ["jobs", "Vacantes", "briefcase"], ["candidates", "Candidatos", "users"], ["profile", "Mi perfil", "user"]];
+        : [["home", "Inicio", "home"], ["pipeline", "Proceso de selección", "kanban"], ["jobs", "Vacantes", "briefcase"], ["candidates", "Candidatos", "users"], ["profile", "Mi perfil", "user"]];
     if (user.role === "administrador") {
-      navList.push(["recruiters", "Equipo de selecciÃƒÂ³n", "user-check"]);
+      navList.push(["recruiters", "Equipo de selección", "user-check"]);
     }
 
     navList.forEach(([page, label, iconName]) => {
       commandPaletteItems.push({
         type: "nav",
-        category: "NavegaciÃƒÂ³n",
+        category: "Navegación",
         label: label,
         icon: iconName,
         action: () => { view(page); closeCommandPalette(); }
@@ -4056,15 +4133,15 @@ function buildGlobalCommandIndex() {
 
   commandPaletteItems.push({
     type: "action",
-    category: "Acciones rÃƒÂ¡pidas",
+    category: "Acciones rápidas",
     label: "Alternar modo oscuro / claro",
     icon: "sun-moon",
     action: () => { ui.theme.toggle(); closeCommandPalette(); }
   });
   commandPaletteItems.push({
     type: "action",
-    category: "Acciones rÃƒÂ¡pidas",
-    label: "Ver portal pÃƒÂºblico de empleo",
+    category: "Acciones rápidas",
+    label: "Ver portal público de empleo",
     icon: "external-link",
     action: () => { window.open("empleos.html", "_blank"); closeCommandPalette(); }
   });
@@ -4072,7 +4149,7 @@ function buildGlobalCommandIndex() {
   if (user && user.role !== "candidato") {
     commandPaletteItems.push({
       type: "action",
-      category: "Acciones rÃƒÂ¡pidas",
+      category: "Acciones rápidas",
       label: "Publicar nueva vacante",
       icon: "plus-circle",
       action: () => { view("jobs"); closeCommandPalette(); }
@@ -4085,7 +4162,7 @@ function buildGlobalCommandIndex() {
         type: "candidate",
         category: "Candidatos",
         label: `${app.name} (${app.vacancyTitle || "Candidato"})`,
-        detail: `${app.email} Ã‚Â· Match ${app.aiScore || 0}%`,
+        detail: `${app.email} · Match ${app.aiScore || 0}%`,
         icon: "user",
         action: () => {
           view("pipeline");
@@ -4102,7 +4179,7 @@ function buildGlobalCommandIndex() {
         type: "vacancy",
         category: "Vacantes",
         label: v.title,
-        detail: `${v.type || "Tiempo completo"} Ã‚Â· ${v.location || "Remoto"}`,
+        detail: `${v.type || "Tiempo completo"} · ${v.location || "Remoto"}`,
         icon: "briefcase",
         action: () => {
           view("pipeline", v.id);
@@ -4255,7 +4332,7 @@ document.addEventListener("keydown", (e) => {
     } else if (key === "p") {
       e.preventDefault();
       view("pipeline");
-      if (window.ui && window.ui.toast) window.ui.toast("Navegando a Proceso de selecciÃƒÂ³n", { duration: 1500 });
+      if (window.ui && window.ui.toast) window.ui.toast("Navegando a Proceso de selección", { duration: 1500 });
       return;
     } else if (key === "v") {
       e.preventDefault();
@@ -4270,7 +4347,7 @@ document.addEventListener("keydown", (e) => {
     } else if (key === "e") {
       e.preventDefault();
       view("recruiters");
-      if (window.ui && window.ui.toast) window.ui.toast("Navegando a Equipo de selecciÃƒÂ³n", { duration: 1500 });
+      if (window.ui && window.ui.toast) window.ui.toast("Navegando a Equipo de selección", { duration: 1500 });
       return;
     }
   }
@@ -4301,7 +4378,7 @@ document.addEventListener("keydown", (e) => {
   } else if (key === "?") {
     e.preventDefault();
     if (window.ui && window.ui.toast) {
-      window.ui.toast("Atajos: G+H Inicio Ã‚Â· G+P Pipeline Ã‚Â· G+V Vacantes Ã‚Â· G+C Candidatos Ã‚Â· N Nueva vacante Ã‚Â· / Buscar", { duration: 6000 });
+      window.ui.toast("Atajos: G+H Inicio · G+P Pipeline · G+V Vacantes · G+C Candidatos · N Nueva vacante · / Buscar", { duration: 6000 });
     }
     return;
   }

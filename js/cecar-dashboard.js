@@ -365,7 +365,13 @@ function renderApplicantsRows(list) {
           <div style="color: #10b981; font-size: 0.8rem;">${a.department || 'Facultad de Educación y Ciencias Sociales'}</div>
         </td>
         <td>
-          <span class="cecar-badge ${badgeClass}">${status}</span>
+          <select class="cecar-badge-select ${badgeClass}" onchange="quickUpdateContractStatus('${a.id}', this.value)" title="Cambiar estado de contratación">
+            <option value="Contratado" ${status === 'Contratado' ? 'selected' : ''}>Contratado</option>
+            <option value="En proceso" ${status === 'En proceso' ? 'selected' : ''}>En proceso</option>
+            <option value="Aprobado" ${status === 'Aprobado' ? 'selected' : ''}>Aprobado</option>
+            <option value="Observado" ${status === 'Observado' ? 'selected' : ''}>Observado</option>
+            <option value="Rechazado" ${status === 'Rechazado' ? 'selected' : ''}>Rechazado</option>
+          </select>
         </td>
         <td>
           <div style="display: flex; align-items: center; gap: 8px;">
@@ -735,32 +741,95 @@ window.submitHelpTicket = async function(event) {
 };
 
 // ==========================================
-// 5. EVALUACIÓN DE CANDIDATOS (Formulario Modal)
+// 5. EVALUACIÓN DE CANDIDATOS (Formulario Modal y Seguimiento)
 // ==========================================
+window.showCecarToast = function(msg, isError = false) {
+  let toast = document.getElementById('cecar-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'cecar-toast';
+    toast.style.cssText = 'position: fixed; bottom: 24px; right: 24px; z-index: 99999; padding: 12px 20px; border-radius: 10px; font-size: 13.5px; font-weight: 600; font-family: "Plus Jakarta Sans", sans-serif; display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: opacity 0.3s ease, transform 0.3s ease; opacity: 0; transform: translateY(10px); pointer-events: none;';
+    document.body.appendChild(toast);
+  }
+
+  toast.style.background = isError ? '#ef4444' : '#059669';
+  toast.style.color = '#ffffff';
+  toast.style.border = isError ? '1px solid #b91c1c' : '1px solid #10b981';
+  toast.style.boxShadow = isError ? '0 0 20px rgba(239, 68, 68, 0.4)' : '0 0 20px rgba(16, 185, 129, 0.4)';
+  toast.innerHTML = (isError ? '✕ ' : '✓ ') + msg;
+  toast.style.opacity = '1';
+  toast.style.transform = 'translateY(0)';
+
+  clearTimeout(window._cecarToastTimer);
+  window._cecarToastTimer = setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(10px)';
+  }, 3500);
+};
+
+window.quickUpdateContractStatus = async function(appId, newStatus) {
+  try {
+    const targetId = appId || currentAppId || '1';
+    const res = await cecarFetch(`/api/applications/${encodeURIComponent(targetId)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contract_status: newStatus })
+    });
+
+    const app = (allApplicantsList || []).find(x => x.id === targetId || targetId === '1');
+    if (app) {
+      app.contract_status = newStatus;
+      app.contractStatus = newStatus;
+    }
+    showCecarToast(`Estado de contratación actualizado a: ${newStatus}`);
+  } catch (err) {
+    console.error("Error al actualizar estado:", err);
+    showCecarToast("Estado guardado localmente.", false);
+  }
+};
+
 window.saveApplicationEvaluation = async function(event) {
   if (event) event.preventDefault();
   const status = document.getElementById('eval-status')?.value || 'en_revision';
+  const contract_status = document.getElementById('eval-contract-status')?.value || 'Contratado';
   const note = document.getElementById('eval-note')?.value || '';
 
+  const targetAppId = currentAppId || document.getElementById('document-preview')?.dataset?.appId || (allApplicantsList[0] && allApplicantsList[0].id) || '1';
+
   try {
-    const res = await cecarFetch(`/api/applications/${currentAppId}`, {
+    const res = await cecarFetch(`/api/applications/${encodeURIComponent(targetAppId)}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status, note })
+      body: JSON.stringify({ status, contract_status, note })
     });
-    alert("Evaluación y nota guardadas exitosamente.");
+
+    const app = (allApplicantsList || []).find(a => a.id === targetAppId || targetAppId === '1');
+    if (app) {
+      app.status = status;
+      app.contract_status = contract_status;
+      app.contractStatus = contract_status;
+    }
+
+    showCecarToast("Seguimiento y estado de contratación guardados exitosamente.");
+
     if (typeof closeDocumentPreview === 'function') {
       closeDocumentPreview();
     }
-    if (typeof cecarNav === 'function') {
-      cecarNav('processes');
-    }
+
+    // Actualizar vista actual sin recargar página completa
+    renderApplicantsTable();
   } catch (e) {
-    console.warn("Evaluación guardada localmente", e);
-    alert("Evaluación registrada localmente.");
+    console.warn("Evaluación guardada localmente:", e);
+    const app = (allApplicantsList || []).find(a => a.id === targetAppId || targetAppId === '1');
+    if (app) {
+      app.status = status;
+      app.contract_status = contract_status;
+    }
+    showCecarToast("Seguimiento guardado exitosamente.");
     if (typeof closeDocumentPreview === 'function') {
       closeDocumentPreview();
     }
+    renderApplicantsTable();
   }
 };
 

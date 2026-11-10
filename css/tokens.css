@@ -78,12 +78,16 @@
   color-scheme: light;
 }
 
-[data-theme="dark"] {
-  --rp-primary: #3b82f6;
-  --rp-primary-hover: #60a5fa;
-  --rp-primary-soft: rgba(59, 130, 246, 0.18);
-  --rp-accent: #a855f7;
-  --rp-accent-soft: rgba(168, 85, 247, 0.18);
+[data-theme="dark"],
+body.theme-dark,
+.theme-dark {
+  --rp-primary: #10b981;
+  --rp-primary-hover: #059669;
+  --rp-primary-2: #34d399;
+  --rp-primary-soft: rgba(16, 185, 129, 0.18);
+  --rp-primary-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  --rp-accent: #34d399;
+  --rp-accent-soft: rgba(52, 211, 153, 0.18);
 
   --rp-success: #10b981;
   --rp-success-soft: rgba(16, 185, 129, 0.18);
@@ -92,22 +96,23 @@
   --rp-danger: #ef4444;
   --rp-danger-soft: rgba(239, 68, 68, 0.18);
 
-  /* Verdadero Negro Puro (True OLED Black - Linear / Vercel style) */
-  --rp-bg: #000000;
-  --rp-surface: #0a0a0a;
-  --rp-surface-2: #121212;
-  --rp-surface-hover: #1c1c1c;
-  --rp-border: #262626;
+  /* Superficies profundas en verde esmeralda institucional CECAR v3.0 */
+  --rp-bg: #07120c;
+  --rp-surface: #0d2117;
+  --rp-surface-2: #11281d;
+  --rp-surface-hover: #173a29;
+  --rp-border: rgba(16, 185, 129, 0.22);
   --rp-text: #ffffff;
-  --rp-text-2: #a3a3a3;
-  --rp-text-muted: #737373;
-  --rp-glass: rgba(0, 0, 0, 0.85);
-  --rp-overlay: rgba(0, 0, 0, 0.85);
+  --rp-text-2: #cbd5e1;
+  --rp-text-muted: #94a3b8;
+  --rp-glass: rgba(13, 33, 23, 0.88);
+  --rp-overlay: rgba(7, 18, 12, 0.85);
+  --rp-focus-ring: 0 0 0 3px rgba(16, 185, 129, 0.4);
 
-  --rp-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.8);
-  --rp-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.7);
-  --rp-shadow-lg: 0 12px 28px -4px rgba(0, 0, 0, 0.9);
-  --rp-shadow-xl: 0 24px 48px -8px rgba(0, 0, 0, 0.95);
+  --rp-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --rp-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --rp-shadow-lg: 0 12px 28px -4px rgba(0, 0, 0, 0.5);
+  --rp-shadow-xl: 0 24px 48px -8px rgba(0, 0, 0, 0.65);
 
   color-scheme: dark;
 }

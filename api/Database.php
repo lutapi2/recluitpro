@@ -177,13 +177,13 @@ class Database {
             $appCols = $pdo->query("PRAGMA table_info(applications)")->fetchAll(PDO::FETCH_ASSOC);
             $appColNames = array_map(fn($c) => strtolower($c['name']), $appCols);
             if (!in_array('department', $appColNames, true)) {
-                $pdo->exec("ALTER TABLE applications ADD COLUMN department VARCHAR(150) DEFAULT 'Facultad de Educación y Ciencias Sociales'");
+                $pdo->exec("ALTER TABLE applications ADD COLUMN department TEXT DEFAULT 'Facultad de Educación y Ciencias Sociales'");
             }
             if (!in_array('process_type', $appColNames, true)) {
-                $pdo->exec("ALTER TABLE applications ADD COLUMN process_type VARCHAR(150) DEFAULT 'Aspirante Nuevo a docente cátedra'");
+                $pdo->exec("ALTER TABLE applications ADD COLUMN process_type TEXT DEFAULT 'Aspirante Nuevo a docente cátedra'");
             }
             if (!in_array('contract_status', $appColNames, true)) {
-                $pdo->exec("ALTER TABLE applications ADD COLUMN contract_status VARCHAR(50) DEFAULT 'Contratado'");
+                $pdo->exec("ALTER TABLE applications ADD COLUMN contract_status TEXT DEFAULT 'Contratado'");
             }
             if (!in_array('approved_docs_count', $appColNames, true)) {
                 $pdo->exec("ALTER TABLE applications ADD COLUMN approved_docs_count INTEGER DEFAULT 22");

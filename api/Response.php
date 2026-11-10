@@ -24,24 +24,40 @@ class Response {
     }
 
     public static function file(string $path, string $mediaType, string $filename, ?string $fileData = null): void {
-        if (!is_file($path) || filesize($path) === 0) {
-            if ($fileData !== null && strlen($fileData) > 0) {
-                @file_put_contents($path, $fileData);
-            }
+        $content = null;
+        if (is_file($path) && filesize($path) > 0) {
+            $content = file_get_contents($path);
+        } elseif ($fileData !== null && strlen($fileData) > 0) {
+            $content = $fileData;
+            @file_put_contents($path, $fileData);
         }
 
-        if (!is_file($path)) {
+        if ($content === null) {
             self::error("No se encontró el archivo físico.", 404);
         }
 
         http_response_code(200);
         header('Content-Type: ' . ($mediaType ?: 'application/pdf'));
         header('Content-Disposition: inline; filename="' . rawurlencode($filename) . '"');
+        header('X-Document-Name: ' . rawurlencode($filename));
         header('X-Content-Type-Options: nosniff');
         header('Cache-Control: private, no-store');
-        header('Content-Length: ' . filesize($path));
+        header('Content-Length: ' . strlen($content));
 
-        readfile($path);
+        echo $content;
+        exit;
+    }
+
+    public static function streamPdf(string $bytes, string $filename): void {
+        http_response_code(200);
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: inline; filename="' . rawurlencode($filename) . '"');
+        header('X-Document-Name: ' . rawurlencode($filename));
+        header('X-Content-Type-Options: nosniff');
+        header('Cache-Control: private, no-store');
+        header('Content-Length: ' . strlen($bytes));
+
+        echo $bytes;
         exit;
     }
 }

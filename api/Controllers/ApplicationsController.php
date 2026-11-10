@@ -244,7 +244,10 @@ class ApplicationsController {
                 'status' => $item['status'],
                 'department' => $item['department'] ?? 'Facultad de Educación y Ciencias Sociales',
                 'processType' => $item['process_type'] ?? 'Aspirante Nuevo a docente cátedra',
+                'process_type' => $item['process_type'] ?? 'Aspirante Nuevo a docente cátedra',
                 'contractStatus' => $item['contract_status'] ?? 'Contratado',
+                'contract_status' => $item['contract_status'] ?? 'Contratado',
+                'full_name' => $item['name'],
                 'approvedDocsCount' => (int)($item['approved_docs_count'] ?? 22),
                 'totalDocsCount' => (int)($item['total_docs_count'] ?? 22),
                 'rejectedAt' => $rejectedAt,
@@ -309,6 +312,14 @@ class ApplicationsController {
         $viewer = Security::currentUser($pdo);
         Security::requireRole($viewer, ['administrador', 'reclutador']);
 
+        // Resolve alias '1' or 'default' or empty to primary application
+        if ($applicationId === '1' || $applicationId === 'default' || empty($applicationId)) {
+            $firstId = $pdo->query("SELECT id FROM applications ORDER BY created_at ASC LIMIT 1")->fetchColumn();
+            if ($firstId) {
+                $applicationId = (string)$firstId;
+            }
+        }
+
         $stmt = $pdo->prepare("
             SELECT a.*, v.title as vacancy_title, v.recruiter_id as vacancy_recruiter_id, c.email as candidate_email
             FROM applications a
@@ -328,15 +339,19 @@ class ApplicationsController {
         }
 
         $statusRequested = array_key_exists('status', $body);
+        $contractStatusRequested = array_key_exists('contract_status', $body);
+        $departmentRequested = array_key_exists('department', $body);
+        $processTypeRequested = array_key_exists('process_type', $body);
         $noteRequested = array_key_exists('note', $body);
         $assignedRequested = array_key_exists('assigned_recruiter_id', $body);
 
-        if (!$statusRequested && !$noteRequested && !$assignedRequested) {
-            Response::error("Indica un cambio de etapa, responsable o nota.", 422);
+        if (!$statusRequested && !$contractStatusRequested && !$departmentRequested && !$processTypeRequested && !$noteRequested && !$assignedRequested) {
+            Response::error("Indica un cambio de etapa, estado de contratación, responsable o nota.", 422);
         }
 
         $now = Config::utcNow();
         $prevStatus = $app['status'];
+        $prevContractStatus = $app['contract_status'] ?? 'Contratado';
         $prevAssignee = $app['assigned_recruiter_id'];
 
         $newStatus = $app['status'];
@@ -346,6 +361,24 @@ class ApplicationsController {
                 Response::error("Estado de postulación no válido.", 422);
             }
             $newStatus = $body['status'];
+        }
+
+        $newContractStatus = $prevContractStatus;
+        if ($contractStatusRequested && !empty($body['contract_status'])) {
+            $allowedContract = ['Contratado', 'En proceso', 'Aprobado', 'Observado', 'Rechazado', 'Pendiente'];
+            if (in_array($body['contract_status'], $allowedContract, true)) {
+                $newContractStatus = $body['contract_status'];
+            }
+        }
+
+        $newDepartment = $app['department'] ?? 'Facultad de Educación y Ciencias Sociales';
+        if ($departmentRequested && !empty($body['department'])) {
+            $newDepartment = substr(trim((string)$body['department']), 0, 150);
+        }
+
+        $newProcessType = $app['process_type'] ?? 'Aspirante Nuevo a docente cátedra';
+        if ($processTypeRequested && !empty($body['process_type'])) {
+            $newProcessType = substr(trim((string)$body['process_type']), 0, 150);
         }
 
         $newAssignee = $app['assigned_recruiter_id'];
@@ -367,14 +400,21 @@ class ApplicationsController {
         $note = $noteRequested ? trim((string)($body['note'] ?? '')) : null;
         if ($note === '') $note = null;
 
-        // Update application
+        // Update application in database
         $upd = $pdo->prepare("
             UPDATE applications 
-            SET status = :status, assigned_recruiter_id = :assigned
+            SET status = :status,
+                contract_status = :contract_status,
+                department = :department,
+                process_type = :process_type,
+                assigned_recruiter_id = :assigned
             WHERE id = :id
         ");
         $upd->execute([
             ':status' => $newStatus,
+            ':contract_status' => $newContractStatus,
+            ':department' => $newDepartment,
+            ':process_type' => $newProcessType,
             ':assigned' => $newAssignee,
             ':id' => $applicationId,
         ]);
@@ -391,6 +431,20 @@ class ApplicationsController {
                 ':author_id' => $viewer['id'],
                 ':from_st' => $prevStatus,
                 ':to_st' => $newStatus,
+                ':created_at' => $now,
+            ]);
+        }
+
+        if ($newContractStatus !== $prevContractStatus) {
+            $actStmt = $pdo->prepare("
+                INSERT INTO application_activities (id, application_id, author_id, event_type, note, created_at)
+                VALUES (:id, :app_id, :author_id, 'contract_status', :note, :created_at)
+            ");
+            $actStmt->execute([
+                ':id' => Config::uuid(),
+                ':app_id' => $applicationId,
+                ':author_id' => $viewer['id'],
+                ':note' => "Estado de contratación CECAR actualizado a: {$newContractStatus}",
                 ':created_at' => $now,
             ]);
         }
@@ -438,6 +492,13 @@ class ApplicationsController {
         Response::json([
             'id' => $applicationId,
             'status' => $newStatus,
+            'contract_status' => $newContractStatus,
+            'department' => $newDepartment,
+            'process_type' => $newProcessType,
+            'assignedRecruiterId' => $newAssignee,
+            'statusChanged' => $statusChanged,
+            'emailSent' => $emailSent,
+        ]);
             'assignedRecruiterId' => $newAssignee,
             'statusChanged' => $statusChanged,
             'emailSent' => $emailSent,

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,14 +7,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="css/style.css?v=6.0" />
-    <link rel="stylesheet" href="css/tokens.css?v=6.0" />
-    <link rel="stylesheet" href="css/components.css?v=6.0" />
-    <link rel="stylesheet" href="css/layout.css?v=6.0" />
-    <link rel="stylesheet" href="css/pages.css?v=6.0" />
-    <link rel="stylesheet" href="css/cecar.css?v=7.0" />
+    <link rel="stylesheet" href="css/style.css?v=7.0" />
+    <link rel="stylesheet" href="css/tokens.css?v=7.0" />
+    <link rel="stylesheet" href="css/components.css?v=7.0" />
+    <link rel="stylesheet" href="css/layout.css?v=7.0" />
+    <link rel="stylesheet" href="css/pages.css?v=7.0" />
+    <link rel="stylesheet" href="css/cecar.css?v=8.0" />
   </head>
-  <body class="theme-dark" style="background: var(--cecar-bg-dark); color: #f8fafc;">
+  <body class="theme-dark" data-theme="dark" style="background: var(--cecar-bg-dark); color: #f8fafc;">
     <div class="cecar-app-layout">
       <!-- Menú Lateral Institucional (Fiel a la Imagen 2) -->
       <aside class="cecar-sidebar">
@@ -206,7 +206,8 @@
           </div>
         </div>
         <div class="preview-header-actions">
-          <a id="document-download" class="cecar-btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;" download>Descargar</a>
+          <a id="document-open-tab" class="cecar-btn-secondary" style="padding: 6px 12px; font-size: 0.8rem; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;" target="_blank">Abrir en pestaña nueva ↗</a>
+          <a id="document-download" class="cecar-btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;" download>Descargar PDF</a>
           <button class="preview-close" type="button" onclick="closeDocumentPreview()" style="background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer;">×</button>
         </div>
       </div>
@@ -245,7 +246,7 @@
           </div>
 
           <form id="eval-form" onsubmit="saveApplicationEvaluation(event)">
-            <label style="color: #cbd5e1; font-size: 0.85rem;">Etapa de postulación
+            <label style="color: #cbd5e1; font-size: 0.85rem;">Etapa de postulación (ATS)
               <select id="eval-status" class="cecar-select" style="width: 100%; margin-top: 4px;">
                 <option value="recibida">Recibida</option>
                 <option value="en_revision">En revisión</option>
@@ -254,10 +255,19 @@
                 <option value="rechazada">Rechazada</option>
               </select>
             </label>
-            <label style="color: #cbd5e1; font-size: 0.85rem; margin-top: 10px; display: block;">Nota interna / Observación
-              <textarea id="eval-note" rows="3" class="cecar-search-input" style="width: 100%; margin-top: 4px; box-sizing: border-box;"></textarea>
+            <label style="color: #cbd5e1; font-size: 0.85rem; margin-top: 10px; display: block;">Estado de Contratación CECAR
+              <select id="eval-contract-status" class="cecar-select" style="width: 100%; margin-top: 4px;">
+                <option value="Contratado">Contratado</option>
+                <option value="En proceso">En proceso</option>
+                <option value="Aprobado">Aprobado</option>
+                <option value="Observado">Observado</option>
+                <option value="Rechazado">Rechazado</option>
+              </select>
             </label>
-            <button type="submit" class="cecar-btn-primary" style="width: 100%; margin-top: 14px; justify-content: center;">Guardar Cambios</button>
+            <label style="color: #cbd5e1; font-size: 0.85rem; margin-top: 10px; display: block;">Nota interna / Observación de Seguimiento
+              <textarea id="eval-note" rows="3" class="cecar-search-input" placeholder="Añade observaciones de contratación, acuerdos de comité..." style="width: 100%; margin-top: 4px; box-sizing: border-box;"></textarea>
+            </label>
+            <button type="submit" id="btn-save-eval" class="cecar-btn-primary" style="width: 100%; margin-top: 14px; justify-content: center;">Guardar Seguimiento</button>
           </form>
         </aside>
       </div>

@@ -963,3 +963,286 @@
 .error.show {
   display: block !important;
 }
+
+/* ==========================================================================
+   ARMORIZATION & DARK EMERALD COHESION (CECAR v3.0 Ultra-Pro)
+   Eliminación total de bloques blancos y realce del verde base institucional
+   ========================================================================== */
+
+/* Barra interactiva de búsqueda y filtro del pipeline */
+.pipeline-search-bar {
+  background: #0d2117 !important;
+  border: 1px solid rgba(16, 185, 129, 0.25) !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45) !important;
+}
+
+.pipeline-search-input {
+  background: transparent !important;
+  color: #f8fafc !important;
+}
+
+.pipeline-search-input::placeholder {
+  color: #64748b !important;
+}
+
+.pipeline-search-select {
+  background: #07150e !important;
+  border: 1px solid rgba(16, 185, 129, 0.25) !important;
+  color: #f8fafc !important;
+  border-radius: 9999px !important;
+}
+
+.pipeline-counter-pill {
+  background: rgba(16, 185, 129, 0.16) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  font-weight: 700 !important;
+}
+
+.pipeline-nav-btn {
+  background: #07150e !important;
+  border: 1px solid rgba(16, 185, 129, 0.25) !important;
+  color: #cbd5e1 !important;
+}
+
+.pipeline-nav-btn:hover {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border-color: #34d399 !important;
+}
+
+/* Columnas de Kanban y Tarjetas de Candidato */
+.kanban-column {
+  background: #0d2117 !important;
+  border: 1px solid rgba(16, 185, 129, 0.22) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35) !important;
+}
+
+.kanban-col-header {
+  color: #ffffff !important;
+}
+
+.kanban-col-title {
+  color: #f8fafc !important;
+  font-weight: 700 !important;
+}
+
+.kanban-counter {
+  background: rgba(16, 185, 129, 0.18) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  font-weight: 800 !important;
+}
+
+.kanban-empty-compact {
+  background: rgba(7, 18, 12, 0.6) !important;
+  border: 1.5px dashed rgba(16, 185, 129, 0.25) !important;
+  color: #94a3b8 !important;
+}
+
+.candidate-card-v2 {
+  background: #091710 !important;
+  border: 1px solid rgba(16, 185, 129, 0.22) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3) !important;
+}
+
+.candidate-card-v2:hover {
+  background: #112a1d !important;
+  border-color: #10b981 !important;
+  box-shadow: 0 4px 18px rgba(16, 185, 129, 0.22) !important;
+}
+
+/* Acciones Rápidas del Dashboard */
+.dash-action-card {
+  background: #0d2117 !important;
+  border: 1px solid rgba(16, 185, 129, 0.22) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.dash-action-card:hover {
+  background: #122c1f !important;
+  border-color: #10b981 !important;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.25) !important;
+  transform: translateY(-2px) !important;
+}
+
+.dash-action-card strong {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+.dash-action-card small {
+  color: #94a3b8 !important;
+}
+
+.dash-action-icon {
+  background: rgba(16, 185, 129, 0.16) !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  color: #34d399 !important;
+}
+
+/* Tarjetas de Embudo y Postulaciones Recientes */
+.funnel-card,
+.recent-card,
+.panel .card {
+  background: #0d2117 !important;
+  border: 1px solid rgba(16, 185, 129, 0.22) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35) !important;
+}
+
+.funnel-card h2,
+.recent-card h2,
+.profile-section-title {
+  color: #ffffff !important;
+}
+
+.funnel-row-label,
+.recent-item-title {
+  color: #cbd5e1 !important;
+}
+
+.recent-item-row {
+  background: rgba(7, 18, 12, 0.5) !important;
+  border: 1px solid rgba(16, 185, 129, 0.18) !important;
+}
+
+/* Paneles de Filtro y Creación de Vacantes */
+.filter-panel-v2,
+.profile-section-card {
+  background: #0d2117 !important;
+  border: 1px solid rgba(16, 185, 129, 0.25) !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4) !important;
+  color: #f8fafc !important;
+}
+
+.filter-panel-title,
+.profile-section-title {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+.filter-field-label {
+  color: #94a3b8 !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  margin-bottom: 6px !important;
+}
+
+.filter-input,
+.filter-input-wrap input,
+.filter-field select,
+.profile-section-card input,
+.profile-section-card select,
+.profile-section-card textarea {
+  background: #07150e !important;
+  border: 1px solid rgba(16, 185, 129, 0.25) !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.filter-input:focus,
+.filter-field select:focus,
+.profile-section-card input:focus,
+.profile-section-card select:focus,
+.profile-section-card textarea:focus {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.35) !important;
+  background: #0a1f14 !important;
+  outline: none !important;
+}
+
+.filter-input::placeholder,
+.profile-section-card input::placeholder,
+.profile-section-card textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* Selector Interactivo de Estado de Contratación en Tabla */
+.cecar-badge-select {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  padding: 5px 24px 5px 10px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  font-family: inherit;
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  background-size: 12px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2334d399' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  transition: all 0.2s ease;
+}
+
+.cecar-badge-select.badge-contratado,
+.cecar-badge-select.badge-aprobado {
+  background-color: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.cecar-badge-select.badge-en-proceso,
+.cecar-badge-select.badge-pendiente {
+  background-color: rgba(245, 158, 11, 0.18);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23fbbf24' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+.cecar-badge-select.badge-observado {
+  background-color: rgba(168, 85, 247, 0.18);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23c084fc' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+.cecar-badge-select.badge-rechazado {
+  background-color: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23f87171' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+.cecar-badge-select option {
+  background: #0d2117;
+  color: #ffffff;
+}
+
+/* Botones Principales y Secundarios con Brillo Esmeralda */
+.rp-btn--primary,
+.cecar-btn-primary {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(16, 185, 129, 0.4) !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.rp-btn--primary:hover,
+.cecar-btn-primary:hover {
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%) !important;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45) !important;
+  transform: translateY(-1px) !important;
+}
+
+.rp-btn--secondary,
+.cecar-btn-secondary {
+  background: #0d2117 !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+}
+
+.rp-btn--secondary:hover,
+.cecar-btn-secondary:hover {
+  background: #133324 !important;
+  border-color: #10b981 !important;
+  color: #ffffff !important;
+}
