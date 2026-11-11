@@ -1246,3 +1246,159 @@
   border-color: #10b981 !important;
   color: #ffffff !important;
 }
+
+/* ==========================================================================
+   ESTILOS ROBUSTOS PARA EL VISOR DE CV Y SEGUIMIENTO INSTITUCIONAL CECAR v3.0
+   ========================================================================== */
+
+/* Barra de controles del tablero Kanban */
+.kanban-controls-bar {
+  background: #0d2117 !important;
+  border: 1px solid rgba(16, 185, 129, 0.25) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45) !important;
+  color: #f8fafc !important;
+}
+
+.kanban-search-box {
+  background: #081710 !important;
+  border: 1px solid rgba(16, 185, 129, 0.25) !important;
+  border-radius: 9999px !important;
+}
+
+.kanban-search-input {
+  background: transparent !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.kanban-search-input::placeholder {
+  color: #94a3b8 !important;
+}
+
+.kanban-vacancy-select {
+  background: #081710 !important;
+  border: 1px solid rgba(16, 185, 129, 0.25) !important;
+  color: #ffffff !important;
+  border-radius: 9999px !important;
+}
+
+.kanban-vacancy-select option {
+  background: #0d2117;
+  color: #ffffff;
+}
+
+.kanban-stats-badge {
+  background: rgba(16, 185, 129, 0.16) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+}
+
+.kanban-scroll-btn {
+  background: #081710 !important;
+  border: 1px solid rgba(16, 185, 129, 0.25) !important;
+  color: #34d399 !important;
+}
+
+.kanban-scroll-btn:hover {
+  background: #10b981 !important;
+  color: #ffffff !important;
+}
+
+/* Columnas y Zonas de Soltar de Kanban */
+.kanban-column {
+  background: #0b1f15 !important;
+  border: 1px solid rgba(16, 185, 129, 0.2) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35) !important;
+}
+
+.kanban-column.drag-over {
+  background: rgba(16, 185, 129, 0.12) !important;
+  outline: 2px dashed #10b981 !important;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.25) !important;
+}
+
+.kanban-empty-drop-zone {
+  background: rgba(6, 18, 12, 0.6) !important;
+  border: 1.5px dashed rgba(16, 185, 129, 0.25) !important;
+  color: #94a3b8 !important;
+  border-radius: 12px !important;
+}
+
+/* Tarjetas de Candidato */
+.candidate-card-v2 {
+  background: #0f261b !important;
+  border: 1px solid rgba(16, 185, 129, 0.25) !important;
+  border-radius: 14px !important;
+  color: #f8fafc !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.candidate-card-v2:hover {
+  border-color: #10b981 !important;
+  background: #133324 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5), 0 0 14px rgba(16, 185, 129, 0.18) !important;
+}
+
+.candidate-card-name {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+.candidate-meta-row {
+  color: #cbd5e1 !important;
+}
+
+.candidate-card-vacancy-chip {
+  background: rgba(16, 185, 129, 0.14) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.25) !important;
+  border-radius: 6px !important;
+}
+
+/* Botón específico de CV con alto contraste */
+.cv-viewer-btn {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.4) !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.cv-viewer-btn:hover {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border-color: #34d399 !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4) !important;
+}
+
+/* Modales y Visor de Documentos: Máxima prioridad de capa (z-index) */
+dialog#document-preview.split-preview-dialog[open] {
+  z-index: 99999 !important;
+  background: #07150e !important;
+  border: 1px solid rgba(16, 185, 129, 0.4) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.85), 0 0 35px rgba(16, 185, 129, 0.2) !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+dialog#document-preview.split-preview-dialog::backdrop,
+dialog#application-detail-dialog::backdrop {
+  z-index: 99998 !important;
+  background: rgba(3, 10, 6, 0.88) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+dialog#application-detail-dialog[open] {
+  z-index: 99999 !important;
+  display: block !important;
+  margin: auto !important;
+  position: fixed !important;
+  inset: 0 !important;
+}
+

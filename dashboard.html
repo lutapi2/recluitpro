@@ -198,22 +198,26 @@
 
     <!-- Visor de Documento PDF en Pantalla Dividida -->
     <dialog id="document-preview" class="document-preview split-preview-dialog" aria-labelledby="preview-title">
-      <div class="preview-header" style="background: #091710; border-bottom: 1px solid var(--cecar-border);">
-        <div class="preview-header-left">
+      <div class="preview-header" style="background: #091710; border-bottom: 1px solid var(--cecar-border); display: flex; align-items: center; justify-content: space-between; padding: 12px 20px;">
+        <div class="preview-header-left" style="display: flex; align-items: center; gap: 16px;">
           <div>
-            <h2 id="preview-title" style="color: #fff; font-size: 1.15rem;">Expediente del Candidato y Currículum</h2>
-            <small id="preview-subtitle" class="preview-subtitle" style="color: #10b981;">Revisión en pantalla dividida</small>
+            <h2 id="preview-title" style="color: #fff; font-size: 1.15rem; margin: 0;">Expediente del Candidato y Currículum</h2>
+            <small id="preview-subtitle" class="preview-subtitle" style="color: #10b981;">Revisión institucional CECAR v3.0</small>
+          </div>
+          <div class="preview-mode-tabs" style="display: inline-flex; gap: 6px; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.2);">
+            <button type="button" id="btn-toggle-pdf" class="cecar-btn-primary" style="padding: 4px 10px; font-size: 0.76rem;" onclick="switchPreviewMode('pdf')">📄 Visor PDF</button>
+            <button type="button" id="btn-toggle-dossier" class="cecar-btn-secondary" style="padding: 4px 10px; font-size: 0.76rem;" onclick="switchPreviewMode('dossier')">📋 Expediente Digital</button>
           </div>
         </div>
-        <div class="preview-header-actions">
+        <div class="preview-header-actions" style="display: flex; align-items: center; gap: 8px;">
           <a id="document-open-tab" class="cecar-btn-secondary" style="padding: 6px 12px; font-size: 0.8rem; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;" target="_blank">Abrir en pestaña nueva ↗</a>
           <a id="document-download" class="cecar-btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;" download>Descargar PDF</a>
-          <button class="preview-close" type="button" onclick="closeDocumentPreview()" style="background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer;">×</button>
+          <button class="preview-close" type="button" onclick="closeDocumentPreview()" style="background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; line-height: 1;">×</button>
         </div>
       </div>
       <div class="split-preview-body">
-        <div class="split-doc-pane">
-          <iframe id="document-frame" title="Vista previa del documento"></iframe>
+        <div class="split-doc-pane" style="position: relative; width: 100%; height: 100%;">
+          <iframe id="document-frame" title="Vista previa del documento" style="width: 100%; height: 100%; border: none; background: #07120c;"></iframe>
         </div>
         <aside id="split-evaluation-pane" class="split-eval-pane" style="background: #0d1e15; border-left: 1px solid var(--cecar-border);">
           <div class="eval-candidate-card" style="background: #091710; border: 1px solid var(--cecar-border);">
@@ -271,6 +275,59 @@
           </form>
         </aside>
       </div>
+    </dialog>
+
+    <!-- Diálogo Modal de Seguimiento Detallado del Candidato -->
+    <dialog id="application-detail-dialog" class="cecar-modal-dialog" aria-labelledby="app-detail-title" style="background: #0d2117; border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 18px; color: #f8fafc; max-width: 580px; width: 95vw; box-shadow: 0 25px 70px rgba(0,0,0,0.85); padding: 0; overflow: hidden;">
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; background: #081710; border-bottom: 1px solid var(--cecar-border);">
+        <div>
+          <h3 id="app-detail-title" style="margin: 0; font-size: 1.15rem; color: #ffffff; font-weight: 800;">Seguimiento del Candidato</h3>
+          <small style="color: #10b981; font-size: 12px;">Gestión de etapa, notas internas y responsables</small>
+        </div>
+        <button type="button" onclick="closeApplicationDetailDialog()" style="background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; padding: 4px;">×</button>
+      </div>
+      
+      <form id="app-detail-form" onsubmit="saveApplicationDetailUpdate(event)" style="padding: 24px;">
+        <input type="hidden" id="app-detail-id" value="" />
+        
+        <div id="app-detail-candidate-info" style="margin-bottom: 18px;"></div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+          <label style="font-size: 12.5px; font-weight: 600; color: #cbd5e1; display: block;">Etapa del Proceso (ATS)
+            <select id="app-detail-stage" class="cecar-select" style="width: 100%; margin-top: 6px;">
+              <option value="recibida">Recibida</option>
+              <option value="en_revision">En revisión</option>
+              <option value="entrevista">Entrevista</option>
+              <option value="oferta">Oferta / Contratado</option>
+              <option value="rechazada">Rechazada</option>
+            </select>
+          </label>
+
+          <label style="font-size: 12.5px; font-weight: 600; color: #cbd5e1; display: block;">Reclutador Responsable
+            <select id="app-detail-assignee" class="cecar-select" style="width: 100%; margin-top: 6px;">
+              <option value="">Sin asignar</option>
+            </select>
+          </label>
+        </div>
+
+        <label style="font-size: 12.5px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 16px;">
+          Nueva Nota Interna de Seguimiento
+          <textarea id="app-detail-note" class="cecar-input" rows="3" placeholder="Registra acuerdos, feedback de entrevista o avances del expediente..." style="width: 100%; margin-top: 6px; box-sizing: border-box; resize: vertical;"></textarea>
+        </label>
+
+        <div id="app-detail-message" style="margin-bottom: 14px; font-size: 13px; font-weight: 600;"></div>
+
+        <div style="border-top: 1px solid rgba(16, 185, 129, 0.15); padding-top: 16px; margin-bottom: 18px;">
+          <div style="font-size: 12px; font-weight: 700; color: #10b981; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px;">Historial de Actividad y Notas</div>
+          <ul id="app-detail-history" style="list-style: none; padding: 0; margin: 0; max-height: 140px; overflow-y: auto; font-size: 12.5px; color: #cbd5e1; display: flex; flex-direction: column; gap: 8px;"></ul>
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end; align-items: center;">
+          <button type="button" class="cecar-btn-secondary" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.35); font-size: 12.5px;" onclick="deleteCurrentApplication()">Eliminar Postulación</button>
+          <button type="button" class="cecar-btn-secondary" onclick="closeApplicationDetailDialog()" style="font-size: 12.5px;">Cancelar</button>
+          <button type="submit" class="cecar-btn-primary" style="font-size: 12.5px; padding: 9px 18px;">Guardar Cambios</button>
+        </div>
+      </form>
     </dialog>
 
     <!-- Diálogo Modal Paleta de Comandos (Ctrl + K) -->

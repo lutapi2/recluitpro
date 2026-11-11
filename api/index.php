@@ -157,7 +157,7 @@ try {
     if ($method === 'POST' && $path === '/documents') {
         DocumentsController::uploadDocument($_FILES);
     }
-    if ($method === 'GET' && preg_match('#^/documents/([a-zA-Z0-9_-]+)$#', $path, $m)) {
+    if ($method === 'GET' && preg_match('#^/documents/([a-zA-Z0-9_.-]+)(/download|/view)?$#', $path, $m)) {
         DocumentsController::downloadDocument($m[1]);
     }
 

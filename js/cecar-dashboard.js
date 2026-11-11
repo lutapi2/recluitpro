@@ -810,6 +810,16 @@ window.saveApplicationEvaluation = async function(event) {
       app.contractStatus = contract_status;
     }
 
+    if (typeof pipelineApplicationsCache !== "undefined" && pipelineApplicationsCache) {
+      const pApp = pipelineApplicationsCache.find(a => a.id === targetAppId);
+      if (pApp) {
+        pApp.status = status;
+        pApp.contract_status = contract_status;
+        if (typeof refreshPipelineBoard === "function") refreshPipelineBoard();
+        if (typeof updatePipelineStatsCount === "function") updatePipelineStatsCount();
+      }
+    }
+
     showCecarToast("Seguimiento y estado de contratación guardados exitosamente.");
 
     if (typeof closeDocumentPreview === 'function') {
@@ -817,7 +827,9 @@ window.saveApplicationEvaluation = async function(event) {
     }
 
     // Actualizar vista actual sin recargar página completa
-    renderApplicantsTable();
+    if (typeof renderApplicantsTable === 'function') {
+      renderApplicantsTable();
+    }
   } catch (e) {
     console.warn("Evaluación guardada localmente:", e);
     const app = (allApplicantsList || []).find(a => a.id === targetAppId || targetAppId === '1');
@@ -825,11 +837,22 @@ window.saveApplicationEvaluation = async function(event) {
       app.status = status;
       app.contract_status = contract_status;
     }
+    if (typeof pipelineApplicationsCache !== "undefined" && pipelineApplicationsCache) {
+      const pApp = pipelineApplicationsCache.find(a => a.id === targetAppId);
+      if (pApp) {
+        pApp.status = status;
+        pApp.contract_status = contract_status;
+        if (typeof refreshPipelineBoard === "function") refreshPipelineBoard();
+        if (typeof updatePipelineStatsCount === "function") updatePipelineStatsCount();
+      }
+    }
     showCecarToast("Seguimiento guardado exitosamente.");
     if (typeof closeDocumentPreview === 'function') {
       closeDocumentPreview();
     }
-    renderApplicantsTable();
+    if (typeof renderApplicantsTable === 'function') {
+      renderApplicantsTable();
+    }
   }
 };
 
