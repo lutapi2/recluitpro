@@ -253,6 +253,7 @@ class UsersController {
         $appIds = $appIdsStmt->fetchAll(PDO::FETCH_COLUMN);
 
         foreach ($appIds as $aId) {
+            $pdo->prepare("DELETE FROM hv_items WHERE application_id = :aid")->execute([':aid' => $aId]);
             $pdo->prepare("DELETE FROM application_activities WHERE application_id = :aid")->execute([':aid' => $aId]);
             $pdo->prepare("DELETE FROM applications WHERE id = :aid")->execute([':aid' => $aId]);
         }
@@ -271,9 +272,10 @@ class UsersController {
         $uploadDir = Config::getUploadDir();
         $pdo->prepare("DELETE FROM documents WHERE owner_id = :uid")->execute([':uid' => $userId]);
 
-        // 4. Delete sessions, tokens, user
+        // 4. Delete sessions, tokens, help tickets, user
         $pdo->prepare("DELETE FROM auth_sessions WHERE user_id = :uid")->execute([':uid' => $userId]);
         $pdo->prepare("DELETE FROM email_tokens WHERE user_id = :uid")->execute([':uid' => $userId]);
+        $pdo->prepare("DELETE FROM help_tickets WHERE user_id = :uid")->execute([':uid' => $userId]);
         $pdo->prepare("DELETE FROM users WHERE id = :uid")->execute([':uid' => $userId]);
 
         foreach ($storageNames as $sname) {

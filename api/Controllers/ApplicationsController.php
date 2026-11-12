@@ -534,6 +534,7 @@ class ApplicationsController {
             Response::error("No tienes permisos para eliminar esta postulación.", 403);
         }
 
+        $pdo->prepare("DELETE FROM hv_items WHERE application_id = :id")->execute([':id' => $applicationId]);
         $pdo->prepare("DELETE FROM application_activities WHERE application_id = :id")->execute([':id' => $applicationId]);
         $pdo->prepare("DELETE FROM applications WHERE id = :id")->execute([':id' => $applicationId]);
 

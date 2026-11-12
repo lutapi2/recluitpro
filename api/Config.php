@@ -20,12 +20,27 @@ class Config {
     }
 
     public static function getDatabasePath(): string {
+        $envPath = getenv('DATABASE_PATH') ?: getenv('SQLITE_PATH');
+        if (!empty($envPath)) {
+            $dir = dirname($envPath);
+            if (!is_dir($dir)) {
+                @mkdir($dir, 0777, true);
+            }
+            return $envPath;
+        }
         $root = self::getRootPath();
         $dbPath = $root . DIRECTORY_SEPARATOR . 'recruitpro.db';
         return $dbPath;
     }
 
     public static function getUploadDir(): string {
+        $envUpload = getenv('UPLOAD_DIR');
+        if (!empty($envUpload)) {
+            if (!is_dir($envUpload)) {
+                @mkdir($envUpload, 0777, true);
+            }
+            return $envUpload;
+        }
         $root = self::getRootPath();
         // Priority: outside root folder or local recruitpro-data
         $parentData = dirname($root) . DIRECTORY_SEPARATOR . 'recruitpro-data' . DIRECTORY_SEPARATOR . 'private_uploads';

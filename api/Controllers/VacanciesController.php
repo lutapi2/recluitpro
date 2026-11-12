@@ -240,6 +240,16 @@ class VacanciesController {
             Response::error("No se encontró la vacante a eliminar.", 404);
         }
 
+        // Clean up associated applications and items
+        $appIdsStmt = $pdo->prepare("SELECT id FROM applications WHERE vacancy_id = :id");
+        $appIdsStmt->execute([':id' => $vacancyId]);
+        $appIds = $appIdsStmt->fetchAll(PDO::FETCH_COLUMN);
+        foreach ($appIds as $aid) {
+            $pdo->prepare("DELETE FROM hv_items WHERE application_id = :aid")->execute([':aid' => $aid]);
+            $pdo->prepare("DELETE FROM application_activities WHERE application_id = :aid")->execute([':aid' => $aid]);
+            $pdo->prepare("DELETE FROM applications WHERE id = :aid")->execute([':aid' => $aid]);
+        }
+
         $del = $pdo->prepare("DELETE FROM vacancies WHERE id = :id");
         $del->execute([':id' => $vacancyId]);
 

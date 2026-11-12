@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: recruitpro-app
+    env: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: ENVIRONMENT
+        value: production
