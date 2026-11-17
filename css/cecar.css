@@ -253,7 +253,8 @@
 .cecar-tutorial-pill {
   position: fixed;
   bottom: 24px;
-  left: 24px;
+  right: 24px;
+  left: auto;
   z-index: 100;
   display: inline-flex;
   align-items: center;
@@ -1385,20 +1386,127 @@ dialog#document-preview.split-preview-dialog[open] {
   box-shadow: 0 25px 80px rgba(0, 0, 0, 0.85), 0 0 35px rgba(16, 185, 129, 0.2) !important;
   display: flex !important;
   flex-direction: column !important;
+  width: min(1380px, calc(100vw - 32px)) !important;
+  height: min(880px, calc(100dvh - 32px)) !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: auto !important;
+  inset: 0 !important;
+  position: fixed !important;
+  overflow: hidden !important;
+  padding: 0 !important;
 }
 
 dialog#document-preview.split-preview-dialog::backdrop,
-dialog#application-detail-dialog::backdrop {
+dialog#application-detail-dialog::backdrop,
+dialog.cecar-modal-dialog::backdrop {
   z-index: 99998 !important;
   background: rgba(3, 10, 6, 0.88) !important;
   backdrop-filter: blur(8px) !important;
 }
 
-dialog#application-detail-dialog[open] {
+dialog#application-detail-dialog[open],
+dialog.cecar-modal-dialog[open] {
   z-index: 99999 !important;
   display: block !important;
   margin: auto !important;
   position: fixed !important;
   inset: 0 !important;
+}
+
+/* ==============================================================================
+   CECAR v3.0 Deep Emerald Consistency Overrides (Previene tarjetas blancas)
+   ============================================================================== */
+.dash-metric-card,
+.dash-chart-card,
+.quick-action,
+.dash-section-card,
+.dash-recent-card,
+.dash-recent-item,
+.filter-card,
+.profile-section-card,
+.vacancy-card-v2,
+.kanban-controls-bar,
+.kanban-column,
+.kanban-card {
+  background: #0d2117 !important;
+  border: 1px solid rgba(16, 185, 129, 0.22) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35) !important;
+}
+
+.quick-action:hover,
+.dash-metric-card:hover,
+.vacancy-card-v2:hover {
+  background: #11281d !important;
+  border-color: rgba(16, 185, 129, 0.45) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 15px rgba(16, 185, 129, 0.15) !important;
+}
+
+.filter-input,
+.kanban-search-input,
+.kanban-vacancy-select,
+.cecar-select,
+.cecar-search-input,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="search"],
+textarea,
+select {
+  background: #08160f !important;
+  border: 1px solid rgba(16, 185, 129, 0.28) !important;
+  color: #ffffff !important;
+  border-radius: 10px !important;
+}
+
+.filter-input:focus,
+.kanban-search-input:focus,
+.kanban-vacancy-select:focus,
+.cecar-select:focus,
+.cecar-search-input:focus,
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25) !important;
+  outline: none !important;
+}
+
+.dash-chart-card h2,
+.dash-chart-card h3,
+.dash-section-title,
+.profile-section-title,
+.vacancy-card-title,
+.filter-field-label,
+.table-user-name {
+  color: #ffffff !important;
+}
+
+.dash-greeting-sub,
+.profile-section-sub,
+.filter-desc,
+.dash-chart-subtitle {
+  color: #94a3b8 !important;
+}
+
+.notice-box.is-error,
+.box.notice-box.is-error {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border: 1px solid rgba(239, 68, 68, 0.4) !important;
+  color: #fca5a5 !important;
+  border-radius: 12px !important;
+  padding: 14px 18px !important;
+}
+
+.notice-box.is-success,
+.box.notice-box.is-success {
+  background: rgba(16, 185, 129, 0.15) !important;
+  border: 1px solid rgba(16, 185, 129, 0.4) !important;
+  color: #6ee7b7 !important;
+  border-radius: 12px !important;
+  padding: 14px 18px !important;
 }
 

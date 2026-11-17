@@ -1,28 +1,37 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="dark">
   <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RecruitPro | Verificar correo</title>
+    <title>Verificar Correo | CECAR Selección</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="css/style.css" />
-    <link rel="stylesheet" href="css/tokens.css?v=6.0" />
-    <link rel="stylesheet" href="css/components.css?v=6.0" />
+    <link rel="stylesheet" href="css/style.css?v=12.0" />
+    <link rel="stylesheet" href="css/tokens.css?v=12.0" />
+    <link rel="stylesheet" href="css/components.css?v=12.0" />
+    <link rel="stylesheet" href="css/cecar.css?v=12.0" />
   </head>
-  <body>
-    <main class="panel">
-      <section class="card">
-        <h2>Verifica tu correo</h2>
-        <p id="verification-copy">Confirma tu dirección de correo para activar tu cuenta.</p>
+  <body class="theme-dark" data-theme="dark" style="background: #07120c; display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+    <main class="panel" style="max-width: 460px; width: 100%; margin: 20px;">
+      <section class="card" style="background: #0d2117; border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 16px; padding: 32px; box-shadow: 0 12px 35px rgba(0,0,0,0.5);">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="24" height="24" rx="6" fill="#10b981"/>
+            <path d="M12 6L14 10.5L18.5 12L14 13.5L12 18L10 13.5L5.5 12L10 10.5L12 6Z" fill="#ffffff"/>
+          </svg>
+          <span style="font-weight: 800; font-size: 1.1rem; color: #fff;">CECAR · Selección</span>
+        </div>
+        <h2 style="color: #fff; margin: 0 0 8px;">Verifica tu correo</h2>
+        <p id="verification-copy" style="color: #cbd5e1; font-size: 0.92rem; margin: 0 0 20px;">Confirma tu dirección de correo para activar tu cuenta de candidato o evaluador en CECAR.</p>
         <div id="verification-result" class="notice-box" role="status"></div>
-        <button id="verify-button" class="primary" type="button" onclick="verifyEmail()">Verificar correo</button>
-        <p class="center"><a href="index.html">Iniciar sesión</a></p>
+        <button id="verify-button" class="primary" type="button" onclick="verifyEmail()" style="width: 100%; padding: 12px; background: #10b981; color: #fff; font-weight: 700; border: none; border-radius: 10px; cursor: pointer;">Verificar correo</button>
+        <p class="center" style="margin-top: 20px; font-size: 0.9rem; text-align: center;"><a href="index.html" style="color: #34d399; text-decoration: none;">Iniciar sesión</a></p>
       </section>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js" defer></script>
-    <script src="js/ui.js?v=6.0"></script>
-    <script src="js/verify-email.js"></script>
+    <script src="js/ui.js?v=12.0" charset="UTF-8"></script>
+    <script src="js/verify-email.js?v=12.0" charset="UTF-8"></script>
   </body>
 </html>

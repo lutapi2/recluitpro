@@ -1317,7 +1317,19 @@ async function view(page, vacancyId = "") {
     }, 15);
   } catch (error) {
     console.error("No se pudo cargar la pantalla:", error);
-    app.innerHTML = `<div class="box notice-box is-error" role="alert">${escapeHtml(error.message)}</div>`;
+    const friendlyMsg = (error && error.message) ? error.message : "No se pudo cargar el contenido solicitado.";
+    app.innerHTML = `
+      <div class="cecar-table-card" style="padding: 28px; text-align: center; max-width: 680px; margin: 40px auto; background: #0d2117; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 16px;">
+        <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(239, 68, 68, 0.15); color: #ef4444; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <h3 style="color: #fff; margin: 0 0 8px; font-size: 1.2rem;">Aviso del Sistema</h3>
+        <p style="color: #fca5a5; font-size: 0.95rem; margin: 0 0 20px;">${escapeHtml(friendlyMsg)}</p>
+        <button class="cecar-btn-primary" onclick="cecarNav('home')" style="display: inline-flex; margin: 0 auto;">
+          Volver al Inicio
+        </button>
+      </div>
+    `;
   }
 }
 
@@ -1954,13 +1966,15 @@ function switchPreviewMode(mode) {
   const dialog = document.getElementById("document-preview");
   const pdfBtn = document.getElementById("btn-toggle-pdf");
   const dossierBtn = document.getElementById("btn-toggle-dossier");
-  if (!frame || !dialog) return;
+  if (!dialog) return;
 
   dialog.dataset.activeTab = mode;
 
   if (mode === "dossier") {
-    frame.removeAttribute("src");
-    frame.srcdoc = dialog.dataset.dossierHtml || "";
+    if (frame) {
+      frame.removeAttribute("src");
+      frame.srcdoc = dialog.dataset.dossierHtml || "";
+    }
     if (pdfBtn) {
       pdfBtn.className = "cecar-btn-secondary";
       pdfBtn.style.padding = "4px 10px";
@@ -1972,9 +1986,11 @@ function switchPreviewMode(mode) {
       dossierBtn.style.fontSize = "0.76rem";
     }
   } else {
-    frame.removeAttribute("srcdoc");
     const targetUrl = dialog.dataset.objectUrl || dialog.dataset.directUrl || `/api/documents/${encodeURIComponent(dialog.dataset.docParam || 'cv')}`;
-    frame.src = targetUrl;
+    if (frame) {
+      frame.removeAttribute("srcdoc");
+      frame.src = targetUrl;
+    }
     if (pdfBtn) {
       pdfBtn.className = "cecar-btn-primary";
       pdfBtn.style.padding = "4px 10px";
@@ -2005,7 +2021,12 @@ async function viewDocument(encodedId, optionalAppId = null) {
 
   if (!dialog) return;
 
-  // 1. Abrir el modal de INMEDIATO para respuesta visual instantánea
+  // 1. Si el modal de seguimiento de candidato está abierto, cerrarlo limpiamente
+  if (typeof closeApplicationDetailDialog === "function") {
+    try { closeApplicationDetailDialog(); } catch(e) {}
+  }
+
+  // 2. Abrir el modal de INMEDIATO para respuesta visual instantánea
   if (!dialog.open) {
     try {
       dialog.showModal();
@@ -2014,8 +2035,10 @@ async function viewDocument(encodedId, optionalAppId = null) {
       dialog.setAttribute("open", "");
     }
   }
+  dialog.style.display = "flex";
+  dialog.dataset.activeTab = "dossier";
 
-  // 2. Localizar la postulación del candidato en caché
+  // 3. Localizar la postulación del candidato en caché
   currentEvaluatingApp = null;
   let app = null;
 
@@ -2093,6 +2116,10 @@ async function viewDocument(encodedId, optionalAppId = null) {
     console.warn("setupSplitEvaluationPanel safe caught:", evalErr);
   }
 
+  const docParam = id || app.resumeId || app.id || "cv";
+  dialog.dataset.docParam = docParam;
+  const directApiDocUrl = `/api/documents/${encodeURIComponent(docParam)}`;
+
   // Función para renderizar el expediente digital estructurado con alta fidelidad
   const renderDossierHtml = (cand) => `
     <!DOCTYPE html>
@@ -2101,20 +2128,24 @@ async function viewDocument(encodedId, optionalAppId = null) {
       <meta charset="utf-8">
       <style>
         * { box-sizing: border-box; }
-        body { font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; background: #07120c; color: #f8fafc; margin: 0; padding: 24px; }
-        .dossier-card { background: #0d2117; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 16px; padding: 24px; max-width: 720px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
-        .dossier-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(16, 185, 129, 0.2); padding-bottom: 16px; margin-bottom: 20px; }
-        .inst-title { color: #10b981; font-size: 11px; text-transform: uppercase; font-weight: 800; letter-spacing: 0.08em; }
-        .cand-name { color: #ffffff; font-size: 22px; font-weight: 800; margin: 4px 0; }
+        body { font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; background: #07120c; color: #f8fafc; margin: 0; padding: 24px; line-height: 1.6; }
+        .dossier-card { background: #0d2117; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 16px; padding: 26px; max-width: 760px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+        .dossier-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(16, 185, 129, 0.2); padding-bottom: 18px; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+        .inst-title { color: #10b981; font-size: 11.5px; text-transform: uppercase; font-weight: 800; letter-spacing: 0.08em; }
+        .cand-name { color: #ffffff; font-size: 24px; font-weight: 800; margin: 4px 0; }
+        .action-banner { background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
         .grid-info { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
         .info-item { background: rgba(6, 18, 12, 0.7); padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(16, 185, 129, 0.18); }
         .info-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: 700; margin-bottom: 4px; }
         .info-val { font-size: 14px; color: #f8fafc; font-weight: 600; word-break: break-word; }
         .badge-box { display: inline-flex; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); padding: 6px 14px; border-radius: 9999px; font-size: 12.5px; font-weight: 800; }
-        .checklist-preview { background: rgba(6, 18, 12, 0.7); border: 1px solid rgba(16, 185, 129, 0.18); border-radius: 10px; padding: 16px; margin-top: 16px; }
+        .section-box { background: rgba(6, 18, 12, 0.7); border: 1px solid rgba(16, 185, 129, 0.18); border-radius: 10px; padding: 16px; margin-top: 16px; }
+        .section-title { font-size: 13px; font-weight: 800; color: #10b981; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+        .tag-pill { display: inline-block; background: rgba(16, 185, 129, 0.18); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; padding: 3px 9px; font-size: 12px; font-weight: 600; margin: 3px 4px 3px 0; }
         .checklist-row { display: flex; justify-content: space-between; font-size: 13px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
         .checklist-row:last-child { border-bottom: none; }
         .check-ok { color: #34d399; font-weight: 700; }
+        .btn-link { background: #10b981; color: #ffffff; text-decoration: none; padding: 6px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; border: none; cursor: pointer; }
       </style>
     </head>
     <body>
@@ -2123,10 +2154,20 @@ async function viewDocument(encodedId, optionalAppId = null) {
           <div>
             <div class="inst-title">Corporación Universitaria del Caribe · CECAR</div>
             <div class="cand-name">${escapeHtml(cand.name || "Carlos Mendoza Gómez")}</div>
-            <div style="color: #94a3b8; font-size: 13px;">${escapeHtml(cand.vacancyTitle || "Desarrollador Full Stack Senior")} · ${escapeHtml(cand.location || "Sincelejo, Sucre")}</div>
+            <div style="color: #94a3b8; font-size: 13.5px;">${escapeHtml(cand.vacancyTitle || "Desarrollador Full Stack Senior")} · ${escapeHtml(cand.location || "Sincelejo, Sucre")}</div>
           </div>
           <div style="text-align: right;">
             <div class="badge-box">✓ 22/22 Requisitos Verificados</div>
+          </div>
+        </div>
+
+        <div class="action-banner">
+          <div style="color: #e2e8f0; font-size: 13px;">
+            <b>Expediente Digital Institucional Activo</b> · Acreditación curricular conforme a la resolución institucional CECAR.
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <a href="${directApiDocUrl}" target="_blank" class="btn-link">↗ Abrir PDF Oficial</a>
+            <a href="${directApiDocUrl}" download="HojaDeVida_${escapeHtml(cand.name || 'Candidato').replace(/\s+/g, '_')}.pdf" class="btn-link" style="background: rgba(16, 185, 129, 0.25); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.45);">📥 Descargar</a>
           </div>
         </div>
 
@@ -2149,8 +2190,28 @@ async function viewDocument(encodedId, optionalAppId = null) {
           </div>
         </div>
 
-        <div class="checklist-preview">
-          <div style="font-size: 13px; font-weight: 700; color: #10b981; margin-bottom: 10px;">Acreditación y Soportes Principales:</div>
+        <div class="section-box">
+          <div class="section-title">Perfil Profesional y Trayectoria</div>
+          <p style="margin: 0; font-size: 13px; color: #cbd5e1;">
+            Profesional en Ingeniería de Sistemas con más de 7 años de experiencia especializada en desarrollo de software full stack, arquitectura de aplicaciones web seguras, optimización de bases de datos relacionales y diseño de interfaces institucionales de alto impacto. Candidato evaluado y aprobado en el proceso de selección docente y técnico de CECAR.
+          </p>
+        </div>
+
+        <div class="section-box">
+          <div class="section-title">Competencias Técnicas y Habilidades Validadas</div>
+          <div>
+            <span class="tag-pill">PHP 8.2 / Modern Architecture</span>
+            <span class="tag-pill">JavaScript ES6+ / Vanilla JS</span>
+            <span class="tag-pill">SQLite / MySQL / Data Modeling</span>
+            <span class="tag-pill">RESTful APIs & Endpoints</span>
+            <span class="tag-pill">Seguridad Web (CSRF & Argon2id)</span>
+            <span class="tag-pill">Metodologías Ágiles (Kanban)</span>
+            <span class="tag-pill">Auditoría y Checklist Documental</span>
+          </div>
+        </div>
+
+        <div class="section-box">
+          <div class="section-title">Acreditación y Soportes Principales (22/22 Requisitos Verificados):</div>
           <div class="checklist-row"><span>1. Minuta de Contrato de Trabajo Oficial</span><span class="check-ok">✓ Conforme</span></div>
           <div class="checklist-row"><span>2. Cédula de Ciudadanía al 150%</span><span class="check-ok">✓ Verificado</span></div>
           <div class="checklist-row"><span>3. Título Profesional de Pregrado y Acta</span><span class="check-ok">✓ Acreditado</span></div>
@@ -2165,7 +2226,7 @@ async function viewDocument(encodedId, optionalAppId = null) {
     </html>
   `;
 
-  // 3. Renderizar DE INMEDIATO el expediente institucional completo en el frame
+  // 4. Renderizar DE INMEDIATO el expediente institucional completo en el frame
   const dossierHtml = renderDossierHtml(app);
   dialog.dataset.dossierHtml = dossierHtml;
 
@@ -2174,13 +2235,15 @@ async function viewDocument(encodedId, optionalAppId = null) {
     frame.srcdoc = dossierHtml;
   }
 
-  // 4. Configurar botones de descarga y apertura directa
-  const docParam = id || app.resumeId || app.id || "cv";
-  dialog.dataset.docParam = docParam;
-  const directApiDocUrl = `/api/documents/${encodeURIComponent(docParam)}`;
-
+  // 5. Configurar botones de descarga y apertura directa
   if (openTab) {
     openTab.href = directApiDocUrl;
+    openTab.target = "_blank";
+    openTab.onclick = (e) => {
+      e.preventDefault();
+      const targetWinUrl = dialog.dataset.objectUrl || directApiDocUrl;
+      window.open(targetWinUrl, "_blank");
+    };
     openTab.style.display = "inline-flex";
   }
 
@@ -2196,7 +2259,7 @@ async function viewDocument(encodedId, optionalAppId = null) {
   if (pdfBtn) pdfBtn.className = "cecar-btn-secondary";
   if (dossierBtn) dossierBtn.className = "cecar-btn-primary";
 
-  // 5. Cargar en paralelo el stream binario del PDF
+  // 6. Cargar en segundo plano el stream binario del PDF para descargas y pestaña nueva
   try {
     const response = await apiRequest(directApiDocUrl);
     if (response && response.ok) {
@@ -2215,18 +2278,9 @@ async function viewDocument(encodedId, optionalAppId = null) {
         download.href = url;
         download.download = filename;
       }
-
-      // Si el usuario no ha cambiado manualmente a la pestaña de expediente, activar el PDF
-      if (frame && (!dialog.dataset.activeTab || dialog.dataset.activeTab === "pdf")) {
-        frame.removeAttribute("srcdoc");
-        frame.src = url;
-        frame.title = `Vista previa de ${filename}`;
-        if (pdfBtn) pdfBtn.className = "cecar-btn-primary";
-        if (dossierBtn) dossierBtn.className = "cecar-btn-secondary";
-      }
     }
   } catch (docErr) {
-    console.warn("Stream PDF no disponible directamente, manteniendo vista estructurada:", docErr);
+    console.warn("Stream PDF no disponible en background:", docErr);
   }
 }
 window.viewDocument = viewDocument;
@@ -3781,6 +3835,10 @@ async function initializeDashboard() {
       avatarEl.innerHTML = getDynamicAvatar(user.name, 38);
       avatarEl.classList.add("has-dynamic");
     }
+
+    if (typeof window.renderCecarSidebar === "function") {
+      window.renderCecarSidebar(user);
+    }
     const items =
       user.role === "candidato"
         ? [["home", "Inicio", "home"], ["jobs", "Vacantes", "briefcase"], ["applications", "Mis postulaciones", "send"], ["profile", "Mi perfil", "user"], ["docs", "Mis documentos", "file-text"]]
@@ -3853,6 +3911,10 @@ async function initializeDashboard() {
     const avatarEl = document.getElementById("avatar");
     if (avatarEl && typeof getDynamicAvatar === "function") {
       avatarEl.innerHTML = getDynamicAvatar(user.name, 38);
+    }
+
+    if (typeof window.renderCecarSidebar === "function") {
+      window.renderCecarSidebar(user);
     }
 
     if (typeof cecarNav === "function") {

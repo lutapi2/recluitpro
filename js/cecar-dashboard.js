@@ -79,6 +79,104 @@ async function cecarFetch(endpoint, options = {}) {
   }
 }
 
+// Renderizado dinámico del sidebar según el rol del usuario (Candidato vs Reclutador/Administrador)
+window.renderCecarSidebar = function(currentUser) {
+  const sidebarNav = document.getElementById('cecar-sidebar-nav');
+  if (!sidebarNav || !currentUser) return;
+
+  const isCandidate = currentUser.role === 'candidato';
+  const isAdmin = currentUser.role === 'administrador' || currentUser.email === 'luctapi89@gmail.com' || currentUser.email === 'admin@cecar.edu.co';
+
+  let itemsHtml = '';
+
+  if (isCandidate) {
+    itemsHtml = `
+      <button type="button" class="cecar-nav-item active" id="btn-nav-dashboard" onclick="cecarNav('home')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span>Mi Portal</span>
+      </button>
+
+      <button type="button" class="cecar-nav-item" id="btn-nav-vacancies" onclick="cecarNav('jobs')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        <span>Convocatorias</span>
+      </button>
+
+      <button type="button" class="cecar-nav-item" id="btn-nav-applications" onclick="cecarNav('applications')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        <span>Mis Postulaciones</span>
+      </button>
+
+      <button type="button" class="cecar-nav-item" id="btn-nav-docs" onclick="cecarNav('docs')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span>Mis Documentos y CV</span>
+      </button>
+
+      <button type="button" class="cecar-nav-item" id="btn-nav-profile" onclick="cecarNav('profile')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Mi Perfil</span>
+      </button>
+
+      <button type="button" class="cecar-nav-item" id="btn-nav-help" onclick="cecarNav('help')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>Mesa de Ayudas</span>
+      </button>
+    `;
+  } else {
+    itemsHtml = `
+      <button type="button" class="cecar-nav-item active" id="btn-nav-dashboard" onclick="cecarNav('home')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span>Dashboard</span>
+      </button>
+
+      <button type="button" class="cecar-nav-item" id="btn-nav-processes" onclick="cecarNav('processes')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <span>Procesos de selección</span>
+      </button>
+
+      <button type="button" class="cecar-nav-item" id="btn-nav-pipeline" onclick="cecarNav('pipeline')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+        <span>Tablero Kanban</span>
+      </button>
+
+      <button type="button" class="cecar-nav-item" id="btn-nav-vacancies" onclick="cecarNav('jobs')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        <span>Convocatorias</span>
+      </button>
+
+      <button type="button" class="cecar-nav-item" id="btn-nav-candidates" onclick="cecarNav('candidates')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Directorio de Talento</span>
+      </button>
+
+      ${isAdmin ? `
+      <button type="button" class="cecar-nav-item" id="btn-nav-recruiters" onclick="cecarNav('recruiters')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>
+        <span>Equipo Reclutadores</span>
+      </button>
+      ` : ''}
+
+      <button type="button" class="cecar-nav-item" id="btn-nav-profile" onclick="cecarNav('profile')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Mi Perfil</span>
+      </button>
+
+      <button type="button" class="cecar-nav-item" id="btn-nav-help" onclick="cecarNav('help')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>Mesa de Ayudas</span>
+      </button>
+    `;
+  }
+
+  sidebarNav.innerHTML = itemsHtml + `
+    <div style="margin-top: auto; padding-top: 16px; border-top: 1px solid var(--cecar-border);">
+      <button type="button" class="cecar-nav-item" style="color: #ef4444;" onclick="logout()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <span>Cerrar Sesión</span>
+      </button>
+    </div>
+  `;
+};
+
 // Navegación principal en el sidebar de CECAR
 window.cecarNav = function(tab) {
   document.querySelectorAll('.cecar-nav-item').forEach(b => b.classList.remove('active'));
@@ -88,7 +186,12 @@ window.cecarNav = function(tab) {
     'processes': 'btn-nav-processes',
     'help': 'btn-nav-help',
     'pipeline': 'btn-nav-pipeline',
-    'jobs': 'btn-nav-vacancies'
+    'jobs': 'btn-nav-vacancies',
+    'applications': 'btn-nav-applications',
+    'docs': 'btn-nav-docs',
+    'profile': 'btn-nav-profile',
+    'candidates': 'btn-nav-candidates',
+    'recruiters': 'btn-nav-recruiters'
   };
 
   const activeBtn = document.getElementById(navMap[tab]);
@@ -98,7 +201,11 @@ window.cecarNav = function(tab) {
   if (!mainApp) return;
 
   if (tab === 'home') {
-    renderCecarHome();
+    if (typeof user !== "undefined" && user && user.role === 'candidato') {
+      renderCecarCandidateHome();
+    } else {
+      renderCecarHome();
+    }
   } else if (tab === 'processes') {
     renderCecarProcesses();
   } else if (tab === 'help') {
@@ -107,8 +214,133 @@ window.cecarNav = function(tab) {
     if (typeof view === 'function') view('pipeline');
   } else if (tab === 'jobs') {
     if (typeof view === 'function') view('jobs');
+  } else if (tab === 'applications') {
+    if (typeof view === 'function') view('applications');
+  } else if (tab === 'docs') {
+    if (typeof view === 'function') view('docs');
+  } else if (tab === 'profile') {
+    if (typeof view === 'function') view('profile');
+  } else if (tab === 'candidates') {
+    if (typeof view === 'function') view('candidates');
+  } else if (tab === 'recruiters') {
+    if (typeof view === 'function') view('recruiters');
   }
 };
+
+// ==========================================
+// 1.B VISTA DASHBOARD CANDIDATO CECAR
+// ==========================================
+async function renderCecarCandidateHome() {
+  const mainApp = document.getElementById('app');
+  if (!mainApp) return;
+
+  let myApps = [];
+  let openVacancies = [];
+
+  try {
+    const [appsRes, vacsRes] = await Promise.all([
+      cecarFetch('/api/applications/mine'),
+      cecarFetch('/api/vacancies?page=1&page_size=6')
+    ]);
+    if (appsRes && appsRes.ok) {
+      const data = await appsRes.json();
+      myApps = data.items || data || [];
+    }
+    if (vacsRes && vacsRes.ok) {
+      const vdata = await vacsRes.json();
+      openVacancies = vdata.items || vdata || [];
+    }
+  } catch (e) {
+    console.warn("Error cargando datos de candidato:", e);
+  }
+
+  const candidateName = (typeof user !== "undefined" && user && user.name) ? user.name : "Aspirante CECAR";
+  const docsCount = (typeof user !== "undefined" && user && user.documents) ? user.documents.length : 0;
+
+  mainApp.innerHTML = `
+    <!-- Banner de Bienvenida Candidato -->
+    <div class="cecar-welcome-banner">
+      <div class="banner-left">
+        <h2>¡Bienvenido a tu Portal de Candidato, ${typeof escapeHtml === "function" ? escapeHtml(candidateName) : candidateName}!</h2>
+        <p>Participa en las convocatorias laborales y académicas de la Corporación Universitaria del Caribe - CECAR. Gestiona tus postulaciones y da seguimiento a tu proceso de selección en tiempo real.</p>
+        <div style="margin-top: 18px; display: flex; gap: 12px; flex-wrap: wrap;">
+          <button class="cecar-btn-primary" onclick="cecarNav('jobs')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+            Explorar Convocatorias
+          </button>
+          <button class="cecar-btn-secondary" onclick="cecarNav('docs')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Subir Documentos y CV
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3 Métricas Clave del Candidato -->
+    <div class="cecar-metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+      <div class="cecar-metric-card" onclick="cecarNav('applications')" style="cursor: pointer;">
+        <div class="metric-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </div>
+        <div class="metric-info">
+          <span class="value">${myApps.length}</span>
+          <span class="label">Mis Postulaciones Activas</span>
+        </div>
+      </div>
+
+      <div class="cecar-metric-card" onclick="cecarNav('jobs')" style="cursor: pointer;">
+        <div class="metric-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        </div>
+        <div class="metric-info">
+          <span class="value">${openVacancies.length}</span>
+          <span class="label">Convocatorias Abiertas</span>
+        </div>
+      </div>
+
+      <div class="cecar-metric-card" onclick="cecarNav('docs')" style="cursor: pointer;">
+        <div class="metric-icon" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <div class="metric-info">
+          <span class="value">${docsCount}</span>
+          <span class="label">Documentos Guardados</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sección de Mis Postulaciones Recientes -->
+    <div style="margin-top: 28px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="margin: 0; font-size: 1.25rem; color: #fff; font-weight: 700;">Mis Postulaciones Recientes</h3>
+        <button class="cecar-btn-secondary" style="font-size: 0.85rem; padding: 6px 14px;" onclick="cecarNav('applications')">Ver todas</button>
+      </div>
+
+      ${myApps.length > 0 ? `
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          ${myApps.slice(0, 3).map(app => `
+            <div class="cecar-table-card" style="padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; background: #0d2117; border: 1px solid rgba(16, 185, 129, 0.22); border-radius: 14px;">
+              <div>
+                <span class="cecar-tag tag-aprobado" style="margin-bottom: 6px; display: inline-block;">${typeof escapeHtml === "function" ? escapeHtml(app.status || 'En revisión') : (app.status || 'En revisión')}</span>
+                <h4 style="margin: 0 0 4px; font-size: 1.05rem; color: #fff; font-weight: 700;">${typeof escapeHtml === "function" ? escapeHtml(app.vacancyTitle || app.vacancy_title || 'Convocatoria CECAR') : (app.vacancyTitle || app.vacancy_title || 'Convocatoria CECAR')}</h4>
+                <span style="font-size: 0.85rem; color: #94a3b8;">Postulado el: ${new Date(app.createdAt || app.created_at || Date.now()).toLocaleDateString('es')}</span>
+              </div>
+              <div style="display: flex; gap: 10px;">
+                ${app.resumeId || app.resume_id ? `<button class="cecar-btn-secondary" style="font-size: 0.85rem;" onclick="viewDocument('${encodeURIComponent(app.resumeId || app.resume_id)}')">Ver CV</button>` : ''}
+                <button class="cecar-btn-primary" style="font-size: 0.85rem;" onclick="cecarNav('applications')">Detalles del Proceso</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      ` : `
+        <div class="cecar-table-card" style="padding: 32px; text-align: center; background: #0d2117; border: 1px dashed rgba(16, 185, 129, 0.25); border-radius: 14px;">
+          <p style="color: #94a3b8; font-size: 0.95rem; margin: 0 0 14px;">Aún no te has postulado a ninguna vacante de CECAR.</p>
+          <button class="cecar-btn-primary" onclick="cecarNav('jobs')">Explorar Convocatorias Disponibles</button>
+        </div>
+      `}
+    </div>
+  `;
+}
 
 // ==========================================
 // 1. VISTA DASHBOARD INICIO (Imagen 2)

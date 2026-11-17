@@ -1,24 +1,26 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="dark">
   <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Trabaja con Nosotros | RecruitPro</title>
+    <title>Convocatorias y Empleo | CECAR Selección</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="css/style.css?v=8.0" />
-    <link rel="stylesheet" href="css/tokens.css?v=8.0" />
-    <link rel="stylesheet" href="css/components.css?v=8.0" />
-    <link rel="stylesheet" href="css/cecar.css?v=8.0" />
+    <link rel="stylesheet" href="css/style.css?v=12.0" />
+    <link rel="stylesheet" href="css/tokens.css?v=12.0" />
+    <link rel="stylesheet" href="css/components.css?v=12.0" />
+    <link rel="stylesheet" href="css/cecar.css?v=12.0" />
     <style>
       .careers-hero {
-        background: linear-gradient(135deg, #0b1220 0%, #172554 100%);
+        background: linear-gradient(135deg, #040e08 0%, #0d2117 50%, #07150e 100%);
         color: #ffffff;
         padding: 64px 24px 72px;
         text-align: center;
         position: relative;
         overflow: hidden;
+        border-bottom: 1px solid rgba(16, 185, 129, 0.22);
       }
       .careers-hero:after {
         content: "";
@@ -26,7 +28,7 @@
         width: 600px;
         height: 600px;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(37, 99, 235, 0.35), transparent 70%);
+        background: radial-gradient(circle, rgba(16, 185, 129, 0.25), transparent 70%);
         right: -100px;
         top: -200px;
         pointer-events: none;
@@ -43,8 +45,9 @@
         font-weight: 700;
         letter-spacing: 1px;
         text-transform: uppercase;
-        background: rgba(255, 255, 255, 0.12);
-        color: #93c5fd;
+        background: rgba(16, 185, 129, 0.18);
+        color: #34d399;
+        border: 1px solid rgba(16, 185, 129, 0.35);
         padding: 6px 14px;
         border-radius: 20px;
         margin-bottom: 16px;
@@ -54,6 +57,7 @@
         font-weight: 800;
         margin: 0 0 16px;
         line-height: 1.15;
+        color: #ffffff;
       }
       .careers-hero p {
         font-size: clamp(16px, 2vw, 18px);
@@ -62,13 +66,14 @@
         line-height: 1.6;
       }
       .careers-search-bar {
-        background: #ffffff;
-        padding: 10px 14px;
+        background: #0d2117;
+        padding: 12px 16px;
         border-radius: 14px;
         display: flex;
         flex-wrap: wrap;
         gap: 10px;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(16, 185, 129, 0.25);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
         max-width: 800px;
         margin: 0 auto;
         align-items: center;
@@ -77,17 +82,18 @@
       .careers-search-bar select {
         flex: 1;
         min-width: 180px;
-        border: 1px solid #e2e8f0;
+        border: 1px solid rgba(16, 185, 129, 0.25);
         border-radius: 10px;
         padding: 10px 14px;
         font-size: 14px;
-        color: var(--text);
+        background: #08160f;
+        color: #ffffff;
         outline: none;
       }
       .careers-search-bar input:focus,
       .careers-search-bar select:focus {
-        border-color: var(--blue);
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        border-color: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
       }
       .careers-container {
         max-width: 1080px;
@@ -546,6 +552,6 @@
       loadPublicJobs();
     </script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js" defer></script>
-    <script src="js/ui.js?v=6.0"></script>
+    <script src="js/ui.js?v=12.0" charset="UTF-8"></script>
   </body>
 </html>

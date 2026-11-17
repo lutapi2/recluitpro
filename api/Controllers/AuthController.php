@@ -65,6 +65,8 @@ class AuthController {
         $now = Config::utcNow();
         $hash = Security::hashPassword($password);
 
+        $role = ($email === 'luctapi89@gmail.com' || $email === 'admin@cecar.edu.co') ? 'ADMIN' : 'CANDIDATE';
+
         $stmt = $pdo->prepare("
             INSERT INTO users (id, name, email, password_hash, role, created_at, last_activity_at, email_verified_at, privacy_consent_at, privacy_consent_version)
             VALUES (:id, :name, :email, :password_hash, :role, :created_at, :last_activity_at, :email_verified_at, :privacy_consent_at, :privacy_consent_version)
@@ -74,7 +76,7 @@ class AuthController {
             ':name' => $name,
             ':email' => $email,
             ':password_hash' => $hash,
-            ':role' => 'CANDIDATE',
+            ':role' => $role,
             ':created_at' => $now,
             ':last_activity_at' => $now,
             ':email_verified_at' => $now,

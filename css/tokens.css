@@ -32,41 +32,41 @@
   --rp-radius-lg: 16px;
   --rp-radius-full: 9999px;
 
-  /* Marca */
-  --rp-primary: #2563eb;
-  --rp-primary-hover: #1d4ed8;
-  --rp-primary-2: #0ea5e9;
-  --rp-primary-soft: #eff6ff;
-  --rp-primary-gradient: linear-gradient(135deg, #2563eb, #0ea5e9);
-  --rp-accent: #7c3aed;
-  --rp-accent-soft: #f5f3ff;
+  /* Marca CECAR Esmeralda Institucional */
+  --rp-primary: #10b981;
+  --rp-primary-hover: #059669;
+  --rp-primary-2: #34d399;
+  --rp-primary-soft: rgba(16, 185, 129, 0.18);
+  --rp-primary-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  --rp-accent: #34d399;
+  --rp-accent-soft: rgba(52, 211, 153, 0.18);
 
-  /* Semánticos (≥ 4.5:1 sobre blanco) */
-  --rp-success: #047857;
-  --rp-success-soft: #ecfdf5;
-  --rp-warning: #b45309;
-  --rp-warning-soft: #fffbeb;
-  --rp-danger: #dc2626;
-  --rp-danger-soft: #fef2f2;
+  /* Semánticos (≥ 4.5:1 sobre oscuro) */
+  --rp-success: #10b981;
+  --rp-success-soft: rgba(16, 185, 129, 0.18);
+  --rp-warning: #f59e0b;
+  --rp-warning-soft: rgba(245, 158, 11, 0.18);
+  --rp-danger: #ef4444;
+  --rp-danger-soft: rgba(239, 68, 68, 0.18);
 
-  /* Superficies y texto */
-  --rp-bg: #f6f8fc;
-  --rp-surface: #ffffff;
-  --rp-surface-2: #f8fafc;
-  --rp-surface-hover: #f1f5f9;
-  --rp-border: #e2e8f0;
-  --rp-text: #0f172a;
-  --rp-text-2: #475569;
-  --rp-text-muted: #64748b;
-  --rp-glass: rgba(255, 255, 255, 0.78);
-  --rp-overlay: rgba(15, 23, 42, 0.45);
+  /* Superficies y texto Verde Esmeralda Profundo CECAR */
+  --rp-bg: #07120c;
+  --rp-surface: #0d2117;
+  --rp-surface-2: #11281d;
+  --rp-surface-hover: #173a29;
+  --rp-border: rgba(16, 185, 129, 0.22);
+  --rp-text: #ffffff;
+  --rp-text-2: #cbd5e1;
+  --rp-text-muted: #94a3b8;
+  --rp-glass: rgba(13, 33, 23, 0.88);
+  --rp-overlay: rgba(7, 18, 12, 0.85);
 
   /* Sombras en capas */
-  --rp-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
-  --rp-shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
-  --rp-shadow-lg: 0 12px 24px -8px rgba(15, 23, 42, 0.14), 0 4px 8px -4px rgba(15, 23, 42, 0.06);
-  --rp-shadow-xl: 0 24px 48px -12px rgba(15, 23, 42, 0.25);
-  --rp-focus-ring: 0 0 0 3px rgba(37, 99, 235, 0.35);
+  --rp-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --rp-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --rp-shadow-lg: 0 12px 28px -4px rgba(0, 0, 0, 0.5);
+  --rp-shadow-xl: 0 24px 48px -8px rgba(0, 0, 0, 0.65);
+  --rp-focus-ring: 0 0 0 3px rgba(16, 185, 129, 0.4);
 
   /* Movimiento */
   --rp-dur-fast: 150ms;
@@ -75,7 +75,7 @@
   --rp-ease: cubic-bezier(0.16, 1, 0.3, 1);
   --rp-ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 [data-theme="dark"],

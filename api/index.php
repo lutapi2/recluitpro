@@ -3,6 +3,18 @@ declare(strict_types=1);
 
 namespace RecruitPro;
 
+// Prevent PHP warnings, notices or deprecations from injecting HTML into JSON responses
+ini_set('display_errors', '0');
+ini_set('display_startup_errors', '0');
+error_reporting(E_ALL);
+ini_set('default_charset', 'UTF-8');
+if (function_exists('mb_internal_encoding')) {
+    mb_internal_encoding('UTF-8');
+}
+
+// Start output buffering to catch any accidental stray output
+ob_start();
+
 use Throwable;
 use RecruitPro\Controllers\AuthController;
 use RecruitPro\Controllers\VacanciesController;

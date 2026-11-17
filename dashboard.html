@@ -1,18 +1,19 @@
 <!DOCTYPE html>
 <html lang="es" data-theme="dark">
   <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>RecruitPro | Sistema de Selección CECAR</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="css/style.css?v=7.0" />
-    <link rel="stylesheet" href="css/tokens.css?v=7.0" />
-    <link rel="stylesheet" href="css/components.css?v=7.0" />
-    <link rel="stylesheet" href="css/layout.css?v=7.0" />
-    <link rel="stylesheet" href="css/pages.css?v=7.0" />
-    <link rel="stylesheet" href="css/cecar.css?v=8.0" />
+    <link rel="stylesheet" href="css/style.css?v=12.0" />
+    <link rel="stylesheet" href="css/tokens.css?v=12.0" />
+    <link rel="stylesheet" href="css/components.css?v=12.0" />
+    <link rel="stylesheet" href="css/layout.css?v=12.0" />
+    <link rel="stylesheet" href="css/pages.css?v=12.0" />
+    <link rel="stylesheet" href="css/cecar.css?v=12.0" />
   </head>
   <body class="theme-dark" data-theme="dark" style="background: var(--cecar-bg-dark); color: #f8fafc;">
     <div class="cecar-app-layout">
@@ -30,7 +31,7 @@
           Módulos del Sistema
         </div>
 
-        <nav class="cecar-sidebar-nav">
+        <nav class="cecar-sidebar-nav" id="cecar-sidebar-nav">
           <button type="button" class="cecar-nav-item active" id="btn-nav-dashboard" onclick="cecarNav('home')">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
             <span>Dashboard</span>
@@ -330,6 +331,131 @@
       </form>
     </dialog>
 
+    <!-- Diálogo Modal Editar Vacante -->
+    <dialog id="edit-vacancy-dialog" class="cecar-modal-dialog" aria-labelledby="edit-vacancy-modal-title" style="background: #0d2117; border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 18px; color: #f8fafc; max-width: 620px; width: 95vw; box-shadow: 0 25px 70px rgba(0,0,0,0.85); padding: 0; overflow: hidden;">
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; background: #081710; border-bottom: 1px solid var(--cecar-border);">
+        <div>
+          <h3 id="edit-vacancy-modal-title" style="margin: 0; font-size: 1.15rem; color: #ffffff; font-weight: 800;">Editar Convocatoria / Vacante</h3>
+          <small style="color: #10b981; font-size: 12px;">Actualización de requisitos, modalidad y estado</small>
+        </div>
+        <button type="button" onclick="closeEditVacancyDialog()" style="background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; padding: 4px;">×</button>
+      </div>
+      <form id="edit-vacancy-form" onsubmit="saveVacancyEdit(event)" style="padding: 24px;">
+        <input type="hidden" id="edit-vacancy-id" name="id" value="" />
+        
+        <div style="margin-bottom: 14px;">
+          <label style="font-size: 12.5px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 4px;">Título del Puesto / Cargo</label>
+          <input type="text" id="edit-vacancy-title" name="title" required class="cecar-input" style="width: 100%; box-sizing: border-box;" />
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+          <div>
+            <label style="font-size: 12.5px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 4px;">Modalidad / Tipo de Contrato</label>
+            <input type="text" id="edit-vacancy-type" name="type" required class="cecar-input" style="width: 100%; box-sizing: border-box;" />
+          </div>
+          <div>
+            <label style="font-size: 12.5px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 4px;">Ubicación / Ciudad</label>
+            <input type="text" id="edit-vacancy-location" name="location" class="cecar-input" style="width: 100%; box-sizing: border-box;" />
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+          <div>
+            <label style="font-size: 12.5px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 4px;">Estado de la Vacante</label>
+            <select id="edit-vacancy-status" name="status" class="cecar-select" style="width: 100%;">
+              <option value="active">Activa (Publicada)</option>
+              <option value="closed">Cerrada</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size: 12.5px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 4px;">Reclutador Responsable</label>
+            <select id="edit-vacancy-recruiter" name="recruiterEmail" class="cecar-select" style="width: 100%;"></select>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="font-size: 12.5px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 4px;">Descripción del Rol y Requisitos</label>
+          <textarea id="edit-vacancy-description" name="description" rows="4" required class="cecar-input" style="width: 100%; box-sizing: border-box; resize: vertical;"></textarea>
+        </div>
+
+        <div id="edit-vacancy-message" style="margin-bottom: 14px; font-size: 13px; font-weight: 600;"></div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end; align-items: center;">
+          <button type="button" class="cecar-btn-secondary" onclick="closeEditVacancyDialog()" style="font-size: 12.5px;">Cancelar</button>
+          <button type="submit" class="cecar-btn-primary" style="font-size: 12.5px; padding: 9px 18px;">Actualizar Vacante</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Diálogo Modal Editar Usuario -->
+    <dialog id="edit-user-dialog" class="cecar-modal-dialog" aria-labelledby="edit-user-modal-title" style="background: #0d2117; border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 18px; color: #f8fafc; max-width: 500px; width: 95vw; box-shadow: 0 25px 70px rgba(0,0,0,0.85); padding: 0; overflow: hidden;">
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; background: #081710; border-bottom: 1px solid var(--cecar-border);">
+        <div>
+          <h3 id="edit-user-modal-title" style="margin: 0; font-size: 1.15rem; color: #ffffff; font-weight: 800;">Editar Cuenta de Usuario</h3>
+          <small style="color: #10b981; font-size: 12px;">Modificación de datos básicos y contacto</small>
+        </div>
+        <button type="button" onclick="closeEditUserDialog()" style="background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; padding: 4px;">×</button>
+      </div>
+      <form id="edit-user-form" onsubmit="saveUserEdit(event)" style="padding: 24px;">
+        <input type="hidden" id="edit-user-id" value="" />
+        
+        <div style="margin-bottom: 14px;">
+          <label style="font-size: 12.5px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 4px;">Nombre Completo</label>
+          <input type="text" id="edit-user-name" required class="cecar-input" style="width: 100%; box-sizing: border-box;" />
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="font-size: 12.5px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 4px;">Correo Electrónico</label>
+          <input type="email" id="edit-user-email" required class="cecar-input" style="width: 100%; box-sizing: border-box;" />
+        </div>
+
+        <div id="edit-user-message" style="margin-bottom: 14px; font-size: 13px; font-weight: 600;"></div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end; align-items: center;">
+          <button type="button" class="cecar-btn-secondary" onclick="closeEditUserDialog()" style="font-size: 12.5px;">Cancelar</button>
+          <button type="submit" class="cecar-btn-primary" style="font-size: 12.5px; padding: 9px 18px;">Guardar Usuario</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Diálogo Modal Afinidad IA de Candidato a Vacante -->
+    <dialog id="ai-candidate-fit-dialog" class="cecar-modal-dialog" aria-labelledby="ai-fit-title" style="background: #0d2117; border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 18px; color: #f8fafc; max-width: 580px; width: 95vw; box-shadow: 0 25px 70px rgba(0,0,0,0.85); padding: 0; overflow: hidden;">
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; background: #081710; border-bottom: 1px solid var(--cecar-border);">
+        <div>
+          <h3 id="ai-fit-title" style="margin: 0; font-size: 1.15rem; color: #ffffff; font-weight: 800;">Análisis Predictivo de Afinidad (IA ATS)</h3>
+          <small style="color: #10b981; font-size: 12px;">Evaluación algorítmica de competencias vs requisitos</small>
+        </div>
+        <button type="button" onclick="closeAiCandidateDialog()" style="background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; padding: 4px;">×</button>
+      </div>
+      <div style="padding: 24px;">
+        <div id="ai-candidate-loading" style="padding: 20px; text-align: center; color: #10b981; font-size: 14px; font-weight: 600;">Analizando compatibilidad curricular...</div>
+        <div id="ai-candidate-results" style="display: none;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <div id="ai-candidate-verdict" style="font-size: 15px; font-weight: 700; color: #ffffff;"></div>
+            <span id="ai-candidate-score-pill" class="badge-contratado"></span>
+          </div>
+          <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden; margin-bottom: 16px;">
+            <div id="ai-candidate-progress-fill" style="width: 0%; height: 100%; background: #10b981; transition: width 0.4s ease;"></div>
+          </div>
+          <div style="background: rgba(6, 18, 12, 0.6); padding: 14px; border-radius: 10px; border: 1px solid rgba(16, 185, 129, 0.2); margin-bottom: 14px;">
+            <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #10b981; margin-bottom: 4px;">Recomendación del Asistente</div>
+            <p id="ai-candidate-advice" style="margin: 0; font-size: 13px; color: #cbd5e1; line-height: 1.5;"></p>
+          </div>
+          <div style="margin-bottom: 12px;">
+            <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #94a3b8; margin-bottom: 6px;">Habilidades Coincidentes:</div>
+            <div id="ai-candidate-matched" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
+          </div>
+          <div style="margin-bottom: 16px;">
+            <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #94a3b8; margin-bottom: 6px;">Áreas a Fortalecer:</div>
+            <div id="ai-candidate-missing" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
+          </div>
+          <div style="text-align: right;">
+            <button type="button" class="cecar-btn-primary" onclick="closeAiCandidateDialog()" style="font-size: 12.5px; padding: 8px 18px;">Entendido</button>
+          </div>
+        </div>
+      </div>
+    </dialog>
+
     <!-- Diálogo Modal Paleta de Comandos (Ctrl + K) -->
     <dialog id="rp-cmd-dialog" class="rp-cmd-dialog" aria-label="Paleta de comandos y búsqueda global" style="background: #0d1e15; border: 1px solid var(--cecar-border); border-radius: 16px;">
       <div class="rp-cmd-search-wrap" style="border-bottom: 1px solid var(--cecar-border);">
@@ -345,8 +471,8 @@
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-    <script src="js/ui.js?v=6.0"></script>
-    <script src="js/dashboard.js?v=7.0"></script>
-    <script src="js/cecar-dashboard.js?v=7.0"></script>
+    <script src="js/ui.js?v=12.0" charset="UTF-8"></script>
+    <script src="js/dashboard.js?v=12.0" charset="UTF-8"></script>
+    <script src="js/cecar-dashboard.js?v=12.0" charset="UTF-8"></script>
   </body>
 </html>

@@ -21,16 +21,26 @@ class BootstrapAdmin {
         }
 
         $pdo = Database::getConnection();
-        $check = $pdo->query("SELECT id FROM users WHERE role = 'ADMIN' OR role = 'administrador' LIMIT 1");
-        if ($check->fetch()) {
-            echo "Aviso: Ya existe un administrador registrado en el sistema.\n";
-            return false;
-        }
-
         $now = Config::utcNow();
-        $userId = Config::uuid();
         $hash = Security::hashPassword($password);
 
+        // If this user already exists, ensure they are promoted to ADMIN
+        $checkUser = $pdo->prepare("SELECT id FROM users WHERE email = :email LIMIT 1");
+        $checkUser->execute([':email' => $email]);
+        $existing = $checkUser->fetch(PDO::FETCH_ASSOC);
+
+        if ($existing) {
+            $upd = $pdo->prepare("
+                UPDATE users 
+                SET role = 'ADMIN', password_hash = :hash, name = :name, email_verified_at = COALESCE(email_verified_at, :now)
+                WHERE id = :id
+            ");
+            $upd->execute([':hash' => $hash, ':name' => $name, ':now' => $now, ':id' => $existing['id']]);
+            echo "Usuario actualizado a ADMINISTRADOR: $email\n";
+            return true;
+        }
+
+        $userId = Config::uuid();
         $stmt = $pdo->prepare("
             INSERT INTO users (id, name, email, password_hash, role, created_at, last_activity_at, email_verified_at, privacy_consent_at, privacy_consent_version)
             VALUES (:id, :name, :email, :password_hash, 'ADMIN', :now, :now, :now, :now, :version)

@@ -207,22 +207,25 @@
     requestAnimationFrame(step);
   }
 
-  /* ---------- Tema claro / oscuro ---------- */
+  /* ---------- Tema claro / oscuro CECAR ---------- */
   const THEME_KEY = "recruitpro_theme";
   const theme = {
     get() {
-      return localStorage.getItem(THEME_KEY) || "light";
+      const stored = localStorage.getItem(THEME_KEY);
+      return (stored === "light") ? "light" : "dark";
     },
     apply(value, animate = false) {
+      const effective = value || "dark";
       const root = document.documentElement;
       if (animate && !reducedMotion()) {
         root.classList.add("theme-transition");
         setTimeout(() => root.classList.remove("theme-transition"), 350);
       }
-      root.setAttribute("data-theme", value);
+      root.setAttribute("data-theme", effective);
+      document.body && document.body.setAttribute("data-theme", effective);
       document.querySelectorAll("[data-theme-toggle]").forEach((b) => {
-        b.setAttribute("aria-label", value === "dark" ? "Activar modo claro" : "Activar modo oscuro");
-        b.innerHTML = icon(value === "dark" ? "sun" : "moon");
+        b.setAttribute("aria-label", effective === "dark" ? "Activar modo claro" : "Activar modo oscuro");
+        b.innerHTML = icon(effective === "dark" ? "sun" : "moon");
       });
       refreshIcons();
     },

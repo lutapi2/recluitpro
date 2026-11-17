@@ -5,6 +5,9 @@ namespace RecruitPro;
 
 class Response {
     public static function json(mixed $data, int $statusCode = 200, array $headers = []): void {
+        while (ob_get_level() > 0) {
+            @ob_end_clean();
+        }
         http_response_code($statusCode);
         header('Content-Type: application/json; charset=utf-8');
         foreach ($headers as $key => $val) {
@@ -36,6 +39,9 @@ class Response {
             self::error("No se encontró el archivo físico.", 404);
         }
 
+        while (ob_get_level() > 0) {
+            @ob_end_clean();
+        }
         http_response_code(200);
         header('Content-Type: ' . ($mediaType ?: 'application/pdf'));
         header('Content-Disposition: inline; filename="' . rawurlencode($filename) . '"');
@@ -49,6 +55,9 @@ class Response {
     }
 
     public static function streamPdf(string $bytes, string $filename): void {
+        while (ob_get_level() > 0) {
+            @ob_end_clean();
+        }
         http_response_code(200);
         header('Content-Type: application/pdf');
         header('Content-Disposition: inline; filename="' . rawurlencode($filename) . '"');
