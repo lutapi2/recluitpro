@@ -170,6 +170,12 @@ class Database {
                 created_at DATETIME NOT NULL,
                 FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE
             );
+
+            CREATE TABLE IF NOT EXISTS system_settings (
+                key VARCHAR(50) NOT NULL PRIMARY KEY,
+                value TEXT NOT NULL,
+                created_at DATETIME NOT NULL
+            );
         ");
 
         // Verify and add extra columns in applications if missing
@@ -273,156 +279,169 @@ class Database {
             $upd2->execute([':hash' => $adminHash]);
         }
 
-        // Seed initial vacancies if none exist
-        $countVacancies = (int)$pdo->query("SELECT COUNT(*) FROM vacancies")->fetchColumn();
-        if ($countVacancies === 0) {
-            $now = Config::utcNow();
-            $vacStmt = $pdo->prepare("
-                INSERT INTO vacancies (id, title, type, location, description, status, recruiter_id, created_at)
-                VALUES (:id, :title, :type, :location, :description, :status, :recruiter_id, :created_at)
-            ");
-            $vacStmt->execute([
-                ':id' => 'f77546e6-aa0f-4346-8b25-e83f644eb134',
-                ':title' => 'Desarrollador Full Stack Senior',
-                ':type' => 'Tiempo completo',
-                ':location' => 'Remoto',
-                ':description' => 'Buscamos un desarrollador full stack con experiencia en PHP, FastAPI y JavaScript.',
-                ':status' => 'active',
-                ':recruiter_id' => '7c8ed709-87fc-404d-9dc3-e118d1f62191',
-                ':created_at' => $now,
-            ]);
-            $vacStmt->execute([
-                ':id' => 'e928ec9d-4615-4dd3-ba17-81438fb5b0fd',
-                ':title' => 'Líder de Arquitectura de Software & Backend',
-                ':type' => 'Tiempo completo',
-                ':location' => 'Remoto / Híbrido',
-                ':description' => 'Posición de liderazgo técnico responsable del diseño, escalabilidad y resiliencia de la plataforma. Requisitos fundamentales: dominio avanzado en arquitecturas web modernas, microservicios, bases de datos relacionales, contenedores Docker y despliegues en la nube.',
-                ':status' => 'active',
-                ':recruiter_id' => '7c8ed709-87fc-404d-9dc3-e118d1f62191',
-                ':created_at' => $now,
-            ]);
-        }
-
-        // Seed CECAR Document Categories if empty
-        $catCount = (int)$pdo->query("SELECT COUNT(*) FROM document_categories")->fetchColumn();
-        if ($catCount === 0) {
-            $categories = [
-                ['contrato', 'Contrato', 'file-text', 1],
-                ['info_personal', 'Información Personal', 'user', 2],
-                ['formacion', 'Formación Académica', 'graduation-cap', 3],
-                ['experiencia', 'Experiencia Laboral', 'briefcase', 4],
-                ['seguridad_social', 'Seguridad Social', 'shield', 5],
-                ['info_bancaria', 'Información Bancaria', 'credit-card', 6],
-                ['salud_ocupacional', 'Salud Ocupacional', 'activity', 7],
-                ['antecedentes', 'Antecedentes Legales', 'scale', 8],
-            ];
-            $insCat = $pdo->prepare("INSERT INTO document_categories (id, code, name, icon, order_index) VALUES (:id, :code, :name, :icon, :order)");
-            foreach ($categories as $cat) {
-                $insCat->execute([
-                    ':id' => Config::uuid(),
-                    ':code' => $cat[0],
-                    ':name' => $cat[1],
-                    ':icon' => $cat[2],
-                    ':order' => $cat[3],
+        // Verificar si el sistema ya fue inicializado previamente.
+        // Si ya fue inicializado, se respetan estrictamente las eliminaciones y adiciones del usuario.
+        $isInitialized = (int)$pdo->query("SELECT COUNT(*) FROM system_settings WHERE key = 'system_initialized'")->fetchColumn();
+        if ($isInitialized === 0) {
+            // Seed initial vacancies if none exist
+            $countVacancies = (int)$pdo->query("SELECT COUNT(*) FROM vacancies")->fetchColumn();
+            if ($countVacancies === 0) {
+                $now = Config::utcNow();
+                $vacStmt = $pdo->prepare("
+                    INSERT INTO vacancies (id, title, type, location, description, status, recruiter_id, created_at)
+                    VALUES (:id, :title, :type, :location, :description, :status, :recruiter_id, :created_at)
+                ");
+                $vacStmt->execute([
+                    ':id' => 'f77546e6-aa0f-4346-8b25-e83f644eb134',
+                    ':title' => 'Desarrollador Full Stack Senior',
+                    ':type' => 'Tiempo completo',
+                    ':location' => 'Remoto',
+                    ':description' => 'Buscamos un desarrollador full stack con experiencia en PHP, FastAPI y JavaScript.',
+                    ':status' => 'active',
+                    ':recruiter_id' => '7c8ed709-87fc-404d-9dc3-e118d1f62191',
+                    ':created_at' => $now,
+                ]);
+                $vacStmt->execute([
+                    ':id' => 'e928ec9d-4615-4dd3-ba17-81438fb5b0fd',
+                    ':title' => 'Líder de Arquitectura de Software & Backend',
+                    ':type' => 'Tiempo completo',
+                    ':location' => 'Remoto / Híbrido',
+                    ':description' => 'Posición de liderazgo técnico responsable del diseño, escalabilidad y resiliencia de la plataforma. Requisitos fundamentales: dominio avanzado en arquitecturas web modernas, microservicios, bases de datos relacionales, contenedores Docker y despliegues en la nube.',
+                    ':status' => 'active',
+                    ':recruiter_id' => '7c8ed709-87fc-404d-9dc3-e118d1f62191',
+                    ':created_at' => $now,
                 ]);
             }
-        }
 
-        // Seed CECAR sample process & candidate application if no applications exist
-        $appCount = (int)$pdo->query("SELECT COUNT(*) FROM applications")->fetchColumn();
-        if ($appCount === 0) {
-            $now = Config::utcNow();
-            $candId = 'a1000000-0000-0000-0000-000000000001';
-            $docId = 'd1000000-0000-0000-0000-000000000001';
-            $appId = 'app-cecar-docente-001';
-
-            // Candidate user
-            $pdo->prepare("
-                INSERT OR IGNORE INTO users (id, name, email, password_hash, role, phone, location, email_verified_at, last_activity_at, privacy_consent_at, privacy_consent_version, created_at)
-                VALUES (:id, 'Carlos Mendoza Gómez', 'carlos.mendoza@cecar.edu.co', :hash, 'CANDIDATE', '3001234567', 'Sincelejo, Sucre', :now, :now, :now, :ver, :now)
-            ")->execute([
-                ':id' => $candId,
-                ':hash' => '$2y$10$abcdefghijklmnopqrstuu',
-                ':now' => $now,
-                ':ver' => Config::PRIVACY_CONSENT_VERSION,
-            ]);
-
-            // Document with binary PDF embedded
-            require_once __DIR__ . '/Controllers/DocumentsController.php';
-            $seededPdfBytes = \RecruitPro\Controllers\DocumentsController::generateFallbackPdf('Carlos Mendoza Gómez', 'carlos.mendoza@cecar.edu.co', 'HojaDeVida_CarlosMendoza.pdf', 'Desarrollador Full Stack Senior');
-            $pdo->prepare("
-                INSERT OR IGNORE INTO documents (id, owner_id, original_name, media_type, storage_name, size, created_at, file_data)
-                VALUES (:id, :owner_id, 'HojaDeVida_CarlosMendoza.pdf', 'application/pdf', 'cecar-docente-cv', :size, :now, :file_data)
-            ")->execute([
-                ':id' => $docId,
-                ':owner_id' => $candId,
-                ':size' => strlen($seededPdfBytes),
-                ':now' => $now,
-                ':file_data' => $seededPdfBytes,
-            ]);
-
-            // Application
-            $pdo->prepare("
-                INSERT OR IGNORE INTO applications (
-                    id, vacancy_id, candidate_id, name, phone, location, resume_id, status,
-                    assigned_recruiter_id, privacy_consent_at, privacy_consent_version,
-                    ai_score, ai_verdict, ai_summary, ai_analyzed_at, created_at,
-                    department, process_type, contract_status, approved_docs_count, total_docs_count
-                ) VALUES (
-                    :id, 'f77546e6-aa0f-4346-8b25-e83f644eb134', :cand_id, 'Carlos Mendoza Gómez', '3001234567', 'Sincelejo, Sucre',
-                    :doc_id, 'oferta', '7c8ed709-87fc-404d-9dc3-e118d1f62191', :now, :ver,
-                    94, 'Recomendación Favorable (Nivel Sobresaliente)', 'Expediente docente con acreditación completa.', :now, :now,
-                    'Facultad de Educación y Ciencias Sociales', 'Aspirante Nuevo a docente cátedra', 'Contratado', 22, 22
-                )
-            ")->execute([
-                ':id' => $appId,
-                ':cand_id' => $candId,
-                ':doc_id' => $docId,
-                ':now' => $now,
-                ':ver' => Config::PRIVACY_CONSENT_VERSION,
-            ]);
-
-            // Seed sample Checklist Items (HV-001 to HV-026 across 8 categories)
-            $sampleItems = [
-                ['contrato', 'Minuta de Contrato de Trabajo Docente', 'aprobado'],
-                ['info_personal', 'Cédula de Ciudadanía al 150%', 'aprobado'],
-                ['info_personal', 'Libreta Militar (si aplica)', 'aprobado'],
-                ['info_personal', 'Foto tamaño carnet fondo blanco', 'aprobado'],
-                ['formacion', 'Título de Pregrado (Diploma y Acta de Grado)', 'aprobado'],
-                ['formacion', 'Título de Maestría en Educación', 'aprobado'],
-                ['formacion', 'Título de Especialización en Pedagogía', 'aprobado'],
-                ['formacion', 'Convalidación de Títulos del Exterior (si aplica)', 'aprobado'],
-                ['formacion', 'Certificados de Educación Continuada (>40 hrs)', 'aprobado'],
-                ['experiencia', 'Certificación de Experiencia Docente Universitaria', 'aprobado'],
-                ['seguridad_social', 'Certificado de Afiliación EPS vigente', 'aprobado'],
-                ['seguridad_social', 'Certificado de Afiliación a Fondo de Pensiones', 'aprobado'],
-                ['info_bancaria', 'Certificado Apertura Cuenta Davivienda *', 'aprobado'],
-                ['salud_ocupacional', 'Certificado de Examen Médico Ocupacional de Ingreso', 'aprobado'],
-                ['antecedentes', 'Certificado de Antecedentes Disciplinarios Procuraduría', 'aprobado'],
-                ['antecedentes', 'Certificado de Antecedentes Fiscales Contraloría', 'aprobado'],
-                ['antecedentes', 'Certificado de Antecedentes Judiciales Policía Nacional', 'aprobado'],
-                ['antecedentes', 'Certificado de Medidas Correctivas RNMC', 'aprobado'],
-                ['antecedentes', 'Certificado de Delitos Sexuales en Menores de Edad', 'aprobado'],
-                ['antecedentes', 'Certificado Registro de Deudores Alimentarios Morosos (REDAM)', 'aprobado'],
-                ['antecedentes', 'Declaración Juramentada de Bienes y Rentas', 'aprobado'],
-                ['antecedentes', 'Tarjeta Profesional y Certificado de Vigencia', 'aprobado'],
-            ];
-
-            $insItem = $pdo->prepare("
-                INSERT INTO hv_items (id, application_id, category_code, title, required, status, notes, support_doc_id, created_at)
-                VALUES (:id, :app_id, :cat, :title, 1, :st, 'Documento verificado y conforme.', :doc_id, :now)
-            ");
-            foreach ($sampleItems as $si) {
-                $insItem->execute([
-                    ':id' => Config::uuid(),
-                    ':app_id' => $appId,
-                    ':cat' => $si[0],
-                    ':title' => $si[1],
-                    ':st' => $si[2],
-                    ':doc_id' => $docId,
-                    ':now' => $now,
-                ]);
+            // Seed CECAR Document Categories if empty
+            $catCount = (int)$pdo->query("SELECT COUNT(*) FROM document_categories")->fetchColumn();
+            if ($catCount === 0) {
+                $categories = [
+                    ['contrato', 'Contrato', 'file-text', 1],
+                    ['info_personal', 'Información Personal', 'user', 2],
+                    ['formacion', 'Formación Académica', 'graduation-cap', 3],
+                    ['experiencia', 'Experiencia Laboral', 'briefcase', 4],
+                    ['seguridad_social', 'Seguridad Social', 'shield', 5],
+                    ['info_bancaria', 'Información Bancaria', 'credit-card', 6],
+                    ['salud_ocupacional', 'Salud Ocupacional', 'activity', 7],
+                    ['antecedentes', 'Antecedentes Legales', 'scale', 8],
+                ];
+                $insCat = $pdo->prepare("INSERT INTO document_categories (id, code, name, icon, order_index) VALUES (:id, :code, :name, :icon, :order)");
+                foreach ($categories as $cat) {
+                    $insCat->execute([
+                        ':id' => Config::uuid(),
+                        ':code' => $cat[0],
+                        ':name' => $cat[1],
+                        ':icon' => $cat[2],
+                        ':order' => $cat[3],
+                    ]);
+                }
             }
+
+            // Seed CECAR sample process & candidate application SOLO SI existe la vacante correspondiente
+            $vacExists = (int)$pdo->query("SELECT COUNT(*) FROM vacancies WHERE id = 'f77546e6-aa0f-4346-8b25-e83f644eb134'")->fetchColumn();
+            if ($vacExists > 0) {
+                $appCount = (int)$pdo->query("SELECT COUNT(*) FROM applications")->fetchColumn();
+                if ($appCount === 0) {
+                    $now = Config::utcNow();
+                    $candId = 'a1000000-0000-0000-0000-000000000001';
+                    $docId = 'd1000000-0000-0000-0000-000000000001';
+                    $appId = 'app-cecar-docente-001';
+
+                    // Candidate user
+                    $pdo->prepare("
+                        INSERT OR IGNORE INTO users (id, name, email, password_hash, role, phone, location, email_verified_at, last_activity_at, privacy_consent_at, privacy_consent_version, created_at)
+                        VALUES (:id, 'Carlos Mendoza Gómez', 'carlos.mendoza@cecar.edu.co', :hash, 'CANDIDATE', '3001234567', 'Sincelejo, Sucre', :now, :now, :now, :ver, :now)
+                    ")->execute([
+                        ':id' => $candId,
+                        ':hash' => '$2y$10$abcdefghijklmnopqrstuu',
+                        ':now' => $now,
+                        ':ver' => Config::PRIVACY_CONSENT_VERSION,
+                    ]);
+
+                    // Document with binary PDF embedded
+                    require_once __DIR__ . '/Controllers/DocumentsController.php';
+                    $seededPdfBytes = \RecruitPro\Controllers\DocumentsController::generateFallbackPdf('Carlos Mendoza Gómez', 'carlos.mendoza@cecar.edu.co', 'HojaDeVida_CarlosMendoza.pdf', 'Desarrollador Full Stack Senior');
+                    $pdo->prepare("
+                        INSERT OR IGNORE INTO documents (id, owner_id, original_name, media_type, storage_name, size, created_at, file_data)
+                        VALUES (:id, :owner_id, 'HojaDeVida_CarlosMendoza.pdf', 'application/pdf', 'cecar-docente-cv', :size, :now, :file_data)
+                    ")->execute([
+                        ':id' => $docId,
+                        ':owner_id' => $candId,
+                        ':size' => strlen($seededPdfBytes),
+                        ':now' => $now,
+                        ':file_data' => $seededPdfBytes,
+                    ]);
+
+                    // Application
+                    $pdo->prepare("
+                        INSERT OR IGNORE INTO applications (
+                            id, vacancy_id, candidate_id, name, phone, location, resume_id, status,
+                            assigned_recruiter_id, privacy_consent_at, privacy_consent_version,
+                            ai_score, ai_verdict, ai_summary, ai_analyzed_at, created_at,
+                            department, process_type, contract_status, approved_docs_count, total_docs_count
+                        ) VALUES (
+                            :id, 'f77546e6-aa0f-4346-8b25-e83f644eb134', :cand_id, 'Carlos Mendoza Gómez', '3001234567', 'Sincelejo, Sucre',
+                            :doc_id, 'oferta', '7c8ed709-87fc-404d-9dc3-e118d1f62191', :now, :ver,
+                            94, 'Recomendación Favorable (Nivel Sobresaliente)', 'Expediente docente con acreditación completa.', :now, :now,
+                            'Facultad de Educación y Ciencias Sociales', 'Aspirante Nuevo a docente cátedra', 'Contratado', 22, 22
+                        )
+                    ")->execute([
+                        ':id' => $appId,
+                        ':cand_id' => $candId,
+                        ':doc_id' => $docId,
+                        ':now' => $now,
+                        ':ver' => Config::PRIVACY_CONSENT_VERSION,
+                    ]);
+
+                    // Seed sample Checklist Items (HV-001 to HV-026 across 8 categories)
+                    $sampleItems = [
+                        ['contrato', 'Minuta de Contrato de Trabajo Docente', 'aprobado'],
+                        ['info_personal', 'Cédula de Ciudadanía al 150%', 'aprobado'],
+                        ['info_personal', 'Libreta Militar (si aplica)', 'aprobado'],
+                        ['info_personal', 'Foto tamaño carnet fondo blanco', 'aprobado'],
+                        ['formacion', 'Título de Pregrado (Diploma y Acta de Grado)', 'aprobado'],
+                        ['formacion', 'Título de Maestría en Educación', 'aprobado'],
+                        ['formacion', 'Título de Especialización en Pedagogía', 'aprobado'],
+                        ['formacion', 'Convalidación de Títulos del Exterior (si aplica)', 'aprobado'],
+                        ['formacion', 'Certificados de Educación Continuada (>40 hrs)', 'aprobado'],
+                        ['experiencia', 'Certificación de Experiencia Docente Universitaria', 'aprobado'],
+                        ['seguridad_social', 'Certificado de Afiliación EPS vigente', 'aprobado'],
+                        ['seguridad_social', 'Certificado de Afiliación a Fondo de Pensiones', 'aprobado'],
+                        ['info_bancaria', 'Certificado Apertura Cuenta Davivienda *', 'aprobado'],
+                        ['salud_ocupacional', 'Certificado de Examen Médico Ocupacional de Ingreso', 'aprobado'],
+                        ['antecedentes', 'Certificado de Antecedentes Disciplinarios Procuraduría', 'aprobado'],
+                        ['antecedentes', 'Certificado de Antecedentes Fiscales Contraloría', 'aprobado'],
+                        ['antecedentes', 'Certificado de Antecedentes Judiciales Policía Nacional', 'aprobado'],
+                        ['antecedentes', 'Certificado de Medidas Correctivas RNMC', 'aprobado'],
+                        ['antecedentes', 'Certificado de Delitos Sexuales en Menores de Edad', 'aprobado'],
+                        ['antecedentes', 'Certificado Registro de Deudores Alimentarios Morosos (REDAM)', 'aprobado'],
+                        ['antecedentes', 'Declaración Juramentada de Bienes y Rentas', 'aprobado'],
+                        ['antecedentes', 'Tarjeta Profesional y Certificado de Vigencia', 'aprobado'],
+                    ];
+
+                    $insItem = $pdo->prepare("
+                        INSERT INTO hv_items (id, application_id, category_code, title, required, status, notes, support_doc_id, created_at)
+                        VALUES (:id, :app_id, :cat, :title, 1, :st, 'Documento verificado y conforme.', :doc_id, :now)
+                    ");
+                    foreach ($sampleItems as $si) {
+                        $insItem->execute([
+                            ':id' => Config::uuid(),
+                            ':app_id' => $appId,
+                            ':cat' => $si[0],
+                            ':title' => $si[1],
+                            ':st' => $si[2],
+                            ':doc_id' => $docId,
+                            ':now' => $now,
+                        ]);
+                    }
+                }
+            }
+
+            // Marcar como inicializado permanentemente para que las adiciones y eliminaciones del usuario persistan
+            $now = Config::utcNow();
+            $pdo->prepare("INSERT OR REPLACE INTO system_settings (key, value, created_at) VALUES ('system_initialized', '1', :now)")
+                ->execute([':now' => $now]);
         }
     }
 }

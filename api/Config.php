@@ -20,12 +20,41 @@ class Config {
     }
 
     public static function getDatabasePath(): string {
+        $envDb = getenv('DATABASE_PATH') ?: getenv('SQLITE_PATH');
+        if (!empty($envDb)) {
+            return $envDb;
+        }
+
+        $envDataDir = getenv('DATA_DIR');
+        if (!empty($envDataDir)) {
+            return rtrim($envDataDir, '/\\') . DIRECTORY_SEPARATOR . 'recruitpro.db';
+        }
+
+        // Render Persistent Disk por defecto si está montado en /var/data
+        if (is_dir('/var/data') && is_writable('/var/data')) {
+            return '/var/data/recruitpro.db';
+        }
+
         $root = self::getRootPath();
-        $dbPath = $root . DIRECTORY_SEPARATOR . 'recruitpro.db';
-        return $dbPath;
+        return $root . DIRECTORY_SEPARATOR . 'recruitpro.db';
     }
 
     public static function getUploadDir(): string {
+        $envUploads = getenv('UPLOAD_DIR');
+        if (!empty($envUploads)) {
+            return $envUploads;
+        }
+
+        $envDataDir = getenv('DATA_DIR');
+        if (!empty($envDataDir)) {
+            return rtrim($envDataDir, '/\\') . DIRECTORY_SEPARATOR . 'private_uploads';
+        }
+
+        // Render Persistent Disk
+        if (is_dir('/var/data') && is_writable('/var/data')) {
+            return '/var/data/private_uploads';
+        }
+
         $root = self::getRootPath();
         // Priority: outside root folder or local recruitpro-data
         $parentData = dirname($root) . DIRECTORY_SEPARATOR . 'recruitpro-data' . DIRECTORY_SEPARATOR . 'private_uploads';

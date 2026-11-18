@@ -240,6 +240,24 @@ class VacanciesController {
             Response::error("No se encontró la vacante a eliminar.", 404);
         }
 
+        // Eliminar registros hijos explícitamente para garantizar una eliminación segura y atómica
+        $appStmt = $pdo->prepare("SELECT id FROM applications WHERE vacancy_id = :id");
+        $appStmt->execute([':id' => $vacancyId]);
+        $appIds = $appStmt->fetchAll(PDO::FETCH_COLUMN);
+
+        if (!empty($appIds)) {
+            $inClause = implode(',', array_map(fn($id) => $pdo->quote((string)$id), $appIds));
+            try {
+                $pdo->exec("DELETE FROM hv_items WHERE application_id IN ($inClause)");
+            } catch (Exception $e) {}
+            try {
+                $pdo->exec("DELETE FROM application_activities WHERE application_id IN ($inClause)");
+            } catch (Exception $e) {}
+            try {
+                $pdo->exec("DELETE FROM applications WHERE id IN ($inClause)");
+            } catch (Exception $e) {}
+        }
+
         $del = $pdo->prepare("DELETE FROM vacancies WHERE id = :id");
         $del->execute([':id' => $vacancyId]);
 
