@@ -81,7 +81,12 @@
             <nav id="nav" class="rp-nav" style="display: none;"></nav>
           </div>
 
-          <div class="account" style="display: flex; align-items: center; gap: 16px;">
+          <div class="account" style="display: flex; align-items: center; gap: 14px;">
+            <button type="button" id="btn-quick-create-vacancy" class="cecar-btn-primary" onclick="openCreateVacancyModal()" style="display: none; padding: 7px 16px; font-size: 0.82rem; gap: 6px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+              <span>Nueva Vacante</span>
+            </button>
+
             <a href="empleos.html" target="_blank" class="cecar-btn-secondary" style="padding: 6px 14px; font-size: 0.82rem; text-decoration: none;">
               Portal de Empleos ↗
             </a>
@@ -331,6 +336,56 @@
       </form>
     </dialog>
 
+    <!-- Diálogo Modal Publicar Nueva Vacante -->
+    <dialog id="create-vacancy-dialog" class="cecar-modal-dialog" aria-labelledby="create-vacancy-modal-title" style="background: #0d2117; border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 18px; color: #f8fafc; max-width: 640px; width: 95vw; box-shadow: 0 25px 70px rgba(0,0,0,0.85); padding: 0; overflow: hidden;">
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; background: #081710; border-bottom: 1px solid var(--cecar-border);">
+        <div>
+          <h3 id="create-vacancy-modal-title" style="margin: 0; font-size: 1.18rem; color: #ffffff; font-weight: 800;">Publicar Nueva Convocatoria</h3>
+          <small style="color: #10b981; font-size: 12px;">Apertura y publicación en portal de empleo institucional CECAR</small>
+        </div>
+        <button type="button" onclick="closeCreateVacancyModal()" style="background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; padding: 4px;">×</button>
+      </div>
+      <form id="modal-vacancy-form" onsubmit="createVacancyFromModal(event)" style="padding: 24px;">
+        <div style="margin-bottom: 14px;">
+          <label style="font-size: 12.5px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 4px;">Título del Puesto / Cargo *</label>
+          <input type="text" id="modal-vacancy-title" name="title" required class="cecar-input" style="width: 100%; box-sizing: border-box;" placeholder="Ej. Docente Cátedra - Ingeniería de Software" />
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+          <div>
+            <label style="font-size: 12.5px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 4px;">Modalidad / Contrato *</label>
+            <input type="text" id="modal-vacancy-type" name="type" required class="cecar-input" style="width: 100%; box-sizing: border-box;" placeholder="Ej. Tiempo Completo, Cátedra, Remoto" />
+          </div>
+          <div>
+            <label style="font-size: 12.5px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 4px;">Ubicación / Sede</label>
+            <input type="text" id="modal-vacancy-location" name="location" class="cecar-input" style="width: 100%; box-sizing: border-box;" placeholder="Ej. Sincelejo, Sucre - Campus CECAR" />
+          </div>
+        </div>
+
+        <div style="margin-bottom: 14px;" id="modal-vacancy-recruiter-wrap">
+          <label style="font-size: 12.5px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 4px;">Reclutador asignado (Opcional)</label>
+          <select id="modal-vacancy-recruiter" name="recruiter_id" class="cecar-select" style="width: 100%;">
+            <option value="" selected>Directa por Administrador (Sin reclutador asignado)</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="font-size: 12.5px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 4px;">Descripción del Rol, Perfil y Requisitos *</label>
+          <textarea id="modal-vacancy-description" name="description" rows="4" required class="cecar-input" style="width: 100%; box-sizing: border-box; resize: vertical;" placeholder="Describe responsabilidades clave, perfil académico requerido, experiencia y beneficios..."></textarea>
+        </div>
+
+        <div id="modal-vacancy-message" style="margin-bottom: 14px; font-size: 13px; font-weight: 600;"></div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end; align-items: center;">
+          <button type="button" class="cecar-btn-secondary" onclick="closeCreateVacancyModal()" style="font-size: 12.5px;">Cancelar</button>
+          <button type="submit" class="cecar-btn-primary" style="font-size: 12.5px; padding: 9px 20px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            Publicar Convocatoria
+          </button>
+        </div>
+      </form>
+    </dialog>
+
     <!-- Diálogo Modal Editar Vacante -->
     <dialog id="edit-vacancy-dialog" class="cecar-modal-dialog" aria-labelledby="edit-vacancy-modal-title" style="background: #0d2117; border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 18px; color: #f8fafc; max-width: 620px; width: 95vw; box-shadow: 0 25px 70px rgba(0,0,0,0.85); padding: 0; overflow: hidden;">
       <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; background: #081710; border-bottom: 1px solid var(--cecar-border);">
@@ -368,7 +423,7 @@
             </select>
           </div>
           <div>
-            <label style="font-size: 12.5px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 4px;">Reclutador Responsable</label>
+            <label style="font-size: 12.5px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 4px;">Reclutador Asignado (Opcional)</label>
             <select id="edit-vacancy-recruiter" name="recruiterEmail" class="cecar-select" style="width: 100%;"></select>
           </div>
         </div>

@@ -606,7 +606,7 @@ function renderAdminOrRecruiterHome(summary, applications, vacancies) {
     </div>
 
     <div class="dash-actions-grid rp-stagger">
-      <div class="dash-action-card" onclick="view('jobs')">
+      <div class="dash-action-card" onclick="openCreateVacancyModal()">
         <div class="dash-action-icon">${plusIcon}</div>
         <div class="dash-action-text">
           <span class="dash-action-title">Nueva Vacante</span>
@@ -1292,7 +1292,7 @@ async function view(page, vacancyId = "") {
       const result = await (await apiRequest(`/api/vacancies?${params}`)).json();
       vacanciesCache = result.items;
       usersCache = user.role === "administrador"
-        ? (await (await apiRequest("/api/users?role=reclutador")).json()).items || []
+        ? (await (await apiRequest("/api/users")).json()).items || []
         : user.role === "reclutador" ? [user] : [];
       app.innerHTML = `${renderVacancies(result.items)}${renderPager(result, "jobs")}`;
     } else if (page === "apply" && user.role === "candidato") {
@@ -1630,10 +1630,10 @@ function renderVacancies(vacancies) {
                   user.role === "administrador"
                     ? `
                       <div>
-                        <label class="filter-field-label" for="vacancy-recruiter">Reclutador responsable</label>
-                        <select class="filter-input" id="vacancy-recruiter" name="recruiterEmail" required>
-                          <option value="">Selecciona un reclutador</option>
-                          ${recruiters.map((r) => `<option value="${escapeHtml(r.email)}">${escapeHtml(r.name)} (${escapeHtml(r.email)})</option>`).join("")}
+                        <label class="filter-field-label" for="vacancy-recruiter">Reclutador asignado (Opcional)</label>
+                        <select class="filter-input" id="vacancy-recruiter" name="recruiter_id">
+                          <option value="" selected>Directa por Administrador (Sin reclutador)</option>
+                          ${recruiters.map((r) => `<option value="${escapeHtml(r.id)}">Asignar a: ${escapeHtml(r.name)} (${escapeHtml(r.email)})</option>`).join("")}
                         </select>
                       </div>
                     `
@@ -2653,6 +2653,108 @@ document
     document.getElementById("document-frame").removeAttribute("src");
   });
 
+function openCreateVacancyModal() {
+  if (!user || !["administrador", "reclutador"].includes(user.role)) {
+    if (window.ui && window.ui.toast) window.ui.toast("Acceso restringido a administradores y reclutadores.", { type: "error" });
+    return;
+  }
+
+  const dialog = document.getElementById("create-vacancy-dialog");
+  if (!dialog) return;
+
+  const form = document.getElementById("modal-vacancy-form");
+  if (form) form.reset();
+
+  const msg = document.getElementById("modal-vacancy-message");
+  if (msg) {
+    msg.textContent = "";
+    msg.className = "";
+  }
+
+  const recruiterWrap = document.getElementById("modal-vacancy-recruiter-wrap");
+  const recruiterSelect = document.getElementById("modal-vacancy-recruiter");
+  if (recruiterWrap && recruiterSelect) {
+    if (user.role === "administrador") {
+      recruiterWrap.style.display = "block";
+      const onlyRecruiters = (usersCache || []).filter((entry) => entry.role === "reclutador");
+      recruiterSelect.innerHTML = `<option value="" selected>Directa por Administrador (Sin reclutador asignado)</option>${onlyRecruiters
+        .map(
+          (r) => `<option value="${escapeHtml(r.id)}">Asignar a reclutador: ${escapeHtml(r.name)} (${escapeHtml(r.email)})</option>`
+        )
+        .join("")}`;
+      recruiterSelect.value = "";
+    } else {
+      recruiterWrap.style.display = "none";
+    }
+  }
+
+  dialog.showModal();
+}
+window.openCreateVacancyModal = openCreateVacancyModal;
+
+function closeCreateVacancyModal() {
+  const dialog = document.getElementById("create-vacancy-dialog");
+  if (dialog) dialog.close();
+}
+window.closeCreateVacancyModal = closeCreateVacancyModal;
+
+async function createVacancyFromModal(event) {
+  event.preventDefault();
+  const form = document.getElementById("modal-vacancy-form");
+  if (!form || !form.reportValidity()) return;
+
+  const msg = document.getElementById("modal-vacancy-message");
+  const submitBtn = form.querySelector('button[type="submit"]');
+  if (submitBtn) submitBtn.disabled = true;
+
+  const formData = new FormData(form);
+  const title = String(formData.get("title") || "").trim();
+  const type = String(formData.get("type") || "").trim();
+  const location = String(formData.get("location") || "").trim();
+  const description = String(formData.get("description") || "").trim();
+  const rawRecruiter = formData.get("recruiter_id");
+  const recruiter_id = (rawRecruiter && String(rawRecruiter).trim() !== "") ? String(rawRecruiter).trim() : null;
+
+  if (!title || !type || !description) {
+    if (msg) {
+      msg.textContent = "Por favor completa el título, modalidad y descripción.";
+      msg.className = "notice-box is-error";
+    }
+    if (submitBtn) submitBtn.disabled = false;
+    return;
+  }
+
+  try {
+    await apiRequest("/api/vacancies", {
+      method: "POST",
+      body: { title, type, location, description, recruiter_id, status: "active" },
+    });
+
+    closeCreateVacancyModal();
+    if (window.ui && window.ui.toast) {
+      window.ui.toast("¡Convocatoria publicada con éxito en CECAR!", { type: "success" });
+    }
+
+    if (typeof cecarNav === "function") {
+      cecarNav("jobs");
+    } else if (typeof view === "function") {
+      await view("jobs");
+    }
+  } catch (error) {
+    console.error("Error al publicar convocatoria desde modal:", error);
+    if (msg) {
+      msg.textContent = error.message || "No se pudo publicar la convocatoria.";
+      msg.className = "notice-box is-error";
+    }
+    if (window.ui && window.ui.toast) {
+      window.ui.toast(error.message || "Error al publicar la vacante", { type: "error" });
+    }
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
+  }
+}
+window.createVacancyFromModal = createVacancyFromModal;
+
 function openEditVacancyDialog(encodedId) {
   const id = decodeURIComponent(encodedId);
   const vacancy = vacanciesCache.find((entry) => entry.id === id);
@@ -2665,12 +2767,12 @@ function openEditVacancyDialog(encodedId) {
     return;
   }
 
-  const recruiters = usersCache.filter((entry) => entry.role === "reclutador");
+  const recruiters = (usersCache || []).filter((entry) => entry.role === "reclutador");
   const recruiterSelect = document.getElementById("edit-vacancy-recruiter");
-  recruiterSelect.innerHTML = `<option value="">Sin asignar (administrador)</option>${recruiters
+  recruiterSelect.innerHTML = `<option value="">Directa por Administrador (Sin reclutador asignado)</option>${recruiters
     .map(
       (recruiter) =>
-        `<option value="${escapeHtml(recruiter.id)}">${escapeHtml(recruiter.name)} · ${escapeHtml(recruiter.email)}</option>`,
+        `<option value="${escapeHtml(recruiter.id)}">Asignar a reclutador: ${escapeHtml(recruiter.name)} (${escapeHtml(recruiter.email)})</option>`,
     )
     .join("")}`;
   recruiterSelect.value = vacancy.recruiterId || "";
@@ -2730,7 +2832,7 @@ async function saveVacancyEdit(event) {
         location: String(formData.get("location")).trim(),
         description,
         status: String(formData.get("status")),
-        recruiter_id: String(formData.get("recruiterEmail") || "") || null,
+        recruiter_id: String(formData.get("recruiter_id") || formData.get("recruiterEmail") || "") || null,
       },
     });
     closeEditVacancyDialog();
@@ -2747,10 +2849,15 @@ async function publishVacancy(event) {
 
   if (!["reclutador", "administrador"].includes(user.role)) return;
   const form = document.getElementById("vacancy-form");
-  if (!form.reportValidity()) return;
+  if (!form || !form.reportValidity()) return;
 
   const formData = new FormData(form);
+  const submitBtn = form.querySelector('button[type="submit"]');
+  if (submitBtn) submitBtn.disabled = true;
+
   try {
+    const rawRecruiter = formData.get("recruiter_id");
+    const recruiter_id = (rawRecruiter && String(rawRecruiter).trim() !== "") ? String(rawRecruiter).trim() : null;
     await apiRequest("/api/vacancies", {
       method: "POST",
       body: {
@@ -2758,13 +2865,24 @@ async function publishVacancy(event) {
         type: String(formData.get("type")).trim(),
         location: String(formData.get("location")).trim(),
         description: String(formData.get("description")).trim(),
-        recruiter_id: String(formData.get("recruiterEmail") || "") || null,
+        recruiter_id: recruiter_id,
+        status: "active",
       },
     });
+
+    if (window.ui && window.ui.toast) {
+      window.ui.toast("¡Convocatoria creada y publicada exitosamente!", { type: "success" });
+    }
+    form.reset();
     await view("jobs");
   } catch (error) {
     console.error("No se pudo publicar la vacante:", error);
     showMessage(error.message, true);
+    if (window.ui && window.ui.toast) {
+      window.ui.toast(error.message || "Error al publicar la vacante", { type: "error" });
+    }
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
   }
 }
 
@@ -3830,6 +3948,10 @@ async function initializeDashboard() {
     document.getElementById("user").textContent = user.name;
     const isAdmin = (user.role === "administrador" || user.role === "admin" || user.role === "ADMIN" || user.email === "luctapi89@gmail.com");
     document.getElementById("user-role").textContent = isAdmin ? "Administrador" : label(user.role);
+    const quickBtn = document.getElementById("btn-quick-create-vacancy");
+    if (quickBtn && (isAdmin || user.role === "reclutador")) {
+      quickBtn.style.display = "inline-flex";
+    }
     const avatarEl = document.getElementById("avatar");
     if (avatarEl) {
       avatarEl.innerHTML = getDynamicAvatar(user.name, 38);
@@ -3908,6 +4030,10 @@ async function initializeDashboard() {
     const roleEl = document.getElementById("user-role");
     const isAdmin = (user.role === "admin" || user.role === "ADMIN" || user.role === "administrador" || user.email === "luctapi89@gmail.com");
     if (roleEl) roleEl.textContent = isAdmin ? "Administrador" : label(user.role);
+    const quickBtn = document.getElementById("btn-quick-create-vacancy");
+    if (quickBtn && (isAdmin || user.role === "reclutador")) {
+      quickBtn.style.display = "inline-flex";
+    }
     const avatarEl = document.getElementById("avatar");
     if (avatarEl && typeof getDynamicAvatar === "function") {
       avatarEl.innerHTML = getDynamicAvatar(user.name, 38);

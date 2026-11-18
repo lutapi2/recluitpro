@@ -131,14 +131,16 @@ class VacanciesController {
         $viewerRole = Config::normalizeRoleForClient($viewer['role']);
         $recruiterId = ($viewerRole === 'reclutador') ? $viewer['id'] : null;
 
-        if ($viewerRole === 'administrador' && !empty($body['recruiter_id'])) {
-            $recStmt = $pdo->prepare("SELECT id, role FROM users WHERE id = :id LIMIT 1");
-            $recStmt->execute([':id' => $body['recruiter_id']]);
-            $recUser = $recStmt->fetch(PDO::FETCH_ASSOC);
-            if (!$recUser || Config::normalizeRoleForClient($recUser['role']) !== 'reclutador') {
-                Response::error("Selecciona un reclutador válido.", 422);
+        if ($viewerRole === 'administrador') {
+            $rawRecruiter = trim((string)($body['recruiter_id'] ?? $body['recruiterEmail'] ?? ''));
+            if (!empty($rawRecruiter)) {
+                $recStmt = $pdo->prepare("SELECT id, role FROM users WHERE id = :id OR email = :email LIMIT 1");
+                $recStmt->execute([':id' => $rawRecruiter, ':email' => $rawRecruiter]);
+                $recUser = $recStmt->fetch(PDO::FETCH_ASSOC);
+                if ($recUser) {
+                    $recruiterId = $recUser['id'];
+                }
             }
-            $recruiterId = $recUser['id'];
         }
 
         $vacId = Config::uuid();
@@ -193,14 +195,12 @@ class VacanciesController {
 
         $recruiterId = $vacancy['recruiter_id'];
         if ($viewerRole === 'administrador') {
-            if (!empty($body['recruiter_id'])) {
-                $recStmt = $pdo->prepare("SELECT id, role FROM users WHERE id = :id LIMIT 1");
-                $recStmt->execute([':id' => $body['recruiter_id']]);
+            $rawRec = $body['recruiter_id'] ?? $body['recruiterEmail'] ?? null;
+            if (!empty($rawRec)) {
+                $recStmt = $pdo->prepare("SELECT id, role FROM users WHERE id = :id OR email = :email LIMIT 1");
+                $recStmt->execute([':id' => $rawRec, ':email' => $rawRec]);
                 $recUser = $recStmt->fetch(PDO::FETCH_ASSOC);
-                if (!$recUser || Config::normalizeRoleForClient($recUser['role']) !== 'reclutador') {
-                    Response::error("Selecciona un reclutador válido.", 422);
-                }
-                $recruiterId = $recUser['id'];
+                $recruiterId = $recUser ? $recUser['id'] : null;
             } else {
                 $recruiterId = null;
             }

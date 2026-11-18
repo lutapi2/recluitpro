@@ -167,7 +167,7 @@ class Serialization {
             'location' => $vacancy['location'],
             'description' => $vacancy['description'],
             'status' => $vacancy['status'],
-            'recruiterId' => $vacancy['recruiter_id'] ?: '',
+            'recruiterId' => $vacancy['recruiter_id'] ?: null,
             'recruiterEmail' => $recruiterEmail,
             'recruiterName' => $recruiterName,
             'canManage' => $canManage,
